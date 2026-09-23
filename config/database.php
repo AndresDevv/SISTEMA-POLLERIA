@@ -1,4 +1,3 @@
-```php
 <?php
 
 $host = "localhost";
@@ -19,4 +18,3 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 ?>
-```
