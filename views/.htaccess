@@ -1,0 +1,15 @@
+# Evita abrir directamente los .php de las vistas.
+# Los assets (css/js/img) siguen siendo accesibles.
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.php$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.php$">
+        Order deny,allow
+        Deny from all
+    </FilesMatch>
+</IfModule>

@@ -1,0 +1,1134 @@
+/* =========================================================
+   LOS GOMEZ - Sistema de diseño
+   Basado en los diseños de Figma (dashboard, ventas, mesas)
+   ========================================================= */
+
+:root {
+    /* Marca */
+    --lg-rojo: #DF0303;
+    --lg-rojo-claro: #FFE3E3;
+    --lg-amarillo: #FEFB4D;
+    --lg-amarillo-claro: #F9FDC5;
+
+    /* Semánticos */
+    --lg-verde: #34C759;
+    --lg-verde-fondo: #D1FAE5;
+    --lg-verde-pill: #C1FFCC;
+
+    --lg-rojo-estado-fondo: #FEE2E2;
+    --lg-ambar-fondo: #FEF3C7;
+    --lg-ambar-texto: #D97706;
+    --lg-pizarra-fondo: #E2E8F0;
+    --lg-pizarra-texto: #64748B;
+    --lg-purpura-fondo: #F3E8FF;
+    --lg-purpura-texto: #A855F7;
+    --lg-pendiente-fondo: #FFFEC1;
+    --lg-pendiente-texto: #A39A49;
+
+    /* Superficies */
+    --lg-fondo: #F6F6F6;
+    --lg-blanco: #FFFFFF;
+    --lg-borde: #EFEFEF;
+    --lg-gris: #F6F6F6;
+    --lg-texto: #000000;
+    --lg-texto-suave: #A6A6A6;
+
+    /* Layout */
+    --lg-sidebar: 280px;
+    --lg-header: 64px;
+    --lg-radio: 10px;
+    --lg-sombra: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+body {
+    background-color: var(--lg-fondo);
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--lg-texto);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------
+   Sidebar amarillo
+   --------------------------------------------------------- */
+.main-sidebar {
+    width: var(--lg-sidebar);
+    background-color: var(--lg-amarillo);
+    box-shadow: none;
+}
+
+.main-sidebar .sidebar {
+    background-color: transparent;
+    padding-top: 8px;
+}
+
+.brand-link {
+    background-color: var(--lg-amarillo);
+    border-bottom: 0;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.brand-text {
+    color: #000;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* Icono a la izquierda del texto (AdminLTE los apila en modo mini) */
+.main-sidebar .nav-sidebar .nav-item > .nav-link {
+    display: flex;
+    align-items: center;
+    border-radius: 8px;
+    margin: 2px 16px;
+    padding: 9px 14px;
+    color: #111;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.main-sidebar .nav-sidebar .nav-item > .nav-link p {
+    color: inherit;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.main-sidebar .nav-sidebar .nav-item > .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.45);
+    color: #000;
+}
+
+.main-sidebar .nav-sidebar .nav-item > .nav-link.active {
+    background-color: var(--lg-rojo);
+    color: #fff;
+    font-weight: 600;
+}
+
+.main-sidebar .nav-sidebar .nav-item > .nav-link.active p,
+.main-sidebar .nav-sidebar .nav-item > .nav-link.active .nav-icon {
+    color: #fff;
+}
+
+.main-sidebar .nav-sidebar .nav-icon {
+    color: #111;
+    width: 20px;
+    flex: 0 0 20px;
+    font-size: 0.98rem;
+    text-align: left;
+    margin-right: 12px;
+    line-height: 1;
+}
+
+.main-sidebar .nav-sidebar .nav-item:last-child {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.main-sidebar .nav-sidebar .nav-item:last-child > .nav-link {
+    color: #111;
+    font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   Navbar
+   --------------------------------------------------------- */
+.main-header {
+    height: var(--lg-header);
+    background-color: var(--lg-blanco);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 0;
+}
+
+.main-header .nav-link {
+    color: #111;
+}
+
+.main-header .navbar-toggler,
+.main-header .nav-link[data-widget="pushmenu"] {
+    color: #111;
+    font-size: 1.25rem;
+    padding: 10px 14px;
+}
+
+.lg-usuario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    color: #111;
+    font-weight: 500;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.lg-usuario:hover {
+    background-color: var(--lg-gris);
+}
+
+.lg-usuario .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: var(--lg-rojo);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+.lg-usuario .caret {
+    color: var(--lg-texto-suave);
+    font-size: 0.8rem;
+}
+
+/* ---------------------------------------------------------
+   Estructura de contenido
+   --------------------------------------------------------- */
+/* AdminLTE reserva 250px; lo alineamos a nuestro ancho de sidebar */
+.layout-fixed .main-sidebar {
+    width: var(--lg-sidebar);
+}
+
+.layout-fixed .main-header,
+.layout-fixed .content-wrapper,
+.layout-fixed .main-footer {
+    margin-left: var(--lg-sidebar);
+}
+
+.content-wrapper {
+    background-color: var(--lg-fondo);
+}
+
+.content {
+    padding: 16px 24px 24px;
+}
+
+.main-footer {
+    display: none;
+}
+
+/* Encabezado de página (icono + título + subtítulo) */
+.lg-page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.lg-page-head .lg-page-head-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.lg-page-head .lg-page-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: var(--lg-rojo-claro);
+    color: var(--lg-rojo);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.lg-page-head h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.15;
+    color: var(--lg-texto);
+}
+
+.lg-page-head .lg-subtitle {
+    color: var(--lg-texto-suave);
+    font-size: 0.88rem;
+    margin: 2px 0 0;
+}
+
+/* ---------------------------------------------------------
+   Tarjetas
+   --------------------------------------------------------- */
+.lg-card {
+    background-color: var(--lg-blanco);
+    border-radius: var(--lg-radio);
+    box-shadow: var(--lg-sombra);
+    padding: 24px;
+}
+
+/* Solo las tarjetas que son hijas directas de una rejilla se igualan de alto */
+.lg-grid-2 > .lg-card,
+.lg-grid-3 > .lg-card {
+    height: 100%;
+}
+
+.lg-grid {
+    align-items: start;
+}
+
+/* Los botones que representan mesas heredan el color del estado
+   (especificidad mayor que .lg-btn para ganar la cascada) */
+.lg-btn.lg-mesa-badge--libre     { background-color: var(--lg-verde-fondo);        color: #10B981; }
+.lg-btn.lg-mesa-badge--ocupada   { background-color: var(--lg-rojo-estado-fondo);  color: #EF4444; }
+.lg-btn.lg-mesa-badge--reservada { background-color: var(--lg-ambar-fondo);        color: var(--lg-ambar-texto); }
+.lg-btn.lg-mesa-badge--pagada    { background-color: var(--lg-pizarra-fondo);      color: var(--lg-pizarra-texto); }
+.lg-btn.lg-mesa-badge--porpagar  { background-color: var(--lg-purpura-fondo);      color: var(--lg-purpura-texto); }
+
+.lg-btn.lg-mesa-badge--libre:hover,
+.lg-btn.lg-mesa-badge--ocupada:hover,
+.lg-btn.lg-mesa-badge--reservada:hover,
+.lg-btn.lg-mesa-badge--pagada:hover,
+.lg-btn.lg-mesa-badge--porpagar:hover {
+    filter: brightness(0.97);
+    color: inherit;
+}
+
+.lg-card--flat {
+    box-shadow: none;
+    border: 1px solid var(--lg-borde);
+}
+
+.lg-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.lg-card-subtitle {
+    color: var(--lg-texto-suave);
+    font-size: 0.82rem;
+    margin: 2px 0 0;
+}
+
+.lg-card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.lg-card-head .lg-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: var(--lg-amarillo-claro);
+    color: var(--lg-rojo);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------
+   Tarjetas de indicador (dashboard)
+   Compactas: el tablero completo entra sin barra de scroll
+   --------------------------------------------------------- */
+.lg-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+
+.lg-stat {
+    background-color: var(--lg-blanco);
+    border-radius: var(--lg-radio);
+    box-shadow: var(--lg-sombra);
+    padding: 16px 12px;
+    text-align: center;
+}
+
+.lg-stat .lg-stat-icon {
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    background-color: var(--lg-amarillo-claro);
+    color: var(--lg-rojo);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+}
+
+.lg-stat .lg-stat-label {
+    font-size: 0.78rem;
+    color: #111;
+    margin-bottom: 4px;
+    line-height: 1.25;
+}
+
+.lg-stat .lg-stat-value,
+.lg-stat-value {
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.lg-stat-value.is-green { color: var(--lg-verde); }
+.lg-stat-value.is-red   { color: var(--lg-rojo); }
+.lg-stat-value.is-dark  { color: #111; }
+
+/* ---------------------------------------------------------
+   Píldoras / badges
+   --------------------------------------------------------- */
+.lg-pill {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.lg-pill--verde    { background-color: var(--lg-verde-pill);        color: #2E9E4B; }
+.lg-pill--ambar    { background-color: var(--lg-pendiente-fondo);   color: var(--lg-pendiente-texto); }
+.lg-pill--rojo     { background-color: var(--lg-rojo-estado-fondo); color: var(--lg-rojo); }
+.lg-pill--pizarra  { background-color: var(--lg-pizarra-fondo);     color: var(--lg-pizarra-texto); }
+.lg-pill--purpura  { background-color: var(--lg-purpura-fondo);     color: var(--lg-purpura-texto); }
+.lg-pill--neutro   { background-color: var(--lg-gris);              color: var(--lg-texto-suave); }
+
+/* ---------------------------------------------------------
+   Tablas
+   --------------------------------------------------------- */
+.lg-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lg-table thead th {
+    background-color: var(--lg-gris);
+    color: #111;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 12px 14px;
+    white-space: nowrap;
+}
+
+.lg-table thead th:first-child { border-radius: 6px 0 0 6px; }
+.lg-table thead th:last-child  { border-radius: 0 6px 6px 0; }
+
+.lg-table tbody td {
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--lg-borde);
+    font-size: 0.88rem;
+    vertical-align: middle;
+}
+
+.lg-table tbody tr:last-child td { border-bottom: 0; }
+
+.lg-table .num { font-variant-numeric: tabular-nums; }
+
+.lg-table--compact tbody td { padding: 10px 14px; }
+
+/* ---------------------------------------------------------
+   Filas label / valor (panel caja)
+   --------------------------------------------------------- */
+.lg-rows { margin: 0; }
+
+.lg-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--lg-borde);
+}
+
+.lg-row:last-child { border-bottom: 0; }
+.lg-row .lg-row-label { color: #111; font-size: 0.92rem; }
+.lg-row .lg-row-value { font-weight: 600; font-size: 0.92rem; }
+
+.lg-total-box {
+    background-color: var(--lg-rojo-claro);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 6px;
+}
+
+.lg-total-box .lg-row { border-bottom: 0; padding: 0; }
+.lg-total-box .lg-row-label { color: var(--lg-rojo); font-weight: 600; }
+.lg-total-box .lg-row-value { color: var(--lg-rojo); font-size: 1.25rem; font-weight: 700; }
+
+.lg-subtitle-block {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #111;
+    margin: 22px 0 6px;
+}
+
+.lg-movement {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    font-size: 0.88rem;
+}
+
+.lg-movement .lg-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+.lg-movement .lg-dot--in  { background-color: var(--lg-verde); }
+.lg-movement .lg-dot--out { background-color: var(--lg-rojo); }
+.lg-movement .lg-movement-label { color: var(--lg-texto-suave); }
+.lg-movement .lg-movement-value { margin-left: auto; font-weight: 600; }
+
+/* ---------------------------------------------------------
+   Mesas
+   --------------------------------------------------------- */
+.lg-mesas {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.lg-mesa {
+    background-color: var(--lg-blanco);
+    border: 1px solid var(--lg-borde);
+    border-radius: 12px;
+    padding: 18px;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    width: 100%;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.lg-mesa:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+/* Llamada a la acción dentro de la tarjeta de mesa */
+.lg-mesa-cta {
+    margin-top: auto;
+    padding-top: 12px;
+    color: var(--lg-texto-suave);
+    font-size: 0.82rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.lg-mesa:hover .lg-mesa-cta,
+.lg-mesa:focus-visible .lg-mesa-cta {
+    opacity: 1;
+    color: var(--lg-rojo);
+}
+
+/* En pantallas táctiles no hay hover: se muestra siempre */
+@media (hover: none) {
+    .lg-mesa-cta {
+        opacity: 1;
+    }
+}
+
+.lg-mesa.is-selected {
+    box-shadow: 0 0 0 2px var(--lg-rojo);
+}
+
+.lg-mesa--libre     { background-color: #FFFFFF; }.lg-mesa--ocupada   { background-color: #FEE6E6; border-color: #FBD5D5; }
+.lg-mesa--reservada { background-color: #FFFDF5; border-color: #FDEBC8; }
+.lg-mesa--pagada    { background-color: #F8FAFC; border-color: #E2E8F0; }
+.lg-mesa--porpagar  { background-color: #FAF5FF; border-color: #E9D5FF; }
+
+.lg-mesa-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.lg-mesa-top > div:first-child {
+    min-width: 0;
+}
+
+.lg-mesa-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
+}
+
+.lg-mesa-cap {
+    color: var(--lg-texto-suave);
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.lg-mesa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 7px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.lg-mesa-badge i { font-size: 0.85rem; }
+
+.lg-mesa-badge--libre     { background-color: var(--lg-verde-fondo);        color: #10B981; }
+.lg-mesa-badge--ocupada   { background-color: var(--lg-rojo-estado-fondo);  color: #EF4444; }
+.lg-mesa-badge--reservada { background-color: var(--lg-ambar-fondo);        color: var(--lg-ambar-texto); }
+.lg-mesa-badge--pagada    { background-color: var(--lg-pizarra-fondo);      color: var(--lg-pizarra-texto); }
+.lg-mesa-badge--porpagar  { background-color: var(--lg-purpura-fondo);      color: var(--lg-purpura-texto); }
+
+.lg-mesa-foot {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--lg-borde);
+    color: #111;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Sin detalle, la llamada a la acción queda al fondo de la tarjeta */
+.lg-mesa-foot + .lg-mesa-cta {
+    margin-top: 12px;
+    padding-top: 0;
+}
+
+.lg-mesa--ocupada .lg-mesa-foot   { color: #EF4444; }
+.lg-mesa--reservada .lg-mesa-foot { color: var(--lg-ambar-texto); }
+.lg-mesa--pagada .lg-mesa-foot    { color: var(--lg-pizarra-texto); }
+.lg-mesa--porpagar .lg-mesa-foot  { color: var(--lg-purpura-texto); }
+
+/* Leyenda */
+.lg-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    background-color: var(--lg-blanco);
+    border: 1px solid var(--lg-borde);
+    border-radius: 999px;
+    padding: 10px 20px;
+}
+
+.lg-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.82rem;
+    color: #111;
+}
+
+.lg-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+}
+
+/* ---------------------------------------------------------
+   Aviso informativo
+   --------------------------------------------------------- */
+.lg-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: #1E40AF;
+    font-size: 0.88rem;
+}
+
+/* ---------------------------------------------------------
+   Botones
+   --------------------------------------------------------- */
+.lg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    background-color: var(--lg-gris);
+    color: #111;
+    transition: filter 0.15s ease, background-color 0.15s ease;
+}
+
+.lg-btn:hover { filter: brightness(0.96); color: #111; }
+
+.lg-btn--primary { background-color: var(--lg-rojo); color: #fff; }
+.lg-btn--primary:hover { color: #fff; }
+.lg-btn--verde { background-color: var(--lg-verde); color: #fff; }
+.lg-btn--verde:hover { color: #fff; }
+.lg-btn--ghost { background-color: transparent; border: 1px solid var(--lg-borde); }
+
+.lg-btn--sm {
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 0.8rem;
+}
+
+/* ---------------------------------------------------------
+   Formularios
+   --------------------------------------------------------- */
+.lg-input,
+.lg-select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1px solid var(--lg-borde);
+    border-radius: 8px;
+    background-color: var(--lg-blanco);
+    font-size: 0.9rem;
+    color: #111;
+}
+
+.lg-input:focus,
+.lg-select:focus {
+    outline: none;
+    border-color: var(--lg-rojo);
+    box-shadow: 0 0 0 3px rgba(223, 3, 3, 0.1);
+}
+
+.lg-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 6px;
+}
+
+.lg-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px;
+}
+
+.lg-filters .lg-field { min-width: 180px; flex: 1 1 180px; }
+
+/* ---------------------------------------------------------
+   Segmentos (pestañas de la vista Mesas y Pedidos)
+   --------------------------------------------------------- */
+.lg-segmentos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.lg-segmento {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid var(--lg-borde);
+    border-radius: 8px;
+    background-color: var(--lg-blanco);
+    color: #111;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.lg-segmento:hover {
+    background-color: var(--lg-gris);
+    color: #111;
+}
+
+.lg-segmento.is-activo {
+    background-color: var(--lg-rojo);
+    border-color: var(--lg-rojo);
+    color: #fff;
+}
+
+.lg-segmento-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background-color: var(--lg-rojo-claro);
+    color: var(--lg-rojo);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.lg-segmento.is-activo .lg-segmento-badge {
+    background-color: #fff;
+    color: var(--lg-rojo);
+}
+
+/* Producto agotado en el catálogo del modal */
+.modal-producto.is-agotado {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--lg-gris);
+}
+
+.modal-producto.is-agotado:hover {
+    background-color: var(--lg-gris);
+    border-color: var(--lg-borde);
+}
+
+.lg-empty {
+    grid-column: 1 / -1;
+}
+
+/* ---------------------------------------------------------
+   Modal de pedido
+   --------------------------------------------------------- */
+.modal-backdrop.show {
+    opacity: 0.45;
+}
+
+.modal-catalogo {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-height: 44vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.modal-producto {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-height: 56px;
+    padding: 10px 12px;
+    border: 1px solid var(--lg-borde);
+    border-radius: 8px;
+    background-color: var(--lg-blanco);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.modal-producto:hover {
+    background-color: var(--lg-amarillo-claro);
+    border-color: #E8E44C;
+}
+
+.modal-producto:active {
+    transform: scale(0.98);
+}
+
+.modal-producto-nombre {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #111;
+    line-height: 1.25;
+}
+
+.modal-producto-precio {
+    font-size: 0.78rem;
+    color: var(--lg-texto-suave);
+}
+
+.modal-pedido {
+    background-color: var(--lg-gris);
+    border-radius: 10px;
+    padding: 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-pedido-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.modal-pedido-lista {
+    flex: 1;
+    min-height: 120px;
+    max-height: 38vh;
+    overflow-y: auto;
+}
+
+.modal-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background-color: var(--lg-blanco);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+
+.modal-item-nombre {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #111;
+    line-height: 1.25;
+}
+
+.modal-item-sub {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--lg-texto-suave);
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+.modal-item-acciones {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.modal-qty {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background-color: var(--lg-gris);
+    border-radius: 999px;
+    padding: 3px;
+    flex: 0 0 auto;
+}
+
+.modal-qty button {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    background-color: var(--lg-blanco);
+    color: #111;
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.modal-qty button:hover {
+    background-color: var(--lg-amarillo-claro);
+}
+
+.modal-qty span {
+    min-width: 24px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.modal-item-total {
+    flex: 1 1 auto;
+    text-align: right;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #111;
+}
+
+.modal-item-quitar {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: #EF4444;
+    cursor: pointer;
+    padding: 6px;
+    font-size: 0.8rem;
+}
+
+@media (max-width: 767px) {
+    .modal-catalogo {
+        grid-template-columns: 1fr;
+        max-height: 30vh;
+    }
+
+    .modal-pedido-lista {
+        max-height: 24vh;
+    }
+
+    .modal-footer .lg-btn {
+        flex: 1 1 auto;
+    }
+}
+
+/* Tablet: el modal ocupa toda la pantalla para que los botones
+   de acción queden siempre al alcance del dedo */
+@media (max-width: 991px) {
+    #modalPedido .modal-dialog {
+        margin: 0;
+        max-width: 100%;
+        min-height: 100%;
+        display: flex;
+        align-items: stretch;
+    }
+
+    #modalPedido .modal-content {
+        display: flex;
+        flex-direction: column;
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    #modalPedido .modal-header {
+        flex: 0 0 auto;
+        padding: 14px 18px;
+    }
+
+    #modalPedido .modal-body {
+        flex: 1 1 auto;
+        max-height: none;
+        overflow-y: auto;
+        padding: 18px;
+    }
+
+    #modalPedido .modal-footer {
+        flex: 0 0 auto;
+        padding: 12px 18px;
+    }
+
+    #modalPedido .modal-footer .lg-btn {
+        flex: 1 1 auto;
+        min-height: 48px;
+    }
+
+    .modal-catalogo {
+        grid-template-columns: repeat(2, 1fr);
+        max-height: none;
+    }
+
+    .modal-pedido-lista {
+        max-height: none;
+    }
+}
+
+/* ---------------------------------------------------------
+   Utilidades propias
+   Bootstrap 4.6 no incluye las utilidades gap-*
+   --------------------------------------------------------- */
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 1rem; }
+.gap-4 { gap: 1.5rem; }
+
+/* ---------------------------------------------------------
+   Utilidades
+   --------------------------------------------------------- */
+.lg-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: start; }
+.lg-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
+.lg-mt-24 { margin-top: 24px; }
+.lg-mb-24 { margin-bottom: 24px; }
+.lg-muted { color: var(--lg-texto-suave); }
+.lg-text-green { color: var(--lg-verde); }
+.lg-text-red { color: var(--lg-rojo); }
+.lg-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--lg-texto-suave);
+}
+
+.lg-empty i { font-size: 2.2rem; display: block; margin-bottom: 12px; opacity: 0.6; }
+
+/* AdminLTE colapsa el sidebar con -250px; lo ajustamos a nuestro ancho */
+.sidebar-mini.sidebar-collapse .main-sidebar {
+    margin-left: calc(-1 * var(--lg-sidebar));
+}
+
+/* ---------------------------------------------------------
+   Responsivo - tablet (prioridad: mesero / cocinero)
+   --------------------------------------------------------- */
+@media (max-width: 1199px) {
+    .lg-mesas { grid-template-columns: repeat(3, 1fr); }
+    .lg-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 991px) {
+    :root { --lg-sidebar: 260px; }
+
+    .layout-fixed .main-header,
+    .layout-fixed .content-wrapper,
+    .layout-fixed .main-footer {
+        margin-left: 0;
+    }
+
+    /* Sidebar fuera de pantalla hasta que se abra con el botón */
+    .sidebar-mini .main-sidebar {
+        margin-left: calc(-1 * var(--lg-sidebar));
+    }
+
+    .sidebar-mini.sidebar-open .main-sidebar {
+        margin-left: 0;
+    }
+
+    /* Velo oscuro al abrir el menú */
+    .sidebar-open .content-wrapper::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 3000;
+    }
+
+    .content { padding: 20px 18px 32px; }
+
+    .lg-stats { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .lg-grid-2,
+    .lg-grid-3 { grid-template-columns: 1fr; gap: 16px; }
+
+    .lg-mesas { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+
+    .lg-page-head h1 { font-size: 1.55rem; }
+    .lg-page-head .lg-page-icon { width: 42px; height: 42px; }
+
+    .lg-stat { padding: 20px 14px; }
+    .lg-stat .lg-stat-icon { width: 56px; height: 56px; font-size: 1.35rem; }
+    .lg-stat .lg-stat-value,
+    .lg-stat-value { font-size: 1.5rem; }
+}
+
+@media (max-width: 575px) {
+    .lg-stats { grid-template-columns: 1fr; }
+    .lg-mesas { grid-template-columns: 1fr; }
+    .lg-page-head { gap: 12px; }
+    .lg-page-head h1 { font-size: 1.35rem; }
+    .lg-legend { border-radius: 12px; }
+}

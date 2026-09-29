@@ -1,59 +1,25 @@
 <?php
+/**
+ * Vista: login (standalone, sin layout de AdminLTE).
+ * El procesamiento del formulario se hace en index.php.
+ */
 
-session_start();
-
-require_once __DIR__ . '/../../controllers/AuthController.php';
-
-$authController = new AuthController();
-
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $usuario = trim($_POST['usuario'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    if ($usuario === '' || $password === '') {
-
-        $error = 'Completa todos los campos.';
-
-    } else {
-
-        $resultado = $authController->iniciarSesion(
-            $usuario,
-            $password
-        );
-
-        if ($resultado['success']) {
-
-            $datosUsuario = $resultado['usuario'];
-
-            $_SESSION['usuario_id'] = $datosUsuario['id'];
-            $_SESSION['nombre'] = $datosUsuario['nombre'];
-            $_SESSION['usuario'] = $datosUsuario['usuario'];
-            $_SESSION['rol_id'] = $datosUsuario['rol_id'];
-            $_SESSION['rol'] = $datosUsuario['rol'];
-
-            header('Location: /POLLERIA/views/admin/dashboard.php');
-            exit;
-
-        } else {
-
-            $error = $resultado['message'];
-        }
-    }
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Iniciar Sesión | LOS GOMEZ</title>
+    <title>Iniciar Sesión | <?= htmlspecialchars(APP_NOMBRE) ?></title>
 
-    <link rel="stylesheet" href="views/assets/css/login.css">
+    <link rel="stylesheet" href="<?= ASSETS_URL ?>css/login.css">
+
 </head>
 
 <body>
@@ -67,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-
         <!-- Panel derecho -->
         <div class="login-panel">
 
@@ -77,8 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p class="login-description">
                     Ingresa tus credenciales para acceder al sistema
                 </p>
+
                 <!-- MOSTRAR ERROR -->
-                <?php if ($error !== ''): ?>
+                <?php if (!empty($error)): ?>
 
                 <div class="login-error">
                     <?= htmlspecialchars($error) ?>
@@ -86,8 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <?php endif; ?>
 
-
-                <form action="" method="POST">
+                <form action="<?= url('login') ?>" method="POST">
 
                     <!-- Usuario -->
                     <div class="form-group">
@@ -103,13 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 name="usuario"
                                 placeholder="Ingresa tu usuario"
                                 autocomplete="username"
+                                autofocus
                                 required
                             >
-
                         </div>
 
                     </div>
-
 
                     <!-- Contraseña -->
                     <div class="form-group">
@@ -127,11 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 autocomplete="current-password"
                                 required
                             >
-
                         </div>
 
                     </div>
-
 
                     <!-- Botón -->
                     <button type="submit" class="btn-login">
@@ -144,11 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 </form>
 
-
                 <p class="login-footer">
                     Acceso exclusivo para el personal autorizado
                 </p>
-
             </div>
 
         </div>

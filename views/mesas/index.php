@@ -1,0 +1,339 @@
+<?php
+/**
+ * Vista: mesas y pedidos — replica el diseño de Figma (responsive tablet).
+ *
+ * Tres paneles conmutables:
+ *   - Ver mesas   : cuadrícula de mesas
+ *   - Ver pedidos : pedidos registrados
+ *   - Ver ventas  : ventas del día
+ */
+
+require_once __DIR__ . '/../../models/Mesa.php';
+require_once __DIR__ . '/../../models/Pedido.php';
+require_once __DIR__ . '/../../models/Venta.php';
+require_once __DIR__ . '/../../models/Producto.php';
+
+$mesaModel    = new Mesa();
+$pedidoModel  = new Pedido();
+$ventaModel   = new Venta();
+$productoModel = new Producto();
+
+$mesas     = $mesaModel->listar();
+$pedidos   = $pedidoModel->listar('activos');
+$pedidosHoy = $pedidoModel->listar('hoy');
+$ventas    = $ventaModel->delDia();
+$productos = $productoModel->listar();
+
+/** ¿Qué panel se muestra? */
+$panelActual = $_GET['panel'] ?? 'mesas';
+
+if (!in_array($panelActual, ['mesas', 'pedidos', 'ventas'], true)) {
+    $panelActual = 'mesas';
+}
+
+/**
+ * Genera una URL cambiando solo el panel.
+ */
+function urlPanel(string $panel): string
+{
+    return BASE_URL . '?page=mesas&panel=' . $panel;
+}
+
+/**
+ * Mapea el estado de la base al de la interfaz de pedidos.
+ */
+function estadoPedidoUI(string $estado): array
+{
+    return match ($estado) {
+        'preparando' => ['etiqueta' => 'En cocina', 'pildora' => 'lg-pill--rojo',    'icono' => 'fa fa-fire',    'accion' => 'preparado', 'texto' => 'Marcar listo'],
+        'preparado'  => ['etiqueta' => 'Listo',     'pildora' => 'lg-pill--verde',   'icono' => 'fa fa-check',   'accion' => 'entregado', 'texto' => 'Servir'],
+        'entregado'  => ['etiqueta' => 'Servido',   'pildora' => 'lg-pill--pizarra', 'icono' => 'fa fa-bell',   'accion' => '',           'texto' => ''],
+        default      => ['etiqueta' => 'Pendiente', 'pildora' => 'lg-pill--ambar',   'icono' => 'fa fa-clock-o','accion' => 'preparando','texto' => 'Aceptar']
+    };
+}
+?>
+
+<?php
+encabezadoPagina(
+    'fa fa-cutlery',
+    'Mesas y Pedidos',
+    'Selecciona una mesa para ver su estado o tomar un pedido'
+);
+?>
+
+<!-- Selector de panel -->
+<div class="lg-segmentos mb-3">
+
+    <a href="<?= urlPanel('mesas') ?>" class="lg-segmento<?= $panelActual === 'mesas' ? ' is-activo' : '' ?>">
+        <i class="fa fa-table"></i> Ver mesas
+    </a>
+
+    <a href="<?= urlPanel('pedidos') ?>" class="lg-segmento<?= $panelActual === 'pedidos' ? ' is-activo' : '' ?>">
+        <i class="fa fa-list-alt"></i> Ver pedidos
+        <span class="lg-segmento-badge"><?= count($pedidos) ?></span>
+    </a>
+
+    <a href="<?= urlPanel('ventas') ?>" class="lg-segmento<?= $panelActual === 'ventas' ? ' is-activo' : '' ?>">
+        <i class="fa fa-bar-chart"></i> Ver ventas
+    </a>
+
+</div>
+
+<?php if ($panelActual === 'mesas'): ?>
+
+    <?php if (!$mesas): ?>
+
+        <div class="lg-card">
+            <div class="lg-empty">
+                <i class="fa fa-table"></i>
+                <p class="mb-0">A&uacute;n no hay mesas registradas en la base de datos.</p>
+            </div>
+        </div>
+
+    <?php else: ?>
+
+        <!-- Leyenda de estados -->
+        <div class="d-flex justify-content-end mb-3">
+            <div class="lg-legend">
+                <?php foreach (estadosMesa() as $clave => $datos): ?>
+                    <span class="lg-legend-item">
+                        <span class="lg-legend-dot" style="background-color:<?= $datos['color'] ?>"></span>
+                        <?= htmlspecialchars($datos['etiqueta']) ?>
+                    </span>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Cuadrícula de mesas -->
+        <div class="lg-mesas">
+
+            <?php foreach ($mesas as $mesa): ?>
+                <?php $estado = estadosMesa()[$mesa['estado_visual']] ?? estadosMesa()['libre']; ?>
+
+                <button type="button"
+                        class="lg-mesa lg-mesa--<?= htmlspecialchars($mesa['estado_visual']) ?>"
+                        data-mesa="Mesa <?= (int) $mesa['numero'] ?>"
+                        data-mesa-id="<?= (int) $mesa['id'] ?>"
+                        data-capacidad="<?= (int) $mesa['capacidad'] ?> personas">
+
+                    <div class="lg-mesa-top">
+
+                        <div>
+                            <h3 class="lg-mesa-name">Mesa <?= (int) $mesa['numero'] ?></h3>
+                            <div class="lg-mesa-cap">
+                                <i class="fa fa-users"></i>
+                                <?= (int) $mesa['capacidad'] ?> personas
+                            </div>
+                        </div>
+
+                        <span class="lg-mesa-badge lg-mesa-badge--<?= htmlspecialchars($mesa['estado_visual']) ?>">
+                            <i class="<?= $estado['icono'] ?>"></i>
+                            <?= htmlspecialchars($estado['etiqueta']) ?>
+                        </span>
+
+                    </div>
+
+                    <?php if (!empty($mesa['detalle'])): ?>
+                        <div class="lg-mesa-foot">
+                            <i class="fa <?= $mesa['estado_visual'] === 'ocupada' ? 'fa-clock-o' : 'fa-credit-card' ?>"></i>
+                            <?= htmlspecialchars($mesa['detalle']) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="lg-mesa-cta">
+                        <i class="fa fa-plus"></i> Agregar pedido
+                    </div>
+
+                </button>
+
+            <?php endforeach; ?>
+
+        </div>
+
+        <div class="lg-info mt-3">
+            <i class="fa fa-info-circle"></i>
+            <span>Toca una mesa para agregar un pedido y enviarlo a la cocina.</span>
+        </div>
+
+    <?php endif; ?>
+
+<?php elseif ($panelActual === 'pedidos'): ?>
+
+    <div class="lg-card">
+        <div class="lg-card-head">
+            <span class="lg-card-icon"><i class="fa fa-list-alt"></i></span>
+            <div>
+                <h2 class="lg-card-title">Pedidos en curso</h2>
+                <p class="lg-card-subtitle"><?= count($pedidos) ?> pedido(s) pendiente(s)</p>
+            </div>
+        </div>
+
+        <?php if (!$pedidos): ?>
+
+            <div class="lg-empty">
+                <i class="fa fa-clipboard"></i>
+                <p class="mb-0">No hay pedidos activos en este momento.</p>
+            </div>
+
+        <?php else: ?>
+
+            <div class="table-responsive">
+                <table class="lg-table">
+                    <thead>
+                        <tr>
+                            <th>C&oacute;digo</th>
+                            <th>Mesa</th>
+                            <th>Items</th>
+                            <th>Hora</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th style="text-align:right;">Acci&oacute;n</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($pedidos as $pedido): ?>
+                            <?php $ui = estadoPedidoUI($pedido['estado']); ?>
+
+                            <tr>
+                                <td style="font-weight:600;">P-<?= str_pad((string) $pedido['id'], 4, '0', STR_PAD_LEFT) ?></td>
+                                <td>Mesa <?= (int) $pedido['mesa_numero'] ?></td>
+                                <td class="num"><?= (int) $pedido['items'] ?></td>
+                                <td class="text-muted"><?= date('H:i', strtotime($pedido['fecha_creacion'])) ?></td>
+                                <td class="num"><?= soles((float) $pedido['total']) ?></td>
+                                <td>
+                                    <span class="lg-pill <?= $ui['pildora'] ?>">
+                                        <?= htmlspecialchars($ui['etiqueta']) ?>
+                                    </span>
+                                </td>
+                                <td style="text-align:right;">
+                                    <?php if ($ui['accion'] !== ''): ?>
+                                        <button type="button"
+                                                class="lg-btn lg-btn--sm lg-btn--primary js-estado-pedido"
+                                                data-id="<?= (int) $pedido['id'] ?>"
+                                                data-estado="<?= htmlspecialchars($ui['accion']) ?>">
+                                            <i class="<?= $ui['icono'] ?>"></i> <?= htmlspecialchars($ui['texto']) ?>
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="lg-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+        <?php endif; ?>
+    </div>
+
+<?php else: ?>
+
+    <div class="lg-grid-2">
+
+        <div class="lg-card">
+            <div class="lg-card-head">
+                <span class="lg-card-icon"><i class="fa fa-bar-chart"></i></span>
+                <div>
+                    <h2 class="lg-card-title">Ventas del d&iacute;a</h2>
+                    <p class="lg-card-subtitle"><?= count($ventas) ?> venta(s) registrada(s)</p>
+                </div>
+            </div>
+
+            <?php if (!$ventas): ?>
+
+                <div class="lg-empty">
+                    <i class="fa fa-bar-chart"></i>
+                    <p class="mb-0">Todav&iacute;a no hay ventas registradas hoy.</p>
+                </div>
+
+            <?php else: ?>
+
+                <div class="lg-total-box">
+                    <span class="lg-row-label">Total del d&iacute;a</span>
+                    <div class="lg-stat-value is-green" style="font-size:1.7rem;">
+                        <?= soles($ventaModel->totalHoy()) ?>
+                    </div>
+                </div>
+
+                <div class="table-responsive mt-3">
+                    <table class="lg-table">
+                        <thead>
+                            <tr>
+                                <th>C&oacute;digo</th>
+                                <th>Mesa</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($ventas as $venta): ?>
+                                <tr>
+                                    <td style="font-weight:600;">V-<?= str_pad((string) $venta['id'], 4, '0', STR_PAD_LEFT) ?></td>
+                                    <td>Mesa <?= (int) $venta['mesa_numero'] ?></td>
+                                    <td class="num"><?= soles((float) $venta['total']) ?></td>
+                                    <td>
+                                        <span class="lg-pill <?= $venta['estado'] === 'pagada' ? 'lg-pill--verde' : 'lg-pill--rojo' ?>">
+                                            <?= htmlspecialchars(ucfirst($venta['estado'])) ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+            <?php endif; ?>
+        </div>
+
+        <div class="lg-card">
+            <div class="lg-card-head">
+                <span class="lg-card-icon"><i class="fa fa-money"></i></span>
+                <div>
+                    <h2 class="lg-card-title">Ingresos por categor&iacute;a</h2>
+                    <p class="lg-card-subtitle">Distribuci&oacute;n de las ventas de hoy</p>
+                </div>
+            </div>
+
+            <?php $porCategoria = $ventaModel->porCategoria(); ?>
+
+            <?php if (!$porCategoria): ?>
+
+                <div class="lg-empty">
+                    <i class="fa fa-tags"></i>
+                    <p class="mb-0">Sin datos de ventas por categor&iacute;a.</p>
+                </div>
+
+            <?php else: ?>
+                <div class="lg-rows">
+                    <?php foreach ($porCategoria as $fila): ?>
+                        <div class="lg-row">
+                            <span class="lg-row-label"><?= htmlspecialchars($fila['categoria']) ?></span>
+                            <span class="lg-row-value"><?= soles((float) $fila['total']) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+    </div>
+
+<?php endif; ?>
+
+<!-- Catálogo que alimenta el modal de pedido -->
+<?php
+$productosModal = [];
+
+foreach ($productos as $producto) {
+    $productosModal[] = [
+        'nombre'    => $producto['nombre'],
+        'categoria' => $producto['categoria'],
+        'precio'    => (float) $producto['precio'],
+        'stock'     => (int) $producto['stock'],
+        'minimo'    => (int) $producto['stock_minimo'],
+        'id'        => (int) $producto['id']
+    ];
+}
+
+require APP_ROOT . '/views/partials/modal_pedido.php';
+?>

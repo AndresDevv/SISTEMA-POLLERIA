@@ -8,9 +8,7 @@ class Usuario
 
     public function __construct()
     {
-        global $conexion;
-
-        $this->conexion = $conexion;
+        $this->conexion = conexionDB();
     }
 
     public function buscarPorUsuario(string $usuario): ?array

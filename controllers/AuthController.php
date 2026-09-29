@@ -41,6 +41,22 @@ class AuthController
             'usuario' => $usuarioEncontrado
         ];
     }
+
+    /**
+     * Guarda los datos del usuario en la sesión.
+     */
+    public function crearSesion(array $usuario): void
+    {
+        session_regenerate_id(true);
+
+        $_SESSION['usuario_id'] = $usuario['id'];
+        $_SESSION['nombre']     = $usuario['nombre'];
+        $_SESSION['usuario']    = $usuario['usuario'];
+        $_SESSION['rol_id']     = $usuario['rol_id'];
+        $_SESSION['rol']        = $usuario['rol'];
+
+        $_SESSION['login_time'] = time();
+    }
 }
 
 ?>
