@@ -22,23 +22,61 @@ if (isset($ruta['accion']) && $ruta['accion'] === 'logout') {
     accionLogout();
 }
 
-// --- Peticiones AJAX -----------------------------------------------------
-if (($ruta['accion'] ?? '') === 'pedido_crear' || ($ruta['accion'] ?? '') === 'pedido_estado') {
+// --- Exportación de reportes (CSV) --------------------------------------
+if (($ruta['accion'] ?? '') === 'reporte_exportar') {
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if (!sesionActiva()) {
+        redirigir('?page=login');
+    }
+
+    if (!esPermitido('reportes')) {
+        http_response_code(403);
+        exit;
+    }
+
+    require __DIR__ . '/controllers/ReporteController.php';
+
+    exit;
+}
+
+// --- Peticiones AJAX -----------------------------------------------------
+$accionesApi = [
+    'pedido_crear'      => ['PedidoController', 'crear'],
+    'pedido_estado'     => ['PedidoController', 'cambiarEstado'],
+    'pedido_listar'     => ['PedidoController', 'listar'],
+    'pedido_actualizar' => ['PedidoController', 'actualizar'],
+    'pedido_eliminar'   => ['PedidoController', 'eliminar'],
+    'pedido_cobrar'     => ['PedidoController', 'cobrar'],
+    'gestion_listar'    => ['GestionController', 'listar'],
+    'gestion_opciones'  => ['GestionController', 'opciones'],
+    'gestion_crear'     => ['GestionController', 'crear'],
+    'gestion_actualizar' => ['GestionController', 'actualizar'],
+    'gestion_eliminar'  => ['GestionController', 'eliminar']
+];
+
+$accionActual = $ruta['accion'] ?? '';
+
+if (isset($accionesApi[$accionActual])) {
+
+    // Las de solo lectura aceptan GET, el resto solo POST
+    $soloGet = !empty($ruta['soloGet']);
+    $metodoCorrecto = $soloGet
+        ? $_SERVER['REQUEST_METHOD'] === 'GET'
+        : $_SERVER['REQUEST_METHOD'] === 'POST';
+
+    if (!$metodoCorrecto) {
         http_response_code(405);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => false, 'message' => 'Método no permitido.']);
         exit;
     }
 
-    require_once __DIR__ . '/controllers/PedidoController.php';
+    [$controlador, $metodo] = $accionesApi[$accionActual];
 
-    $api = new PedidoController();
+    require_once __DIR__ . '/controllers/' . $controlador . '.php';
 
-    $ruta['accion'] === 'pedido_crear'
-        ? $api->crear()
-        : $api->cambiarEstado();
+    $api = new $controlador();
+    $api->$metodo();
 }
 
 // --- Ruta inexistente ----------------------------------------------------

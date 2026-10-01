@@ -42,6 +42,18 @@ $categoriasModal = array_values(array_unique(array_column($productosModal, 'cate
                     <span id="pedidoAvisoTexto">Agrega al menos un producto antes de enviar el pedido.</span>
                 </div>
 
+                <!-- Pedidos que ya tiene la mesa -->
+                <div class="mb-3" id="pedidoExistentesWrap" style="display:none;">
+                    <p class="lg-subtitle-block" style="margin-top:0;">
+                        Pedidos ya registrados en esta mesa
+                    </p>
+                    <div id="pedidoExistentes"></div>
+                </div>
+
+                <p class="lg-subtitle-block" style="margin-top:0;">
+                    Agregar productos al pedido
+                </p>
+
                 <div class="row">
 
                     <!-- Selector de productos -->

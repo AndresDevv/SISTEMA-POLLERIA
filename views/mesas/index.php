@@ -18,11 +18,31 @@ $pedidoModel  = new Pedido();
 $ventaModel   = new Venta();
 $productoModel = new Producto();
 
-$mesas     = $mesaModel->listar();
-$pedidos   = $pedidoModel->listar('activos');
+$mesas      = $mesaModel->listar();
 $pedidosHoy = $pedidoModel->listar('hoy');
-$ventas    = $ventaModel->delDia();
-$productos = $productoModel->listar();
+$ventas     = $ventaModel->delDia();
+$productos  = $productoModel->listar();
+$metodosPago = $ventaModel->metodosPago();
+
+/**
+ * Pedidos a mostrar, sin repetir.
+ *
+ * Antes se concatenaban la lista de activos con la de pedidos del día, y un
+ * pedido pendiente de hoy aparecía en ambas: se veía duplicado en pantalla.
+ */
+$pedidos = [];
+$vistos  = [];
+
+foreach (array_merge($pedidosHoy, $pedidoModel->listar('activos')) as $pedido) {
+    $clave = (int) $pedido['id'];
+
+    if (isset($vistos[$clave])) {
+        continue;
+    }
+
+    $vistos[$clave] = true;
+    $pedidos[] = $pedido;
+}
 
 /** ¿Qué panel se muestra? */
 $panelActual = $_GET['panel'] ?? 'mesas';
@@ -47,7 +67,7 @@ function estadoPedidoUI(string $estado): array
     return match ($estado) {
         'preparando' => ['etiqueta' => 'En cocina', 'pildora' => 'lg-pill--rojo',    'icono' => 'fa fa-fire',    'accion' => 'preparado', 'texto' => 'Marcar listo'],
         'preparado'  => ['etiqueta' => 'Listo',     'pildora' => 'lg-pill--verde',   'icono' => 'fa fa-check',   'accion' => 'entregado', 'texto' => 'Servir'],
-        'entregado'  => ['etiqueta' => 'Servido',   'pildora' => 'lg-pill--pizarra', 'icono' => 'fa fa-bell',   'accion' => '',           'texto' => ''],
+        'entregado'  => ['etiqueta' => 'Servido',   'pildora' => 'lg-pill--pizarra', 'icono' => 'fa fa-money',   'accion' => '',           'texto' => ''],
         default      => ['etiqueta' => 'Pendiente', 'pildora' => 'lg-pill--ambar',   'icono' => 'fa fa-clock-o','accion' => 'preparando','texto' => 'Aceptar']
     };
 }
@@ -172,7 +192,7 @@ encabezadoPagina(
 
             <div class="lg-empty">
                 <i class="fa fa-clipboard"></i>
-                <p class="mb-0">No hay pedidos activos en este momento.</p>
+                <p class="mb-0">No hay pedidos registrados.</p>
             </div>
 
         <?php else: ?>
@@ -187,12 +207,15 @@ encabezadoPagina(
                             <th>Hora</th>
                             <th>Total</th>
                             <th>Estado</th>
-                            <th style="text-align:right;">Acci&oacute;n</th>
+                            <th style="text-align:right;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($pedidos as $pedido): ?>
-                            <?php $ui = estadoPedidoUI($pedido['estado']); ?>
+                            <?php
+                            $ui      = estadoPedidoUI($pedido['estado']);
+                            $cobrado = $ventaModel->yaCobrado((int) $pedido['id']);
+                            ?>
 
                             <tr>
                                 <td style="font-weight:600;">P-<?= str_pad((string) $pedido['id'], 4, '0', STR_PAD_LEFT) ?></td>
@@ -201,21 +224,48 @@ encabezadoPagina(
                                 <td class="text-muted"><?= date('H:i', strtotime($pedido['fecha_creacion'])) ?></td>
                                 <td class="num"><?= soles((float) $pedido['total']) ?></td>
                                 <td>
-                                    <span class="lg-pill <?= $ui['pildora'] ?>">
-                                        <?= htmlspecialchars($ui['etiqueta']) ?>
-                                    </span>
-                                </td>
-                                <td style="text-align:right;">
-                                    <?php if ($ui['accion'] !== ''): ?>
-                                        <button type="button"
-                                                class="lg-btn lg-btn--sm lg-btn--primary js-estado-pedido"
-                                                data-id="<?= (int) $pedido['id'] ?>"
-                                                data-estado="<?= htmlspecialchars($ui['accion']) ?>">
-                                            <i class="<?= $ui['icono'] ?>"></i> <?= htmlspecialchars($ui['texto']) ?>
-                                        </button>
+                                    <?php if ($cobrado): ?>
+                                        <span class="lg-pill lg-pill--verde">Pagado</span>
                                     <?php else: ?>
-                                        <span class="lg-muted">—</span>
+                                        <span class="lg-pill <?= $ui['pildora'] ?>">
+                                            <?= htmlspecialchars($ui['etiqueta']) ?>
+                                        </span>
                                     <?php endif; ?>
+                                </td>
+
+                                <td style="text-align:right;white-space:nowrap;">
+
+                                    <?php if ($cobrado): ?>
+                                        <span class="lg-muted">Cobrado</span>
+
+                                    <?php else: ?>
+
+                                        <?php if ($ui['accion'] !== ''): ?>
+                                            <button type="button"
+                                                    class="lg-btn lg-btn--sm lg-btn--primary js-estado-pedido"
+                                                    data-id="<?= (int) $pedido['id'] ?>"
+                                                    data-estado="<?= htmlspecialchars($ui['accion']) ?>">
+                                                <i class="<?= $ui['icono'] ?>"></i> <?= htmlspecialchars($ui['texto']) ?>
+                                            </button>
+                                        <?php endif; ?>
+
+                                        <button type="button"
+                                                class="lg-btn lg-btn--sm lg-btn--verde js-abrir-cobro"
+                                                data-id="<?= (int) $pedido['id'] ?>"
+                                                data-total="<?= htmlspecialchars((string) $pedido['total']) ?>"
+                                                data-mesa="Mesa <?= (int) $pedido['mesa_numero'] ?>">
+                                            <i class="fa fa-money"></i> Cobrar
+                                        </button>
+
+                                        <button type="button"
+                                                class="lg-btn lg-btn--sm lg-btn--ghost js-eliminar-pedido"
+                                                data-id="<?= (int) $pedido['id'] ?>"
+                                                title="Eliminar pedido">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+
+                                    <?php endif; ?>
+
                                 </td>
                             </tr>
 
@@ -336,4 +386,5 @@ foreach ($productos as $producto) {
 }
 
 require APP_ROOT . '/views/partials/modal_pedido.php';
+require APP_ROOT . '/views/partials/modal_cobro.php';
 ?>

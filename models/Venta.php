@@ -36,18 +36,19 @@ class Venta
     }
 
     /**
+     * Valida una fecha YYYY-MM-DD.
+     */
+    private function validarFecha(string $fecha): string
+    {
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) ? $fecha : date('Y-m-d');
+    }
+
+    /**
      * Total cobrado hoy.
      */
     public function totalHoy(): float
     {
-        $stmt = $this->conexion->query(
-            "SELECT COALESCE(SUM(total), 0)
-             FROM ventas
-             WHERE DATE(fecha) = CURDATE()
-               AND estado = 'pagada'"
-        );
-
-        return (float) $stmt->fetchColumn();
+        return $this->totalDe(date('Y-m-d'));
     }
 
     /**
@@ -65,6 +66,103 @@ class Venta
                 ORDER BY total DESC";
 
         return $this->conexion->query($sql)->fetchAll();
+    }
+
+    /**
+     * Total cobrado en una fecha.
+     */
+    public function totalDe(string $fecha = ''): float
+    {
+        $fecha = $this->validarFecha($fecha);
+
+        $stmt = $this->conexion->prepare(
+            "SELECT COALESCE(SUM(total), 0)
+             FROM ventas
+             WHERE DATE(fecha) = :f
+               AND estado = 'pagada'"
+        );
+        $stmt->execute([':f' => $fecha]);
+
+        return (float) $stmt->fetchColumn();
+    }
+
+    /**
+     * Montos cobrados agrupados por método de pago en una fecha.
+     */
+    public function porMetodoPago(string $fecha = ''): array
+    {
+        $fecha = $this->validarFecha($fecha);
+
+        $sql = "SELECT m.nombre AS metodo, COALESCE(SUM(pg.monto), 0) AS total
+                FROM metodos_pago m
+                LEFT JOIN pagos pg ON pg.metodo_pago_id = m.id
+                    AND DATE(pg.fecha) = :fecha
+                WHERE m.estado = 1
+                GROUP BY m.id, m.nombre
+                ORDER BY m.id";
+
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute([':fecha' => $fecha]);
+        $filas = $stmt->fetchAll();
+
+        $porNombre = [];
+
+        foreach ($filas as $fila) {
+            $porNombre[strtolower($fila['metodo'])] = [
+                'metodo' => $fila['metodo'],
+                'total'  => (float) $fila['total']
+            ];
+        }
+
+        // Orden fijo para que coincida con el diseño
+        $orden = ['efectivo', 'yape', 'plin', 'tarjeta'];
+        $resultado = [];
+
+        foreach ($orden as $clave) {
+            $resultado[] = $porNombre[$clave] ?? ['metodo' => ucfirst($clave), 'total' => 0.0];
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Métodos de pago activos, para el selector del cobro.
+     */
+    public function metodosPago(): array
+    {
+        return $this->conexion->query(
+            "SELECT id, nombre FROM metodos_pago WHERE estado = 1 ORDER BY id"
+        )->fetchAll();
+    }
+
+    /**
+     * Registra el pago de una venta con su método.
+     */
+    public function registrarPago(int $ventaId, int $metodoPagoId, float $monto): bool
+    {
+        $stmt = $this->conexion->prepare(
+            "INSERT INTO pagos (venta_id, metodo_pago_id, monto)
+             VALUES (:venta_id, :metodo_id, :monto)"
+        );
+
+        return $stmt->execute([
+            ':venta_id'  => $ventaId,
+            ':metodo_id' => $metodoPagoId,
+            ':monto'     => $monto
+        ]);
+    }
+
+    /**
+     * Indica si un pedido ya fue cobrado.
+     */
+    public function yaCobrado(int $pedidoId): bool
+    {
+        $stmt = $this->conexion->prepare(
+            "SELECT COUNT(*) FROM ventas WHERE pedido_id = :pedido AND estado = 'pagada'"
+        );
+        $stmt->execute([':pedido' => $pedidoId]);
+
+        return (int) $stmt->fetchColumn() > 0;
     }
 
     /**

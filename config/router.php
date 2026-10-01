@@ -75,6 +75,16 @@ function rutas(): array
             'permiso' => true
         ],
 
+        'categorias' => [
+            'vista'   => 'inventario/categorias',
+            'titulo'  => 'Categorías'
+        ],
+
+        'reportes/exportar' => [
+            'accion' => 'reporte_exportar',
+            'permiso' => true
+        ],
+
         'configuracion' => [
             'vista'   => 'configuracion/index',
             'titulo'  => 'Configuración',
@@ -89,7 +99,48 @@ function rutas(): array
         'api/pedido/estado' => [
             'accion' => 'pedido_estado',
             'api'    => true
-        ]
+        ],
+        'api/pedido/listar' => [
+            'accion' => 'pedido_listar',
+            'api'    => true,
+            'soloGet' => true
+        ],
+        'api/pedido/actualizar' => [
+            'accion' => 'pedido_actualizar',
+            'api'    => true
+        ],
+        'api/pedido/eliminar' => [
+            'accion' => 'pedido_eliminar',
+            'api'    => true
+        ],
+        'api/pedido/cobrar' => [
+            'accion' => 'pedido_cobrar',
+            'api'    => true
+        ],
+
+        // CRUD genérico de los módulos administrativos
+        'api/gestion/listar' => [
+            'accion'  => 'gestion_listar',
+            'api'     => true,
+            'soloGet' => true
+        ],
+        'api/gestion/opciones' => [
+            'accion'  => 'gestion_opciones',
+            'api'     => true,
+            'soloGet' => true
+        ],
+        'api/gestion/crear' => [
+            'accion' => 'gestion_crear',
+            'api'    => true
+        ],
+        'api/gestion/actualizar' => [
+            'accion' => 'gestion_actualizar',
+            'api'    => true
+        ],
+        'api/gestion/eliminar' => [
+            'accion' => 'gestion_eliminar',
+            'api'    => true
+        ],
     ];
 }
 

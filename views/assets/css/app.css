@@ -336,45 +336,46 @@ body {
 
 /* ---------------------------------------------------------
    Tarjetas de indicador (dashboard)
-   Compactas: el tablero completo entra sin barra de scroll
+   Compactas: las 12 tarjetas entran sin barra de scroll
    --------------------------------------------------------- */
 .lg-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    gap: 12px;
 }
 
 .lg-stat {
     background-color: var(--lg-blanco);
     border-radius: var(--lg-radio);
     box-shadow: var(--lg-sombra);
-    padding: 16px 12px;
+    padding: 12px 10px;
     text-align: center;
 }
 
 .lg-stat .lg-stat-icon {
-    width: 46px;
-    height: 46px;
-    margin: 0 auto 10px;
+    width: 38px;
+    height: 38px;
+    margin: 0 auto 8px;
     border-radius: 50%;
     background-color: var(--lg-amarillo-claro);
     color: var(--lg-rojo);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 0.95rem;
 }
 
 .lg-stat .lg-stat-label {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: #111;
-    margin-bottom: 4px;
-    line-height: 1.25;
+    margin-bottom: 3px;
+    line-height: 1.2;
+    min-height: 1.2em;
 }
 
 .lg-stat .lg-stat-value,
 .lg-stat-value {
-    font-size: 1.45rem;
+    font-size: 1.2rem;
     font-weight: 700;
     line-height: 1.1;
 }
@@ -1074,6 +1075,38 @@ body {
 }
 
 /* ---------------------------------------------------------
+   Menú lateral: estado abierto / cerrado
+
+   Se fuerza con !important porque AdminLTE define márgenes
+   también dentro de media queries propias y, sin esto, el
+   contenido no se mueve al ocultar el menú.
+   --------------------------------------------------------- */
+.layout-fixed .main-header,
+.layout-fixed .content-wrapper,
+.layout-fixed .main-footer {
+    margin-left: var(--lg-sidebar) !important;
+}
+
+/* AdminLTE anima el margen con una transición que se queda pendiente y
+   bloquea el cambio; la quitamos para que el toggle sea inmediato. */
+.layout-fixed .main-header,
+.layout-fixed .content-wrapper,
+.layout-fixed .main-footer,
+.main-sidebar {
+    transition: none !important;
+}
+
+body.lg-menu-cerrado .main-sidebar {
+    margin-left: calc(-1 * var(--lg-sidebar)) !important;
+}
+
+body.lg-menu-cerrado .main-header,
+body.lg-menu-cerrado .content-wrapper,
+body.lg-menu-cerrado .main-footer {
+    margin-left: 0 !important;
+}
+
+/* ---------------------------------------------------------
    Responsivo - tablet (prioridad: mesero / cocinero)
    --------------------------------------------------------- */
 @media (max-width: 1199px) {
@@ -1087,25 +1120,25 @@ body {
     .layout-fixed .main-header,
     .layout-fixed .content-wrapper,
     .layout-fixed .main-footer {
-        margin-left: 0;
+        margin-left: 0 !important;
     }
 
-    /* Sidebar fuera de pantalla hasta que se abra con el botón */
-    .sidebar-mini .main-sidebar {
-        margin-left: calc(-1 * var(--lg-sidebar));
+    /* En móvil el sidebar arranca oculto y se abre con el botón */
+    .main-sidebar {
+        margin-left: calc(-1 * var(--lg-sidebar)) !important;
     }
 
-    .sidebar-mini.sidebar-open .main-sidebar {
-        margin-left: 0;
+    body:not(.lg-menu-cerrado) .main-sidebar {
+        margin-left: 0 !important;
     }
 
-    /* Velo oscuro al abrir el menú */
-    .sidebar-open .content-wrapper::before {
+    /* Velo oscuro al abrir el menú en móvil */
+    body:not(.lg-menu-cerrado) .content-wrapper::before {
         content: "";
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.35);
-        z-index: 3000;
+        z-index: 1000;
     }
 
     .content { padding: 20px 18px 32px; }

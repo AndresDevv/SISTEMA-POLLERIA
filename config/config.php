@@ -1,22 +1,22 @@
 <?php
 
 /**
- * Configuración general de la aplicación.
+ * ConfiguraciÃ³n general de la aplicaciÃ³n.
  */
 
-// Raíz física del proyecto
+// RaÃ­z fÃ­sica del proyecto
 define('APP_ROOT', dirname(__DIR__));
 
-// Raíz web del proyecto (ej: /POLLERIA)
+// RaÃ­z web del proyecto (ej: /POLLERIA)
 $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
 define('BASE_URL', rtrim($scriptDir, '/') . '/');
 
-// Datos de la aplicación
+// Datos de la aplicaciÃ³n
 define('APP_NOMBRE', 'LOS GOMEZ');
 define('APP_SIGLA', 'LOS GOMEZ');
 
-// Versión de los assets (rompe la caché del navegador al cambiarla)
-define('APP_VERSION', '1.0.0');
+// VersiÃ³n de los assets (rompe la cachÃ© del navegador al cambiarla)
+define('APP_VERSION', '1.6.0');
 
 // Rutas de assets
 define('ASSETS_URL', BASE_URL . 'views/assets/');
