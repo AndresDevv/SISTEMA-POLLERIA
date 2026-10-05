@@ -100,6 +100,24 @@ function rutas(): array
             'accion' => 'pedido_estado',
             'api'    => true
         ],
+        // API de mesas: reservar, agregar y eliminar
+        'api/mesa/reservar' => [
+            'accion' => 'mesa_reservar',
+            'api'    => true
+        ],
+        'api/mesa/liberar' => [
+            'accion' => 'mesa_liberar',
+            'api'    => true
+        ],
+        'api/mesa/crear' => [
+            'accion' => 'mesa_crear',
+            'api'    => true
+        ],
+        'api/mesa/eliminar' => [
+            'accion' => 'mesa_eliminar',
+            'api'    => true
+        ],
+
         'api/pedido/listar' => [
             'accion' => 'pedido_listar',
             'api'    => true,

@@ -48,7 +48,10 @@ class Mesa
     }
 
     /**
-     * Traduce el estado de la base a los cinco estados que usa la interfaz.
+     * Traduce el estado de la base al que muestra la interfaz.
+     *
+     * "Ocupada" también se deriva de tener pedidos sin terminar, para que una
+     * mesa no quede verde aunque el enum siga en 'libre'.
      */
     private function estadoVisual(array $mesa): string
     {
@@ -56,7 +59,10 @@ class Mesa
             return 'reservada';
         }
 
-        // Tiene un pedido sin terminar
+        if ($mesa['estado'] === 'ocupada') {
+            return 'ocupada';
+        }
+
         $stmt = $this->conexion->prepare(
             "SELECT COUNT(*)
              FROM pedidos
@@ -65,30 +71,7 @@ class Mesa
         );
         $stmt->execute([':mesa' => $mesa['id']]);
 
-        if ((int) $stmt->fetchColumn() > 0) {
-            return 'ocupada';
-        }
-
-        if ($mesa['estado'] === 'ocupada') {
-            return 'ocupada';
-        }
-
-        // Sin pedido activo: el último pedido quedó sin cobrar
-        $stmt = $this->conexion->prepare(
-            "SELECT COUNT(*)
-             FROM pedidos p
-             LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
-             WHERE p.mesa_id = :mesa
-               AND v.id IS NULL
-               AND p.estado = 'entregado'"
-        );
-        $stmt->execute([':mesa' => $mesa['id']]);
-
-        if ((int) $stmt->fetchColumn() > 0) {
-            return 'porpagar';
-        }
-
-        return 'libre';
+        return (int) $stmt->fetchColumn() > 0 ? 'ocupada' : 'libre';
     }
 
     /**
@@ -122,15 +105,13 @@ class Mesa
         $estado = $this->estadoVisual($mesa);
 
         return match ($estado) {
-            'ocupada'  => $this->tiempoOcupacion($mesa) . ' min',
-            'porpagar' => $this->tiempoOcupacion($mesa) . ' min',
-            'pagada'   => 'Pagado',
-            default    => ''
+            'ocupada' => $this->tiempoOcupacion($mesa) . ' min',
+            default   => ''
         };
     }
 
     /**
-     * Cambia el estado de una mesa.
+     * Cambia el estado de una mesa (libre, ocupada o reservada).
      */
     public function cambiarEstado(int $id, string $estado): bool
     {
@@ -145,5 +126,70 @@ class Mesa
         );
 
         return $stmt->execute([':estado' => $estado, ':id' => $id]);
+    }
+
+    /**
+     * Registra una reserva: la mesa queda en amarillo.
+     *
+     * @param string $nombre  a nombre de quién
+     * @param string $hora    hora estimada, formato H:i
+     */
+    public function reservar(int $id, string $nombre = '', string $hora = ''): bool
+    {
+        return $this->cambiarEstado($id, 'reservada');
+    }
+
+    /**
+     * Crea una mesa nueva.
+     * El número se calcula como el mayor actual + 1 para no repetir.
+     */
+    public function crear(int $capacidad = 4): array
+    {
+        $stmt = $this->conexion->query("SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM mesas");
+        $numero = (int) $stmt->fetchColumn();
+
+        try {
+            $stmt = $this->conexion->prepare(
+                "INSERT INTO mesas (numero, capacidad, estado) VALUES (:numero, :capacidad, 'libre')"
+            );
+            $stmt->execute([':numero' => $numero, ':capacidad' => max(1, min(20, $capacidad))]);
+
+            return [
+                'success' => true,
+                'id'      => (int) $this->conexion->lastInsertId(),
+                'numero'  => $numero,
+                'message' => 'Mesa ' . $numero . ' agregada.'
+            ];
+
+        } catch (PDOException $e) {
+            return ['success' => false, 'message' => 'No se pudo agregar la mesa: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Elimina una mesa.
+     * No se permite si tiene pedidos registrados.
+     */
+    public function eliminar(int $id): array
+    {
+        $stmt = $this->conexion->prepare("SELECT COUNT(*) FROM pedidos WHERE mesa_id = :id");
+        $stmt->execute([':id' => $id]);
+
+        if ((int) $stmt->fetchColumn() > 0) {
+            return [
+                'success' => false,
+                'message' => 'No se puede eliminar: esa mesa tiene pedidos registrados.'
+            ];
+        }
+
+        try {
+            $stmt = $this->conexion->prepare("DELETE FROM mesas WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+
+            return ['success' => true, 'message' => 'Mesa eliminada.'];
+
+        } catch (PDOException $e) {
+            return ['success' => false, 'message' => 'No se pudo eliminar la mesa: ' . $e->getMessage()];
+        }
     }
 }

@@ -508,6 +508,101 @@
             });
         });
 
+        // AdminLTE crea contextos de apilamiento en el sidebar y el contenido:
+        // cualquier modal dentro de ellos quedaría detrás. Los movemos al body.
+        $('.modal').appendTo(document.body);
+
+        // -------------------------------------------------
+        // Mesas: reservar, liberar, agregar y eliminar
+        // -------------------------------------------------
+        $('.js-reservar-mesa').on('click', function () {
+
+            var $boton = $(this);
+            var nombre = $boton.data('mesa');
+            var quien = prompt('¿A nombre de quién se reserva la ' + nombre + '? (opcional)');
+
+            if (quien === null) {
+                return;
+            }
+
+            $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+            api('api/mesa/reservar', { id: $boton.data('id'), nombre: quien })
+            .done(function () {
+                window.location.reload();
+            })
+            .fail(function (xhr) {
+                alert(mensajeDe(xhr, 'No se pudo reservar la mesa.'));
+                $boton.prop('disabled', false).html('<i class="fa fa-calendar"></i> Reservar');
+            });
+        });
+
+        $('.js-liberar-mesa').on('click', function () {
+
+            var $boton = $(this);
+
+            $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+            api('api/mesa/liberar', { id: $boton.data('id') })
+            .done(function () {
+                window.location.reload();
+            })
+            .fail(function (xhr) {
+                alert(mensajeDe(xhr, 'No se pudo liberar la mesa.'));
+                $boton.prop('disabled', false).html('<i class="fa fa-check"></i> Liberar');
+            });
+        });
+
+        $('.js-eliminar-mesa').on('click', function () {
+
+            var $boton = $(this);
+            var mesa = $boton.data('mesa');
+
+            if (!confirm('¿Eliminar la ' + mesa + '? Solo se puede si no tiene pedidos registrados.')) {
+                return;
+            }
+
+            $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+            api('api/mesa/eliminar', { id: $boton.data('id') })
+            .done(function () {
+                window.location.reload();
+            })
+            .fail(function (xhr) {
+                alert(mensajeDe(xhr, 'No se pudo eliminar la mesa.'));
+                $boton.prop('disabled', false).html('<i class="fa fa-trash"></i>');
+            });
+        });
+
+        var $mesaModal = $('#modalMesa');
+
+        if ($mesaModal.length) {
+
+            $('.js-agregar-mesa').on('click', function () {
+                $('#mesaAviso').hide();
+                $('#mesaCapacidad').val(4);
+                $mesaModal.modal('show');
+            });
+
+            $('#mesaGuardar').on('click', function () {
+
+                var $boton = $(this);
+                var textoOriginal = $boton.html();
+
+                $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Agregando...');
+
+                api('api/mesa/crear', { capacidad: parseInt($('#mesaCapacidad').val(), 10) || 4 })
+                .done(function () {
+                    window.location.reload();
+                })
+                .fail(function (xhr) {
+                    $('#mesaAvisoTexto').text(mensajeDe(xhr, 'No se pudo agregar la mesa.'));
+                    $('#mesaAviso').show();
+                    $boton.prop('disabled', false).html(textoOriginal);
+                });
+            });
+        }
+
         // -------------------------------------------------
         // Modal de pedido
         // -------------------------------------------------
@@ -516,10 +611,6 @@
         if (!$modal.length) {
             return;
         }
-
-        // AdminLTE crea contextos de apilamiento en el sidebar y el contenido,
-        // por lo que el modal quedaría por detrás. Lo movemos al <body>.
-        $modal.appendTo(document.body);
 
         var pedido = {
             mesaId: 0,
@@ -683,7 +774,7 @@
         };
 
         // Abre el modal desde las tarjetas de mesa
-        $('.lg-mesa').on('click', function () {
+        $('.lg-mesa-main').on('click', function () {
 
             var $card = $(this);
 

@@ -48,6 +48,19 @@ body {
 }
 
 /* ---------------------------------------------------------
+   Tipografía de marca
+   Alfa Slab One: serif gruesa de estilo rótulo/restaurante.
+   Se guarda en local para que el sistema no dependa de internet.
+   --------------------------------------------------------- */
+@font-face {
+    font-family: 'Alfa Slab One';
+    src: url('../fonts/alfa-slab-one.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ---------------------------------------------------------
    Sidebar amarillo
    --------------------------------------------------------- */
 .main-sidebar {
@@ -72,12 +85,14 @@ body {
 }
 
 .brand-text {
+    font-family: 'Alfa Slab One', Georgia, serif;
     color: #000;
-    font-size: 1.4rem;
-    font-weight: 800;
-    letter-spacing: 1.2px;
-    line-height: 1;
+    font-size: 1.85rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    line-height: 1.1;
     white-space: nowrap;
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 /* Icono a la izquierda del texto (AdminLTE los apila en modo mini) */
@@ -506,16 +521,26 @@ body {
     background-color: var(--lg-blanco);
     border: 1px solid var(--lg-borde);
     border-radius: 12px;
-    padding: 18px;
+    padding: 0;
     min-height: 150px;
     display: flex;
     flex-direction: column;
-    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+/* Zona pulsable de la mesa (abrir pedido) */
+.lg-mesa-main {
+    background: transparent;
+    border: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
     text-align: left;
     font: inherit;
     color: inherit;
-    width: 100%;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    cursor: pointer;
+    border-radius: 12px;
 }
 
 .lg-mesa:hover {
@@ -535,12 +560,54 @@ body {
 }
 
 .lg-mesa:hover .lg-mesa-cta,
-.lg-mesa:focus-visible .lg-mesa-cta {
+.lg-mesa:focus-within .lg-mesa-cta {
     opacity: 1;
     color: var(--lg-rojo);
 }
 
-/* En pantallas táctiles no hay hover: se muestra siempre */
+/* Barra de acciones: reservar / eliminar */
+.lg-mesa-acciones {
+    display: flex;
+    gap: 6px;
+    padding: 0 18px 14px;
+}
+
+.lg-mesa-acciones button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--lg-borde);
+    border-radius: 8px;
+    background-color: var(--lg-blanco);
+    color: #111;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lg-mesa-acciones button:hover {
+    background-color: var(--lg-amarillo-claro);
+}
+
+.lg-mesa-acciones .js-reservar-mesa:hover {
+    background-color: var(--lg-ambar-fondo);
+    color: var(--lg-ambar-texto);
+}
+
+.lg-mesa-acciones .js-eliminar-mesa {
+    padding: 0 10px;
+    color: #EF4444;
+}
+
+.lg-mesa-acciones .js-eliminar-mesa:hover {
+    background-color: var(--lg-rojo-estado-fondo);
+}
+
+/* En pantallas táctiles no hay hover: la llamada se muestra siempre */
 @media (hover: none) {
     .lg-mesa-cta {
         opacity: 1;

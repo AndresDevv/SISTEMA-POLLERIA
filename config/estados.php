@@ -7,15 +7,17 @@
 
 /**
  * Estados posibles de una mesa.
+ *
+ * Son los tres del enum de la tabla mesas: 'libre', 'ocupada', 'reservada'.
+ * "Pagada" y "Por pagar" se quitaron porque no eran estados de mesa, sino
+ * de cobro, y solo confundían la vista del salón.
  */
 function estadosMesa(): array
 {
     return [
-        'libre'     => ['etiqueta' => 'Libre',     'icono' => 'fa fa-check',         'color' => '#10B981'],
-        'ocupada'   => ['etiqueta' => 'Ocupada',   'icono' => 'fa fa-times',         'color' => '#EF4444'],
-        'reservada' => ['etiqueta' => 'Reservada', 'icono' => 'fa fa-calendar',      'color' => '#F59E0B'],
-        'pagada'    => ['etiqueta' => 'Pagada',    'icono' => 'fa fa-check-circle',  'color' => '#64748B'],
-        'porpagar'  => ['etiqueta' => 'Por pagar', 'icono' => 'fa fa-credit-card',   'color' => '#A855F7']
+        'libre'     => ['etiqueta' => 'Libre',     'icono' => 'fa fa-check',    'color' => '#10B981'],
+        'ocupada'   => ['etiqueta' => 'Ocupada',   'icono' => 'fa fa-times',    'color' => '#EF4444'],
+        'reservada' => ['etiqueta' => 'Reservada', 'icono' => 'fa fa-calendar', 'color' => '#F59E0B']
     ];
 }
 

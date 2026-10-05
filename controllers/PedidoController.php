@@ -261,7 +261,7 @@ class PedidoController
         return match ($estado) {
             'preparando' => 'ocupada',
             'preparado'  => 'libre',
-            'entregado'  => 'pagada',
+            'entregado'  => 'libre',
             default      => 'reservada'
         };
     }

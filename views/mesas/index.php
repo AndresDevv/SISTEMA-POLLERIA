@@ -112,8 +112,13 @@ encabezadoPagina(
 
     <?php else: ?>
 
-        <!-- Leyenda de estados -->
-        <div class="d-flex justify-content-end mb-3">
+        <!-- Leyenda de estados + agregar mesa -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+
+            <button type="button" class="lg-btn lg-btn--primary js-agregar-mesa">
+                <i class="fa fa-plus"></i> Agregar mesa
+            </button>
+
             <div class="lg-legend">
                 <?php foreach (estadosMesa() as $clave => $datos): ?>
                     <span class="lg-legend-item">
@@ -122,6 +127,7 @@ encabezadoPagina(
                     </span>
                 <?php endforeach; ?>
             </div>
+
         </div>
 
         <!-- Cuadrícula de mesas -->
@@ -130,41 +136,70 @@ encabezadoPagina(
             <?php foreach ($mesas as $mesa): ?>
                 <?php $estado = estadosMesa()[$mesa['estado_visual']] ?? estadosMesa()['libre']; ?>
 
-                <button type="button"
-                        class="lg-mesa lg-mesa--<?= htmlspecialchars($mesa['estado_visual']) ?>"
-                        data-mesa="Mesa <?= (int) $mesa['numero'] ?>"
-                        data-mesa-id="<?= (int) $mesa['id'] ?>"
-                        data-capacidad="<?= (int) $mesa['capacidad'] ?> personas">
+                <div class="lg-mesa lg-mesa--<?= htmlspecialchars($mesa['estado_visual']) ?>"
+                     data-mesa-id="<?= (int) $mesa['id'] ?>">
 
-                    <div class="lg-mesa-top">
+                    <!-- Abrir pedido -->
+                    <button type="button"
+                            class="lg-mesa-main"
+                            data-mesa="Mesa <?= (int) $mesa['numero'] ?>"
+                            data-mesa-id="<?= (int) $mesa['id'] ?>"
+                            data-capacidad="<?= (int) $mesa['capacidad'] ?> personas">
 
-                        <div>
-                            <h3 class="lg-mesa-name">Mesa <?= (int) $mesa['numero'] ?></h3>
-                            <div class="lg-mesa-cap">
-                                <i class="fa fa-users"></i>
-                                <?= (int) $mesa['capacidad'] ?> personas
+                        <div class="lg-mesa-top">
+
+                            <div>
+                                <h3 class="lg-mesa-name">Mesa <?= (int) $mesa['numero'] ?></h3>
+                                <div class="lg-mesa-cap">
+                                    <i class="fa fa-users"></i>
+                                    <?= (int) $mesa['capacidad'] ?> personas
+                                </div>
                             </div>
+
+                            <span class="lg-mesa-badge lg-mesa-badge--<?= htmlspecialchars($mesa['estado_visual']) ?>">
+                                <i class="<?= $estado['icono'] ?>"></i>
+                                <?= htmlspecialchars($estado['etiqueta']) ?>
+                            </span>
+
                         </div>
 
-                        <span class="lg-mesa-badge lg-mesa-badge--<?= htmlspecialchars($mesa['estado_visual']) ?>">
-                            <i class="<?= $estado['icono'] ?>"></i>
-                            <?= htmlspecialchars($estado['etiqueta']) ?>
-                        </span>
+                        <?php if (!empty($mesa['detalle'])): ?>
+                            <div class="lg-mesa-foot">
+                                <i class="fa fa-clock-o"></i>
+                                <?= htmlspecialchars($mesa['detalle']) ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="lg-mesa-cta">
+                            <i class="fa fa-plus"></i> Agregar pedido
+                        </div>
+
+                    </button>
+
+                    <!-- Acciones de la mesa -->
+                    <div class="lg-mesa-acciones">
+
+                        <?php if ($mesa['estado_visual'] === 'reservada'): ?>
+                            <button type="button" class="js-liberar-mesa" data-id="<?= (int) $mesa['id'] ?>"
+                                    title="Quitar reserva">
+                                <i class="fa fa-check"></i> Liberar
+                            </button>
+                        <?php else: ?>
+                            <button type="button" class="js-reservar-mesa" data-id="<?= (int) $mesa['id'] ?>"
+                                    data-mesa="Mesa <?= (int) $mesa['numero'] ?>"
+                                    title="Reservar mesa">
+                                <i class="fa fa-calendar"></i> Reservar
+                            </button>
+                        <?php endif; ?>
+
+                        <button type="button" class="js-eliminar-mesa" data-id="<?= (int) $mesa['id'] ?>"
+                                data-mesa="Mesa <?= (int) $mesa['numero'] ?>" title="Eliminar mesa">
+                            <i class="fa fa-trash"></i>
+                        </button>
 
                     </div>
 
-                    <?php if (!empty($mesa['detalle'])): ?>
-                        <div class="lg-mesa-foot">
-                            <i class="fa <?= $mesa['estado_visual'] === 'ocupada' ? 'fa-clock-o' : 'fa-credit-card' ?>"></i>
-                            <?= htmlspecialchars($mesa['detalle']) ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="lg-mesa-cta">
-                        <i class="fa fa-plus"></i> Agregar pedido
-                    </div>
-
-                </button>
+                </div>
 
             <?php endforeach; ?>
 
@@ -387,4 +422,5 @@ foreach ($productos as $producto) {
 
 require APP_ROOT . '/views/partials/modal_pedido.php';
 require APP_ROOT . '/views/partials/modal_cobro.php';
+require APP_ROOT . '/views/partials/modal_mesa.php';
 ?>
