@@ -200,8 +200,7 @@ body {
 }
 
 .layout-fixed .main-header,
-.layout-fixed .content-wrapper,
-.layout-fixed .main-footer {
+.layout-fixed .content-wrapper {
     margin-left: var(--lg-sidebar);
 }
 
@@ -211,10 +210,6 @@ body {
 
 .content {
     padding: 16px 24px 24px;
-}
-
-.main-footer {
-    display: none;
 }
 
 /* Encabezado de página (icono + título + subtítulo) */
@@ -401,8 +396,6 @@ body {
 .lg-pill--ambar    { background-color: var(--lg-pendiente-fondo);   color: var(--lg-pendiente-texto); }
 .lg-pill--rojo     { background-color: var(--lg-rojo-estado-fondo); color: var(--lg-rojo); }
 .lg-pill--pizarra  { background-color: var(--lg-pizarra-fondo);     color: var(--lg-pizarra-texto); }
-.lg-pill--purpura  { background-color: var(--lg-purpura-fondo);     color: var(--lg-purpura-texto); }
-.lg-pill--neutro   { background-color: var(--lg-gris);              color: var(--lg-texto-suave); }
 
 /* ---------------------------------------------------------
    Tablas
@@ -1046,21 +1039,15 @@ body {
    Utilidades propias
    Bootstrap 4.6 no incluye las utilidades gap-*
    --------------------------------------------------------- */
-.gap-1 { gap: 0.25rem; }
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 1rem; }
-.gap-4 { gap: 1.5rem; }
 
 /* ---------------------------------------------------------
    Utilidades
    --------------------------------------------------------- */
 .lg-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: start; }
 .lg-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
-.lg-mt-24 { margin-top: 24px; }
-.lg-mb-24 { margin-bottom: 24px; }
 .lg-muted { color: var(--lg-texto-suave); }
-.lg-text-green { color: var(--lg-verde); }
-.lg-text-red { color: var(--lg-rojo); }
 .lg-empty {
     text-align: center;
     padding: 48px 20px;
@@ -1082,18 +1069,26 @@ body {
    contenido no se mueve al ocultar el menú.
    --------------------------------------------------------- */
 .layout-fixed .main-header,
-.layout-fixed .content-wrapper,
-.layout-fixed .main-footer {
+.layout-fixed .content-wrapper {
     margin-left: var(--lg-sidebar) !important;
 }
 
-/* AdminLTE anima el margen con una transición que se queda pendiente y
-   bloquea el cambio; la quitamos para que el toggle sea inmediato. */
-.layout-fixed .main-header,
-.layout-fixed .content-wrapper,
-.layout-fixed .main-footer,
+/* Animación del menú.
+   El sidebar se desliza con transform (va por GPU) y el contenido acompaña
+   con la transición del margen. Se declara explícitamente para reemplazar la
+   de AdminLTE, que se quedaba pendiente e impedía que el margen llegara a 0. */
 .main-sidebar {
-    transition: none !important;
+    transition: transform 0.28s ease, margin-left 0.28s ease;
+    will-change: transform;
+}
+
+.layout-fixed .main-header,
+.layout-fixed .content-wrapper {
+    transition: margin-left 0.28s ease;
+}
+
+body.lg-menu-cerrado .main-sidebar {
+    transform: translateX(-18px);
 }
 
 body.lg-menu-cerrado .main-sidebar {
@@ -1101,8 +1096,7 @@ body.lg-menu-cerrado .main-sidebar {
 }
 
 body.lg-menu-cerrado .main-header,
-body.lg-menu-cerrado .content-wrapper,
-body.lg-menu-cerrado .main-footer {
+body.lg-menu-cerrado .content-wrapper {
     margin-left: 0 !important;
 }
 
@@ -1118,8 +1112,7 @@ body.lg-menu-cerrado .main-footer {
     :root { --lg-sidebar: 260px; }
 
     .layout-fixed .main-header,
-    .layout-fixed .content-wrapper,
-    .layout-fixed .main-footer {
+    .layout-fixed .content-wrapper {
         margin-left: 0 !important;
     }
 

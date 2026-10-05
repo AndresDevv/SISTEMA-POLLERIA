@@ -136,23 +136,6 @@ class Venta
     }
 
     /**
-     * Registra el pago de una venta con su método.
-     */
-    public function registrarPago(int $ventaId, int $metodoPagoId, float $monto): bool
-    {
-        $stmt = $this->conexion->prepare(
-            "INSERT INTO pagos (venta_id, metodo_pago_id, monto)
-             VALUES (:venta_id, :metodo_id, :monto)"
-        );
-
-        return $stmt->execute([
-            ':venta_id'  => $ventaId,
-            ':metodo_id' => $metodoPagoId,
-            ':monto'     => $monto
-        ]);
-    }
-
-    /**
      * Indica si un pedido ya fue cobrado.
      */
     public function yaCobrado(int $pedidoId): bool
@@ -163,34 +146,5 @@ class Venta
         $stmt->execute([':pedido' => $pedidoId]);
 
         return (int) $stmt->fetchColumn() > 0;
-    }
-
-    /**
-     * Registra el cobro de un pedido entregado.
-     */
-    public function registrar(int $pedidoId, int $usuarioId, float $descuento = 0.0): bool
-    {
-        $stmt = $this->conexion->prepare(
-            "SELECT COALESCE(SUM(subtotal), 0) AS subtotal
-             FROM detalle_pedidos
-             WHERE pedido_id = :pedido"
-        );
-        $stmt->execute([':pedido' => $pedidoId]);
-        $subtotal = (float) $stmt->fetchColumn();
-
-        $total = max(0.0, $subtotal - $descuento);
-
-        $stmt = $this->conexion->prepare(
-            "INSERT INTO ventas (pedido_id, usuario_id, subtotal, descuento, total, estado)
-             VALUES (:pedido_id, :usuario_id, :subtotal, :descuento, :total, 'pagada')"
-        );
-
-        return $stmt->execute([
-            ':pedido_id'  => $pedidoId,
-            ':usuario_id' => $usuarioId,
-            ':subtotal'   => $subtotal,
-            ':descuento'  => $descuento,
-            ':total'      => $total
-        ]);
     }
 }

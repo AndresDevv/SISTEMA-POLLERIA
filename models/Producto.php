@@ -97,18 +97,6 @@ class Producto
     }
 
     /**
-     * Categorías activas para los filtros.
-     */
-    public function categorias(): array
-    {
-        $stmt = $this->conexion->query(
-            "SELECT nombre FROM categorias WHERE estado = 1 ORDER BY nombre"
-        );
-
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
-    }
-
-    /**
      * Productos que necesitan reposición.
      */
     public function stockBajo(): int
