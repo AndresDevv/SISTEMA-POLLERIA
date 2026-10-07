@@ -74,27 +74,30 @@ class Gestion
                 'listado' => '*'
             ],
 
+            // Ojo: la tabla empleados no tiene columna "nombre"; el nombre
+            // vive en usuarios, así que el colaborador se elige por su usuario.
             'empleados' => [
                 'tabla'  => 'empleados',
                 'titulo' => 'Colaborador',
                 'modulo' => 'personal',
-                'orden'  => 'e.id DESC',
+                'orden'  => 'u.nombre',
                 'campos' => [
-                    'nombre'       => ['tipo' => 'texto', 'etiqueta' => 'Nombre', 'requerido' => true],
-                    'cargo'        => ['tipo' => 'texto', 'etiqueta' => 'Cargo'],
+                    'usuario_id'   => ['tipo' => 'relacion', 'etiqueta' => 'Usuario', 'tabla' => 'usuarios', 'requerido' => true],
+                    'cargo'        => ['tipo' => 'texto', 'etiqueta' => 'Cargo (mesero, cocinero, cajero)'],
                     'dni'          => ['tipo' => 'texto', 'etiqueta' => 'DNI'],
                     'telefono'     => ['tipo' => 'texto', 'etiqueta' => 'Teléfono'],
                     'direccion'    => ['tipo' => 'texto', 'etiqueta' => 'Dirección'],
                     'fecha_ingreso' => ['tipo' => 'fecha', 'etiqueta' => 'Fecha de ingreso'],
                     'estado'       => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]
                 ],
-                'listado' => '*'
+                'listado' => 'e.id, u.nombre, e.cargo, e.dni, e.telefono, e.fecha_ingreso, e.estado',
+                'join'    => 'INNER JOIN usuarios u ON u.id = e.usuario_id'
             ],
 
             'usuarios' => [
                 'tabla'  => 'usuarios',
                 'titulo' => 'Usuario',
-                'modulo' => 'personal',
+                'modulo' => 'configuracion',
                 'orden'  => 'u.id DESC',
                 'campos' => [
                     'nombre'   => ['tipo' => 'texto', 'etiqueta' => 'Nombre', 'requerido' => true],
@@ -192,6 +195,60 @@ class Gestion
         $recursos = self::recursos();
 
         return $recursos[$nombre] ?? null;
+    }
+
+    /**
+     * Permisos que pide cada recurso: 'ver' para listarlo,
+     * 'editar' para crear, modificar o eliminar.
+     *
+     * Las rutas api/gestion/* son las mismas para todos los módulos, así que
+     * el permiso se resuelve por recurso y no por URL.
+     */
+    public static function permisos(string $nombre): array
+    {
+        return self::mapaPermisos()[$nombre] ?? [];
+    }
+
+    /**
+     * Nombres de los recursos que tienen permiso asignado.
+     */
+    public static function recursosConPermiso(): array
+    {
+        return array_keys(self::mapaPermisos());
+    }
+
+    /**
+     * Mapa completo de permisos por recurso.
+     */
+    private static function mapaPermisos(): array
+    {
+        return [
+            'productos'             => ['ver' => 'inventario',    'editar' => 'inventario_editar'],
+            'categorias'            => ['ver' => 'inventario',    'editar' => 'inventario_editar'],
+            'proveedores'           => ['ver' => 'compras',       'editar' => 'compras'],
+            'empleados'             => ['ver' => 'personal',      'editar' => 'personal'],
+            'usuarios'              => ['ver' => 'configuracion', 'editar' => 'configuracion'],
+            'servicios'             => ['ver' => 'servicios',     'editar' => 'servicios'],
+            'ingresos'              => ['ver' => 'finanzas',      'editar' => 'finanzas'],
+            'egresos'               => ['ver' => 'finanzas',      'editar' => 'finanzas'],
+            'gastos'                => ['ver' => 'finanzas',      'editar' => 'finanzas'],
+            'configuracion_negocio' => ['ver' => 'configuracion', 'editar' => 'configuracion']
+        ];
+    }
+
+    /**
+     * ¿El usuario en sesión puede ver / modificar este recurso?
+     * Un recurso sin permiso declarado queda reservado al administrador.
+     */
+    public static function puede(string $nombre, string $accion = 'ver'): bool
+    {
+        $reglas = self::permisos($nombre);
+
+        if (!$reglas) {
+            return false;
+        }
+
+        return \Permiso::puede($reglas[$accion] ?? $reglas['ver']);
     }
 
     /**
@@ -303,8 +360,10 @@ class Gestion
             $valores[] = $def['fechaDefecto'];
         }
 
-        // Usuario que registra
-        if (in_array('usuario_id', $this->columnas($def['tabla']), true)) {
+        // Usuario que registra, salvo que el recurso ya lo declare como campo
+        // (en empleados, usuario_id es justamente el colaborador que se elige)
+        if (!in_array('usuario_id', $campos, true)
+            && in_array('usuario_id', $this->columnas($def['tabla']), true)) {
             $campos[] = 'usuario_id';
             $valores[] = (int) ($_SESSION['usuario_id'] ?? 0);
         }

@@ -136,6 +136,21 @@ class Venta
     }
 
     /**
+ * Cuántas ventas están pagadas en total.
+ *
+ * Sirve para la huella que usa el auto-refresco de pedidos: si este número
+ * cambia, alguien acaba de cobrar y la pantalla debe actualizarse.
+ */
+public function totalPagadas(): int
+    {
+        $stmt = $this->conexion->query(
+            "SELECT COUNT(*) FROM ventas WHERE estado = 'pagada'"
+        );
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
      * Indica si un pedido ya fue cobrado.
      */
     public function yaCobrado(int $pedidoId): bool

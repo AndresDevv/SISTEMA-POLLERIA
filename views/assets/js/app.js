@@ -294,6 +294,20 @@
             });
         };
 
+        /**
+         * Petición de solo lectura. El router marca estas rutas como soloGet,
+         * así que mandarlas por POST devuelve 405 y el modal no carga nada.
+         */
+        var apiGet = function (ruta, datos) {
+
+            return $.ajax({
+                url: APP_URL + '?page=' + ruta,
+                type: 'GET',
+                dataType: 'json',
+                data: datos || {}
+            });
+        };
+
         var mensajeDe = function (xhr, porDefecto) {
 
             try {
@@ -301,6 +315,14 @@
             } catch (e) {
                 return porDefecto;
             }
+        };
+
+        /**
+         * Formatea un monto. Vive aquí y no dentro de un bloque suelto porque
+         * lo usan el modal de pedidos, el de compras y el de stock.
+         */
+        var soles = function (monto) {
+            return 'S/ ' + Number(monto || 0).toFixed(2);
         };
 
         // -------------------------------------------------
@@ -513,29 +535,438 @@
         $('.modal').appendTo(document.body);
 
         // -------------------------------------------------
-        // Mesas: reservar, liberar, agregar y eliminar
+        // Ajuste de stock
         // -------------------------------------------------
-        $('.js-reservar-mesa').on('click', function () {
+        var $stockModal = $('#modalStock');
+
+        if ($stockModal.length) {
+
+            var stock = { id: 0 };
+
+            var ajustarEtiqueta = function () {
+
+                var tipo = $('#stockTipo').val();
+                var texto = tipo === 'entrada' ? 'Cantidad a ingresar'
+                          : tipo === 'salida' ? 'Cantidad a descontar'
+                          : 'Stock real (queda en este valor)';
+
+                $('#stockEtiqueta').text(texto);
+            };
+
+            $('.js-ajustar-stock').on('click', function () {
+
+                var $boton = $(this);
+
+                stock.id = $boton.data('id');
+
+                $('#stockProducto').text($boton.data('producto'));
+                $('#stockActual').text($boton.data('stock'));
+                $('#stockTipo').val('entrada');
+                $('#stockCantidad').val(0);
+                $('#stockMotivo').val('');
+                $('#stockAviso').hide();
+
+                ajustarEtiqueta();
+                $stockModal.modal('show');
+            });
+
+            $('#stockTipo').on('change', ajustarEtiqueta);
+
+            $('#stockGuardar').on('click', function () {
+
+                var $boton = $(this);
+                var textoOriginal = $boton.html();
+
+                $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+
+                api('api/inventario/ajustar', {
+                    producto_id: stock.id,
+                    tipo: $('#stockTipo').val(),
+                    cantidad: parseFloat($('#stockCantidad').val()) || 0,
+                    motivo: $('#stockMotivo').val()
+                })
+                .done(function () {
+                    window.location.reload();
+                })
+                .fail(function (xhr) {
+                    $('#stockAvisoTexto').text(mensajeDe(xhr, 'No se pudo ajustar el stock.'));
+                    $('#stockAviso').show();
+                    $boton.prop('disabled', false).html(textoOriginal);
+                });
+            });
+        }
+
+        // -------------------------------------------------
+        // Registrar compra
+        // -------------------------------------------------
+        var compra = { items: [] };
+
+        var pintarCompra = function () {
+
+            var $filas = $('#compraItems');
+            var total = 0;
+
+            $filas.empty();
+
+            if (!compra.items.length) {
+                $filas.append(
+                    '<tr><td colspan="5" class="text-center text-muted py-3">Todav&iacute;a no agregaste productos.</td></tr>'
+                );
+            }
+
+            compra.items.forEach(function (item, indice) {
+
+                var subtotal = item.precio * item.cantidad;
+                total += subtotal;
+
+                var $fila = $('<tr></tr>');
+
+                $fila.append('<td style="font-weight:600;">' + item.nombre + '</td>');
+
+                var $cantidad = $('<input type="number" class="lg-input" step="0.01" min="0.01" style="min-height:38px;">').val(item.cantidad);
+                $cantidad.on('input', function () {
+                    compra.items[indice].cantidad = parseFloat($(this).val()) || 0;
+                    pintarCompra();
+                });
+
+                var $precio = $('<input type="number" class="lg-input" step="0.01" min="0" style="min-height:38px;">').val(item.precio);
+                $precio.on('input', function () {
+                    compra.items[indice].precio = parseFloat($(this).val()) || 0;
+                    pintarCompra();
+                });
+
+                $fila.append($('<td></td>').append($cantidad));
+                $fila.append($('<td></td>').append($precio));
+                $fila.append('<td class="num" style="text-align:right;font-weight:600;">' + soles(subtotal) + '</td>');
+                $fila.append(
+                    $('<td></td>').append(
+                        $('<button type="button" class="lg-btn lg-btn--sm lg-btn--ghost"><i class="fa fa-times"></i></button>')
+                            .on('click', function () {
+                                compra.items.splice(indice, 1);
+                                pintarCompra();
+                            })
+                    )
+                );
+
+                $filas.append($fila);
+            });
+
+            $('#compraTotal').text(soles(total));
+        };
+
+        $('#compraCatalogo .modal-producto').on('click', function () {
 
             var $boton = $(this);
-            var nombre = $boton.data('mesa');
-            var quien = prompt('¿A nombre de quién se reserva la ' + nombre + '? (opcional)');
+            var id = parseInt($boton.data('id'), 10);
+            var nombre = $boton.attr('data-nombre-texto');
+            var existente = null;
 
-            if (quien === null) {
+            compra.items.forEach(function (item) {
+                if (item.id === id) { existente = item; }
+            });
+
+            if (existente) {
+                existente.cantidad += 1;
+            } else {
+                // Se precarga con el precio de venta: el administrador lo ajusta
+                // al precio real de compra, pero nunca queda en cero sin querer.
+                compra.items.push({
+                    id: id,
+                    nombre: nombre,
+                    cantidad: 1,
+                    precio: parseFloat($boton.data('precio')) || 0
+                });
+            }
+
+            pintarCompra();
+        });
+
+        /**
+ * Filtra el catálogo por categoría y por texto a la vez.
+ */
+        var filtrarCatalogo = function () {
+
+            var categoria = $('#compraFiltros .is-activo').data('categoria') || '';
+            var texto = $('#compraBuscar').val().toLowerCase().trim();
+            var visibles = 0;
+
+            $('#compraCatalogo .modal-producto').each(function () {
+
+                var $b = $(this);
+                var coincideCategoria = categoria === ''
+                    || String($b.data('categoria')) === categoria;
+                var coincideTexto = texto === ''
+                    || String($b.data('nombre')).indexOf(texto) !== -1;
+
+                var mostrar = coincideCategoria && coincideTexto;
+
+                $b.toggle(mostrar);
+
+                if (mostrar) {
+                    visibles++;
+                }
+            });
+
+            $('#compraSinResultados').toggle(visibles === 0);
+        };
+
+        $('#compraBuscar').on('input', filtrarCatalogo);
+
+        $('#compraFiltros').on('click', '.js-filtro-categoria', function () {
+
+            var $chip = $(this);
+
+            $('#compraFiltros .js-filtro-categoria').removeClass('is-activo');
+            $chip.addClass('is-activo');
+
+            filtrarCatalogo();
+        });
+
+        $('#compraGuardar').on('click', function () {
+
+            if (!compra.items.length) {
+                $('#compraAvisoTexto').text('Agrega al menos un producto.');
+                $('#compraAviso').show();
                 return;
             }
 
+            var $boton = $(this);
+            var textoOriginal = $boton.html();
+
+            $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+            $('#compraAviso').hide();
+
+            api('api/compra/registrar', {
+                proveedor_id: parseInt($('#compraProveedor').val(), 10) || 0,
+                items: compra.items.map(function (i) {
+                    return { id: i.id, cantidad: i.cantidad, precio: i.precio };
+                })
+            })
+            .done(function () {
+                window.location.href = APP_URL + '?page=compras&tab=historial';
+            })
+            .fail(function (xhr) {
+                $('#compraAvisoTexto').text(mensajeDe(xhr, 'No se pudo registrar la compra.'));
+                $('#compraAviso').show();
+                $boton.prop('disabled', false).html(textoOriginal);
+            });
+        });
+
+        // -------------------------------------------------
+        // Historial de compras: ver detalle y anular
+        // -------------------------------------------------
+        var $modalCompra = $('#modalCompra');
+
+        if ($modalCompra.length) {
+
+            var compraActual = { id: 0, anulada: false };
+
+            var pintarDetalle = function (datos) {
+
+                var c = datos.compra;
+
+                $('#compraDetalleTitulo').text(
+                    'Compra C-' + ('0000' + c.id).slice(-4)
+                );
+
+                var cuerpo = '<div class="lg-rows mb-3">'
+                    + '<div class="lg-row"><span class="lg-row-label">Proveedor</span>'
+                    + '<span class="lg-row-value">' + (c.proveedor || 'Sin proveedor') + '</span></div>'
+                    + '<div class="lg-row"><span class="lg-row-label">Registró</span>'
+                    + '<span class="lg-row-value">' + (c.usuario || '-') + '</span></div>'
+                    + '<div class="lg-row"><span class="lg-row-label">Fecha</span>'
+                    + '<span class="lg-row-value">' + c.fecha + '</span></div>'
+                    + '<div class="lg-row"><span class="lg-row-label">Estado</span>'
+                    + '<span class="lg-row-value">'
+                    + (datos.anulada
+                        ? '<span class="lg-pill lg-pill--pizarra">Anulada</span>'
+                        : '<span class="lg-pill lg-pill--verde">Registrada</span>')
+                    + '</span></div>'
+                    + '</div>';
+
+                if (datos.anulada) {
+                    cuerpo += '<div class="lg-info mb-3"><i class="fa fa-info-circle"></i>'
+                        + '<span>Esta compra está anulada: el stock ya se revirtió y '
+                        + 'no cuenta en los gastos del día.</span></div>';
+                }
+
+                var filas = (c.items || []).map(function (item) {
+                    return '<tr>'
+                        + '<td>' + item.nombre + '</td>'
+                        + '<td class="num" style="text-align:right;">' + item.cantidad + '</td>'
+                        + '<td class="num" style="text-align:right;">' + soles(item.precio_unitario) + '</td>'
+                        + '<td class="num" style="text-align:right;font-weight:600;">'
+                        + soles(item.subtotal) + '</td>'
+                        + '</tr>';
+                }).join('');
+
+                cuerpo += '<div class="table-responsive"><table class="lg-table">'
+                    + '<thead><tr><th>Producto</th>'
+                    + '<th style="text-align:right;">Cantidad</th>'
+                    + '<th style="text-align:right;">Precio unit.</th>'
+                    + '<th style="text-align:right;">Subtotal</th></tr></thead>'
+                    + '<tbody>' + filas + '</tbody>'
+                    + '<tfoot><tr><th colspan="3">'
+                    + (c.items || []).length + ' producto(s) · '
+                    + (c.items || []).reduce(function (suma, i) {
+                        return suma + parseFloat(i.cantidad);
+                    }, 0)
+                    + ' unidad(es)</th>'
+                    + '<th style="text-align:right;">' + soles(c.total) + '</th></tr></tfoot>'
+                    + '</table></div>';
+
+                $('#compraDetalleCuerpo').html(cuerpo);
+
+                $('#compraAnular').toggle(!datos.anulada);
+            };
+
+            $('.js-ver-compra').on('click', function () {
+
+                var id = $(this).data('id');
+
+                compraActual = { id: id, anulada: false };
+
+                $('#compraDetalleCuerpo').html(
+                    '<div class="text-center py-4"><i class="fa fa-spinner fa-spin fa-2x" style="opacity:0.4;"></i></div>'
+                );
+
+                $modalCompra.modal('show');
+
+                apiGet('api/compra/detalle', { id: id })
+                .done(function (r) {
+                    compraActual.anulada = r.anulada;
+                    pintarDetalle(r);
+                })
+                .fail(function (xhr) {
+                    $('#compraDetalleCuerpo').html(
+                        '<p class="mb-0">' + mensajeDe(xhr, 'No se pudo cargar la compra.') + '</p>'
+                    );
+                });
+            });
+
+            $('.js-anular-compra').on('click', function () {
+                compraActual = { id: $(this).data('id'), anulada: false };
+                $(this).closest('tr').find('.js-ver-compra').trigger('click');
+            });
+
+            $('#compraAnular').on('click', function () {
+
+                if (!confirm(
+                    'Se anulará la compra y se devolverá el stock al almacén.\n'
+                    + 'También se quitará del gasto del día.\n\n¿Continuar?'
+                )) {
+                    return;
+                }
+
+                var $boton = $(this);
+                var textoOriginal = $boton.html();
+
+                $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Anulando...');
+
+                api('api/compra/anular', { id: compraActual.id })
+                .done(function () {
+                    $modalCompra.modal('hide');
+                    window.location.reload();
+                })
+                .fail(function (xhr) {
+                    alert(mensajeDe(xhr, 'No se pudo anular la compra.'));
+                    $boton.prop('disabled', false).html(textoOriginal);
+                });
+            });
+        }
+        $('.js-asistencia').on('click', function () {
+
+            var $boton = $(this);
+            var textoOriginal = $boton.html();
+
             $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
 
-            api('api/mesa/reservar', { id: $boton.data('id'), nombre: quien })
+            api('api/personal/asistencia', {
+                empleado_id: $boton.data('emp'),
+                tipo: $boton.data('tipo')
+            })
             .done(function () {
                 window.location.reload();
             })
             .fail(function (xhr) {
-                alert(mensajeDe(xhr, 'No se pudo reservar la mesa.'));
-                $boton.prop('disabled', false).html('<i class="fa fa-calendar"></i> Reservar');
+                alert(mensajeDe(xhr, 'No se pudo registrar la asistencia.'));
+                $boton.prop('disabled', false).html(textoOriginal);
             });
         });
+
+        $('#pagoGuardar').on('click', function () {
+
+            var $boton = $(this);
+            var textoOriginal = $boton.html();
+
+            $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+            api('api/personal/pago', {
+                empleado_id: parseInt($('#pagoEmpleado').val(), 10) || 0,
+                periodo: $('#pagoPeriodo').val(),
+                monto: parseFloat($('#pagoMonto').val()) || 0
+            })
+            .done(function () {
+                window.location.reload();
+            })
+            .fail(function (xhr) {
+                $('#pagoAvisoTexto').text(mensajeDe(xhr, 'No se pudo registrar el pago.'));
+                $('#pagoAviso').show();
+                $boton.prop('disabled', false).html(textoOriginal);
+            });
+        });
+
+        // -------------------------------------------------
+        // Mesas: reservar, liberar, agregar y eliminar
+        // -------------------------------------------------
+        var $modalReserva = $('#modalReserva');
+
+        if ($modalReserva.length) {
+
+            var reservaActual = { id: 0 };
+
+            $('.js-reservar-mesa').on('click', function () {
+
+                reservaActual.id = $(this).data('id');
+
+                $('#reservaMesaTitulo').text($(this).data('mesa'));
+                $('#reservaNombre').val('');
+                $('#reservaHora').val(
+                    new Date().toTimeString().substring(0, 5)
+                );
+                $('#reservaAviso').hide();
+
+                $modalReserva.modal('show');
+
+                setTimeout(function () {
+                    $('#reservaNombre').trigger('focus');
+                }, 300);
+            });
+
+            $('#reservaGuardar').on('click', function () {
+
+                var $boton = $(this);
+                var textoOriginal = $boton.html();
+
+                $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+                $('#reservaAviso').hide();
+
+                api('api/mesa/reservar', {
+                    id: reservaActual.id,
+                    nombre: $('#reservaNombre').val(),
+                    hora: $('#reservaHora').val()
+                })
+                .done(function () {
+                    $modalReserva.modal('hide');
+                    window.location.reload();
+                })
+                .fail(function (xhr) {
+                    $('#reservaAvisoTexto').text(mensajeDe(xhr, 'No se pudo reservar la mesa.'));
+                    $('#reservaAviso').show();
+                    $boton.prop('disabled', false).html(textoOriginal);
+                });
+            });
+        }
 
         $('.js-liberar-mesa').on('click', function () {
 
@@ -619,10 +1050,6 @@
             items: []
         };
 
-        var soles = function (monto) {
-            return 'S/ ' + Number(monto).toFixed(2);
-        };
-
         var mostrarAviso = function (texto) {
             $('#pedidoAvisoTexto').text(texto);
             $('#pedidoAviso').stop(true, true).fadeIn(150);
@@ -630,6 +1057,13 @@
 
         var ocultarAviso = function () {
             $('#pedidoAviso').stop(true, true).fadeOut(150);
+        };
+
+        /**
+         * Stock en el almacén de un producto del catálogo.
+         */
+        var $botonStock = function (idProducto) {
+            return $('#modalCatalogo .modal-producto[data-producto-id="' + idProducto + '"]').data('stock');
         };
 
         var pintarPedido = function () {
@@ -677,13 +1111,24 @@
 
                 $qtd.append('<span>' + item.cantidad + '</span>');
 
-                $qtd.append(
-                    $('<button type="button" title="Agregar uno"><i class="fa fa-plus"></i></button>')
-                        .on('click', function () {
-                            item.cantidad += 1;
-                            pintarPedido();
-                        })
-                );
+                var $sumar = $('<button type="button" title="Agregar uno"><i class="fa fa-plus"></i></button>')
+                    .on('click', function () {
+
+                        var stock = parseInt($botonStock(item.id), 10);
+
+                        if (stock > 0 && item.cantidad >= stock) {
+                            mostrarAviso(
+                                'Solo quedan ' + stock + ' de "' + item.nombre + '" en el almacén.'
+                            );
+
+                            return;
+                        }
+
+                        item.cantidad += 1;
+                        pintarPedido();
+                    });
+
+                $qtd.append($sumar);
 
                 $acciones.append($qtd);
                 $acciones.append('<div class="modal-item-total">' + soles(subtotal) + '</div>');
@@ -706,6 +1151,11 @@
         };
 
         var abrirModal = function (datos) {
+
+            // El modal solo se imprime si el rol puede registrar pedidos
+            if (!$('#modalPedido').length) {
+                return;
+            }
 
             pedido.mesaId    = datos.mesaId || 0;
             pedido.mesa      = datos.mesa || '';
@@ -804,6 +1254,7 @@
             var nombre = $boton.data('producto');
             var id     = parseInt($boton.data('producto-id'), 10);
             var precio = parseFloat($boton.data('precio')) || 0;
+            var stock  = parseInt($boton.data('stock'), 10);
             var existente = null;
 
             pedido.items.forEach(function (item) {
@@ -811,6 +1262,17 @@
                     existente = item;
                 }
             });
+
+            // No se deja pasar más unidades de las que hay en el almacén
+            var yaPedidas = existente ? existente.cantidad : 0;
+
+            if (stock > 0 && yaPedidas >= stock) {
+                mostrarAviso(
+                    'Solo quedan ' + stock + ' de "' + nombre + '" en el almacén.'
+                );
+
+                return;
+            }
 
             if (existente) {
                 existente.cantidad += 1;

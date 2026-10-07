@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Exporta las ventas del período a CSV.
+ * Exporta las ventas y los gastos del período a CSV.
  *
  * Se invoca con index.php?page=reportes/exportar&desde=YYYY-MM-DD&hasta=YYYY-MM-DD
  *
- * Son tres consultas separadas a propósito: unir detalle_pedidos con pagos en
+ * Son consultas separadas a propósito: unir detalle_pedidos con pagos en
  * la misma consulta multiplica las filas y descuadra el resumen de pagos.
  */
 
@@ -34,29 +34,23 @@ $stmt = $db->prepare(
 $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $ventas = $stmt->fetchAll();
 
-if (!$ventas) {
-    // Encabezados y nada más
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="ventas_' . $desde . '_a_' . $hasta . '.csv"');
-    $salida = fopen('php://output', 'w');
-    fwrite($salida, "\xEF\xBB\xBF");
-    fputcsv($salida, ['Venta', 'Fecha', 'Hora', 'Mesa', 'Cajero', 'Subtotal', 'Descuento', 'Total', 'Estado', 'Productos', 'Pagos']);
-    fclose($salida);
-    exit;
-}
+// Ojo: productos y pagos se buscan por claves distintas.
+// Los productos cuelgan del pedido, los pagos de la venta.
+$idsPedido = array_column($ventas, 'pedido_id');
+$idsVenta  = array_column($ventas, 'id');
 
-$ids = array_column($ventas, 'id');
-$marcadores = implode(',', array_fill(0, count($ids), '?'));
+$marcadoresPedido = $idsPedido ? implode(',', array_fill(0, count($idsPedido), '?')) : 'NULL';
+$marcadoresVenta  = $idsVenta ? implode(',', array_fill(0, count($idsVenta), '?')) : 'NULL';
 
 /** Productos por venta */
 $stmt = $db->prepare(
     "SELECT d.pedido_id, GROUP_CONCAT(CONCAT(d.cantidad, ' x ', pr.nombre) SEPARATOR ' | ') AS productos
      FROM detalle_pedidos d
      INNER JOIN productos pr ON pr.id = d.producto_id
-     WHERE d.pedido_id IN ($marcadores)
+     WHERE d.pedido_id IN ($marcadoresPedido)
      GROUP BY d.pedido_id"
 );
-$stmt->execute($ids);
+$stmt->execute($idsPedido);
 $porPedido = [];
 
 foreach ($stmt->fetchAll() as $fila) {
@@ -68,11 +62,11 @@ $stmt = $db->prepare(
     "SELECT pg.venta_id, m.nombre AS metodo, SUM(pg.monto) AS total
      FROM pagos pg
      INNER JOIN metodos_pago m ON m.id = pg.metodo_pago_id
-     WHERE pg.venta_id IN ($marcadores)
+     WHERE pg.venta_id IN ($marcadoresVenta)
      GROUP BY pg.venta_id, m.nombre
      ORDER BY m.nombre"
 );
-$stmt->execute($ids);
+$stmt->execute($idsVenta);
 $porVenta = [];
 
 foreach ($stmt->fetchAll() as $fila) {
@@ -111,6 +105,60 @@ foreach ($ventas as $venta) {
         implode(' / ', $porVenta[$ventaId] ?? [])
     ]);
 }
+
+/** Resumen de gastos: egresos y gastos del mismo período */
+$gastos = [];
+
+foreach (['egresos' => 'Egreso', 'gastos' => 'Gasto'] as $tabla => $etiqueta) {
+
+    try {
+        $stmt = $db->prepare(
+            "SELECT fecha,
+                    COALESCE(" . ($tabla === 'gastos' ? 'descripcion' : 'concepto') . ", '-') AS concepto,
+                    monto
+             FROM $tabla
+             WHERE DATE(fecha) BETWEEN :desde AND :hasta
+             ORDER BY fecha"
+        );
+        $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
+
+        foreach ($stmt->fetchAll() as $fila) {
+            $gastos[] = [$etiqueta, $fila['concepto'], (float) $fila['monto'], $fila['fecha']];
+        }
+
+    } catch (PDOException $e) {
+        // Si la tabla no existe, el reporte sale solo con ventas
+    }
+}
+
+if ($gastos) {
+
+    fputcsv($salida, []);
+    fputcsv($salida, ['GASTOS DEL PERIODO']);
+    fputcsv($salida, ['Tipo', 'Concepto', 'Monto', 'Fecha']);
+
+    foreach ($gastos as $gasto) {
+        fputcsv($salida, [
+            $gasto[0],
+            $gasto[1],
+            number_format($gasto[2], 2),
+            date('d/m/Y', strtotime($gasto[3]))
+        ]);
+    }
+}
+
+/** Cierre: ventas, gastos y ganancia del período */
+$totalVentas = array_sum(array_column($ventas, 'total'));
+$totalGastos = array_sum(array_column($gastos, 2));
+
+fputcsv($salida, []);
+fputcsv($salida, ['RESUMEN']);
+fputcsv($salida, ['Ventas', 'Gastos', 'Ganancia']);
+fputcsv($salida, [
+    number_format($totalVentas, 2),
+    number_format($totalGastos, 2),
+    number_format($totalVentas - $totalGastos, 2)
+]);
 
 fclose($salida);
 exit;

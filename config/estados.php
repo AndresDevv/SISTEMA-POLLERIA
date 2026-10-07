@@ -50,15 +50,40 @@ function estadosPago(): array
 
 /**
  * Niveles de stock de un producto.
+ *
+ * Los umbrales son absolutos y no dependen del mínimo de cada producto,
+ * porque así lo pidió el administrador: rojo es lo que está por acabarse,
+ * verde lo que hay de sobra.
  */
+/**
+ * Umbrales de stock.
+ *
+ * Son absolutos y no dependen del mínimo de cada producto, porque así lo
+ * pidió el administrador: lo rojo es lo que está por acabarse y lo verde
+ * lo que hay de sobra, se compare o no con su mínimo.
+ */
+define('STOCK_ROJO', 5);    // menos de esto: rojo
+define('STOCK_VERDE', 30);  // más de esto: verde
+
 function estadosStock(): array
 {
     return [
-        'alto'     => ['etiqueta' => 'Stock alto',    'pildora' => 'lg-pill--verde'],
-        'bajo'     => ['etiqueta' => 'Stock bajo',    'pildora' => 'lg-pill--ambar'],
-        'agotado'  => ['etiqueta' => 'Agotado',       'pildora' => 'lg-pill--rojo'],
-        'critico'  => ['etiqueta' => 'Stock crítico', 'pildora' => 'lg-pill--rojo']
+        'alto'    => ['etiqueta' => 'Stock suficiente', 'pildora' => 'lg-pill--verde', 'color' => 'lg-stock--alto'],
+        'medio'   => ['etiqueta' => 'Stock medio',      'pildora' => 'lg-pill--ambar', 'color' => 'lg-stock--medio'],
+        'bajo'    => ['etiqueta' => 'Stock bajo',       'pildora' => 'lg-pill--rojo',  'color' => 'lg-stock--bajo'],
+        'agotado' => ['etiqueta' => 'Agotado',          'pildora' => 'lg-pill--rojo',  'color' => 'lg-stock--agotado']
     ];
+}
+
+/**
+ * Clase CSS que pinta la cantidad de stock.
+ */
+function claseStock(int $cantidad): string
+{
+    $estados = estadosStock();
+    $nivel   = nivelStock($cantidad);
+
+    return $estados[$nivel]['color'] ?? 'lg-stock--medio';
 }
 
 /**
@@ -102,27 +127,26 @@ function pildoraPago(string $estado): string
 }
 
 /**
- * Calcula el nivel de stock a partir de la cantidad y el mínimo configurado.
+ * Nivel de stock según la cantidad:
+ *   menos de STOCK_ROJO  -> 'agotado' (rojo)
+ *   hasta STOCK_VERDE    -> 'medio'   (amarillo)
+ *   más de STOCK_VERDE   -> 'alto'     (verde)
  */
-function nivelStock(int $cantidad, int $minimo): string
+function nivelStock(int $cantidad): string
 {
-    if ($cantidad <= 0) {
+    if ($cantidad < STOCK_ROJO) {
         return 'agotado';
     }
 
-    if ($cantidad <= $minimo) {
-        return 'critico';
-    }
-
-    return $cantidad <= ($minimo * 2) ? 'bajo' : 'alto';
+    return $cantidad > STOCK_VERDE ? 'alto' : 'medio';
 }
 
 /**
  * Devuelve la etiqueta y la pildora del nivel de stock.
  */
-function infoStock(int $cantidad, int $minimo): array
+function infoStock(int $cantidad): array
 {
-    $nivel   = nivelStock($cantidad, $minimo);
+    $nivel   = nivelStock($cantidad);
     $estados = estadosStock();
 
     return $estados[$nivel];

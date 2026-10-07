@@ -18,8 +18,13 @@
         Si crees que es un error, comun&iacute;cate con el administrador.
     </p>
 
-    <a href="<?= url('dashboard') ?>" class="lg-btn lg-btn--primary mt-3">
-        <i class="fa fa-home mr-2"></i> Volver al dashboard
+    <?php
+    // Un mesero o un cocinero no tienen dashboard: si el botón lo apuntara
+    // allí, el index lo devolvería aquí otra vez y sería un bucle.
+    $destino = primeraPaginaPermitida();
+    ?>
+    <a href="<?= url($destino) ?>" class="lg-btn lg-btn--primary mt-3">
+        <i class="fa fa-home mr-2"></i> Volver al <?= htmlspecialchars($destino === 'dashboard' ? 'dashboard' : 'inicio') ?>
     </a>
 
 </div>

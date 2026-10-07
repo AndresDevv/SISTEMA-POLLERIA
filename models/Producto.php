@@ -14,7 +14,7 @@ class Producto
     /**
      * Catálogo de productos con su categoría y estado de stock.
      *
-     * @param array $filtros nombre, categoria, stock ('alto','bajo','critico','agotado')
+     * @param array $filtros nombre, categoria, stock ('alto','medio','agotado')
      */
     public function listar(array $filtros = []): array
     {
@@ -60,10 +60,7 @@ class Producto
         $productos = $stmt->fetchAll();
 
         foreach ($productos as &$producto) {
-            $producto['nivel'] = nivelStock(
-                (int) $producto['stock'],
-                (int) $producto['stock_minimo']
-            );
+            $producto['nivel'] = nivelStock((int) $producto['stock']);
         }
 
         return $productos;
@@ -74,11 +71,12 @@ class Producto
      */
     private function condicionStock(string $nivel): string
     {
+        // Mismos umbrales que el color: rojo < 5, amarillo hasta 30, verde > 30
         return match ($nivel) {
-            'agotado' => 'p.stock <= 0',
-            'critico' => 'p.stock > 0 AND p.stock <= p.stock_minimo',
-            'bajo'    => 'p.stock > p.stock_minimo AND p.stock <= (p.stock_minimo * 2)',
-            default   => 'p.stock > (p.stock_minimo * 2)'
+            'agotado' => 'p.stock < ' . STOCK_ROJO,
+            'medio'   => 'p.stock >= ' . STOCK_ROJO . ' AND p.stock <= ' . STOCK_VERDE,
+            'alto'    => 'p.stock > ' . STOCK_VERDE,
+            default   => '1 = 1'
         };
     }
 
@@ -98,15 +96,16 @@ class Producto
 
     /**
      * Productos que necesitan reposición.
+     *
+     * Usa el mismo umbral rojo que el color de las tablas, para que el
+     * número del tablero coincida con lo que se ve en rojo.
      */
     public function stockBajo(): int
     {
-        $stmt = $this->conexion->query(
-            "SELECT COUNT(*)
-             FROM productos
-             WHERE estado = 1
-               AND stock <= stock_minimo"
+        $stmt = $this->conexion->prepare(
+            "SELECT COUNT(*) FROM productos WHERE estado = 1 AND stock < :rojo"
         );
+        $stmt->execute([':rojo' => STOCK_ROJO]);
 
         return (int) $stmt->fetchColumn();
     }

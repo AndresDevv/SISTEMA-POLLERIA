@@ -17,8 +17,11 @@
         La secci&oacute;n que buscas no existe o a&uacute;n no est&aacute; disponible.
     </p>
 
-    <a href="<?= url('dashboard') ?>" class="lg-btn lg-btn--primary mt-3">
-        <i class="fa fa-home mr-2"></i> Volver al dashboard
+    <?php
+    $destino = primeraPaginaPermitida();
+    ?>
+    <a href="<?= url($destino) ?>" class="lg-btn lg-btn--primary mt-3">
+        <i class="fa fa-home mr-2"></i> Volver al <?= htmlspecialchars($destino === 'dashboard' ? 'dashboard' : 'inicio') ?>
     </a>
 
 </div>

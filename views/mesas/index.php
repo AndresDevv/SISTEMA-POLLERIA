@@ -51,6 +51,12 @@ if (!in_array($panelActual, ['mesas', 'pedidos', 'ventas'], true)) {
     $panelActual = 'mesas';
 }
 
+// El panel de ventas solo existe para quien tenga ese permiso; si alguien
+// lo pide por URL, vuelve al de mesas.
+if ($panelActual === 'ventas' && !esPermitido('ventas')) {
+    $panelActual = 'mesas';
+}
+
 /**
  * Genera una URL cambiando solo el panel.
  */
@@ -93,9 +99,11 @@ encabezadoPagina(
         <span class="lg-segmento-badge"><?= count($pedidos) ?></span>
     </a>
 
-    <a href="<?= urlPanel('ventas') ?>" class="lg-segmento<?= $panelActual === 'ventas' ? ' is-activo' : '' ?>">
-        <i class="fa fa-bar-chart"></i> Ver ventas
-    </a>
+    <?php if (esPermitido('ventas')): ?>
+        <a href="<?= urlPanel('ventas') ?>" class="lg-segmento<?= $panelActual === 'ventas' ? ' is-activo' : '' ?>">
+            <i class="fa fa-bar-chart"></i> Ver ventas
+        </a>
+    <?php endif; ?>
 
 </div>
 
@@ -115,9 +123,11 @@ encabezadoPagina(
         <!-- Leyenda de estados + agregar mesa -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
 
-            <button type="button" class="lg-btn lg-btn--primary js-agregar-mesa">
-                <i class="fa fa-plus"></i> Agregar mesa
-            </button>
+            <?php if (esPermitido('mesas_editar')): ?>
+                <button type="button" class="lg-btn lg-btn--primary js-agregar-mesa">
+                    <i class="fa fa-plus"></i> Agregar mesa
+                </button>
+            <?php endif; ?>
 
             <div class="lg-legend">
                 <?php foreach (estadosMesa() as $clave => $datos): ?>
@@ -136,8 +146,15 @@ encabezadoPagina(
             <?php foreach ($mesas as $mesa): ?>
                 <?php $estado = estadosMesa()[$mesa['estado_visual']] ?? estadosMesa()['libre']; ?>
 
-                <div class="lg-mesa lg-mesa--<?= htmlspecialchars($mesa['estado_visual']) ?>"
-                     data-mesa-id="<?= (int) $mesa['id'] ?>">
+                <?php
+                    // Quien puede ver las mesas no siempre puede tomar pedidos:
+                    // cocina solo consulta, el mesero registra y manda a cocina.
+                    $puedePedir = esPermitido('pedidos_crear');
+                    $puedeEditarMesa = esPermitido('mesas_editar');
+                    $puedeReservarMesa = esPermitido('mesas_reservar');
+                    ?>
+                    <div class="lg-mesa lg-mesa--<?= htmlspecialchars($mesa['estado_visual']) ?>"
+                         data-mesa-id="<?= (int) $mesa['id'] ?>">
 
                     <!-- Abrir pedido -->
                     <button type="button"
@@ -164,40 +181,51 @@ encabezadoPagina(
                         </div>
 
                         <?php if (!empty($mesa['detalle'])): ?>
-                            <div class="lg-mesa-foot">
-                                <i class="fa fa-clock-o"></i>
-                                <?= htmlspecialchars($mesa['detalle']) ?>
+                            <div class="lg-mesa-foot<?= $mesa['estado_visual'] === 'reservada' ? ' lg-mesa-foot--reserva' : '' ?>">
+                                <i class="fa <?= $mesa['estado_visual'] === 'reservada' ? 'fa-user' : 'fa-clock-o' ?>"></i>
+                                <span class="lg-mesa-reserva-nombre">
+                                    <?= htmlspecialchars($mesa['detalle']) ?>
+                                </span>
                             </div>
                         <?php endif; ?>
 
-                        <div class="lg-mesa-cta">
-                            <i class="fa fa-plus"></i> Agregar pedido
-                        </div>
+                        <?php if ($puedePedir): ?>
+                            <div class="lg-mesa-cta">
+                                <i class="fa fa-plus"></i> Agregar pedido
+                            </div>
+                        <?php endif; ?>
 
                     </button>
 
-                    <!-- Acciones de la mesa -->
+                    <!-- Acciones de la mesa. Reservar y quitar la reserva lo puede
+                         hacer el mesero; agregar y eliminar, solo el admin. -->
+                    <?php if ($puedeEditarMesa || $puedeReservarMesa): ?>
                     <div class="lg-mesa-acciones">
 
-                        <?php if ($mesa['estado_visual'] === 'reservada'): ?>
-                            <button type="button" class="js-liberar-mesa" data-id="<?= (int) $mesa['id'] ?>"
-                                    title="Quitar reserva">
-                                <i class="fa fa-check"></i> Liberar
-                            </button>
-                        <?php else: ?>
-                            <button type="button" class="js-reservar-mesa" data-id="<?= (int) $mesa['id'] ?>"
-                                    data-mesa="Mesa <?= (int) $mesa['numero'] ?>"
-                                    title="Reservar mesa">
-                                <i class="fa fa-calendar"></i> Reservar
+                        <?php if ($puedeReservarMesa): ?>
+                            <?php if ($mesa['estado_visual'] === 'reservada'): ?>
+                                <button type="button" class="js-liberar-mesa" data-id="<?= (int) $mesa['id'] ?>"
+                                        title="Quitar reserva">
+                                    <i class="fa fa-check"></i> Liberar
+                                </button>
+                            <?php else: ?>
+                                <button type="button" class="js-reservar-mesa" data-id="<?= (int) $mesa['id'] ?>"
+                                        data-mesa="Mesa <?= (int) $mesa['numero'] ?>"
+                                        title="Reservar mesa">
+                                    <i class="fa fa-calendar"></i> Reservar
+                                </button>
+                            <?php endif; ?>
+                        <?php endif; ?>
+
+                        <?php if ($puedeEditarMesa): ?>
+                            <button type="button" class="js-eliminar-mesa" data-id="<?= (int) $mesa['id'] ?>"
+                                    data-mesa="Mesa <?= (int) $mesa['numero'] ?>" title="Eliminar mesa">
+                                <i class="fa fa-trash"></i>
                             </button>
                         <?php endif; ?>
 
-                        <button type="button" class="js-eliminar-mesa" data-id="<?= (int) $mesa['id'] ?>"
-                                data-mesa="Mesa <?= (int) $mesa['numero'] ?>" title="Eliminar mesa">
-                            <i class="fa fa-trash"></i>
-                        </button>
-
                     </div>
+                    <?php endif; ?>
 
                 </div>
 
@@ -214,6 +242,22 @@ encabezadoPagina(
 
 <?php elseif ($panelActual === 'pedidos'): ?>
 
+    <?php
+    /**
+     * Huella de los pedidos al cargar la página, para que el mesero note los
+     * cambios de estado que vaya haciendo cocina. Se usa md5 de los mismos
+     * datos que devuelve api/pedido/resumen.
+     */
+    $huellaPedidos = md5(json_encode([
+        array_map(static fn (array $p): array => [
+            'id'     => (int) $p['id'],
+            'estado' => $p['estado'],
+            'total'  => (float) $p['total']
+        ], $pedidos),
+        (int) $ventaModel->totalPagadas()
+    ]));
+    ?>
+
     <div class="lg-card">
         <div class="lg-card-head">
             <span class="lg-card-icon"><i class="fa fa-list-alt"></i></span>
@@ -221,6 +265,12 @@ encabezadoPagina(
                 <h2 class="lg-card-title">Pedidos en curso</h2>
                 <p class="lg-card-subtitle"><?= count($pedidos) ?> pedido(s) pendiente(s)</p>
             </div>
+
+            <?php if (!esPermitido('pedidos_estado')): ?>
+                <span class="lg-muted" style="font-size:0.75rem;" title="Los cambios de cocina aparecen solos">
+                    <i class="fa fa-sync-alt"></i> Se actualiza solo
+                </span>
+            <?php endif; ?>
         </div>
 
         <?php if (!$pedidos): ?>
@@ -275,7 +325,7 @@ encabezadoPagina(
 
                                     <?php else: ?>
 
-                                        <?php if ($ui['accion'] !== ''): ?>
+                                        <?php if (esPermitido('pedidos_estado') && $ui['accion'] !== ''): ?>
                                             <button type="button"
                                                     class="lg-btn lg-btn--sm lg-btn--primary js-estado-pedido"
                                                     data-id="<?= (int) $pedido['id'] ?>"
@@ -284,20 +334,24 @@ encabezadoPagina(
                                             </button>
                                         <?php endif; ?>
 
-                                        <button type="button"
-                                                class="lg-btn lg-btn--sm lg-btn--verde js-abrir-cobro"
-                                                data-id="<?= (int) $pedido['id'] ?>"
-                                                data-total="<?= htmlspecialchars((string) $pedido['total']) ?>"
-                                                data-mesa="Mesa <?= (int) $pedido['mesa_numero'] ?>">
-                                            <i class="fa fa-money"></i> Cobrar
-                                        </button>
+                                        <?php if (esPermitido('cobrar')): ?>
+                                            <button type="button"
+                                                    class="lg-btn lg-btn--sm lg-btn--verde js-abrir-cobro"
+                                                    data-id="<?= (int) $pedido['id'] ?>"
+                                                    data-total="<?= htmlspecialchars((string) $pedido['total']) ?>"
+                                                    data-mesa="Mesa <?= (int) $pedido['mesa_numero'] ?>">
+                                                <i class="fa fa-money"></i> Cobrar
+                                            </button>
+                                        <?php endif; ?>
 
-                                        <button type="button"
-                                                class="lg-btn lg-btn--sm lg-btn--ghost js-eliminar-pedido"
-                                                data-id="<?= (int) $pedido['id'] ?>"
-                                                title="Eliminar pedido">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
+                                        <?php if (esPermitido('pedidos_editar')): ?>
+                                            <button type="button"
+                                                    class="lg-btn lg-btn--sm lg-btn--ghost js-eliminar-pedido"
+                                                    data-id="<?= (int) $pedido['id'] ?>"
+                                                    title="Eliminar pedido">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
 
                                     <?php endif; ?>
 
@@ -308,6 +362,35 @@ encabezadoPagina(
                     </tbody>
                 </table>
             </div>
+
+            <?php if (!esPermitido('pedidos_estado')): ?>
+                <script>
+                    /**
+                     * El mesero ve aquí lo que cocina va marcando. Como no
+                     * tiene un botón que refresque, se comprueba cada 30 s y
+                     * solo se recarga si algo cambió y no hay ningún modal
+                     * abierto (para no interrumpir un cobro en curso).
+                     */
+                    (function () {
+                        var huella = <?= json_encode($huellaPedidos) ?>;
+
+                        setInterval(function () {
+
+                            if ($('.modal.show').length) {
+                                return;
+                            }
+
+                            apiGet('api/pedido/resumen')
+                            .done(function (r) {
+
+                                if (r.huella !== huella) {
+                                    window.location.reload();
+                                }
+                            });
+                        }, 30000);
+                    })();
+                </script>
+            <?php endif; ?>
 
         <?php endif; ?>
     </div>
@@ -405,7 +488,7 @@ encabezadoPagina(
 
 <?php endif; ?>
 
-<!-- Catálogo que alimenta el modal de pedido -->
+<!-- Catálogos y modales: solo se cargan si el rol los puede usar -->
 <?php
 $productosModal = [];
 
@@ -420,7 +503,19 @@ foreach ($productos as $producto) {
     ];
 }
 
-require APP_ROOT . '/views/partials/modal_pedido.php';
-require APP_ROOT . '/views/partials/modal_cobro.php';
-require APP_ROOT . '/views/partials/modal_mesa.php';
+if (esPermitido('pedidos_crear')) {
+    require APP_ROOT . '/views/partials/modal_pedido.php';
+}
+
+if (esPermitido('cobrar')) {
+    require APP_ROOT . '/views/partials/modal_cobro.php';
+}
+
+if (esPermitido('mesas_editar')) {
+    require APP_ROOT . '/views/partials/modal_mesa.php';
+}
+
+if (esPermitido('mesas_reservar')) {
+    require APP_ROOT . '/views/partials/modal_reserva.php';
+}
 ?>

@@ -74,6 +74,56 @@ body {
     padding-top: 8px;
 }
 
+/* ---------------------------------------------------------
+   Saludo del usuario, arriba del menú
+   --------------------------------------------------------- */
+.lg-saludo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 10px 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.55);
+}
+
+.lg-saludo-avatar {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background-color: var(--lg-rojo);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lg-saludo-texto {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.lg-saludo-hola {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #111;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lg-saludo-rol {
+    font-size: 0.72rem;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 .brand-link {
     background-color: var(--lg-amarillo);
     border-bottom: 0;
@@ -413,6 +463,57 @@ body {
 .lg-pill--pizarra  { background-color: var(--lg-pizarra-fondo);     color: var(--lg-pizarra-texto); }
 
 /* ---------------------------------------------------------
+   Stock: verde si alcanza, rojo si falta
+   --------------------------------------------------------- */
+.lg-stock--alto {
+    color: #2E9E4B;
+    font-weight: 700;
+}
+
+.lg-stock--bajo {
+    color: var(--lg-rojo);
+    font-weight: 700;
+}
+
+.lg-stock--agotado {
+    color: var(--lg-rojo);
+    font-weight: 700;
+}
+
+/* Stock justo: amarillo */
+.lg-stock--medio {
+    color: var(--lg-pendiente-texto);
+    font-weight: 700;
+}
+
+/* Filete de color a la izquierda, para leer el stock de reojo */
+.lg-stock-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lg-stock-tag::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background-color: currentColor;
+    flex-shrink: 0;
+}
+
+/* Catálogo de productos (modal de pedido y pantalla de compras) */
+.modal-producto.lg-stock--alto { border-left: 4px solid #2E9E4B; }
+.modal-producto.lg-stock--medio { border-left: 4px solid var(--lg-pendiente-texto); }
+.modal-producto.lg-stock--bajo { border-left: 4px solid var(--lg-rojo); }
+.modal-producto.lg-stock--agotado { border-left: 4px solid var(--lg-rojo); }
+
+.modal-producto-precio.lg-stock--alto { color: #2E9E4B; }
+.modal-producto-precio.lg-stock--medio { color: var(--lg-pendiente-texto); }
+.modal-producto-precio.lg-stock--bajo { color: var(--lg-rojo); }
+.modal-producto-precio.lg-stock--agotado { color: var(--lg-rojo); }
+
+/* ---------------------------------------------------------
    Tablas
    --------------------------------------------------------- */
 .lg-table {
@@ -618,10 +719,9 @@ body {
     box-shadow: 0 0 0 2px var(--lg-rojo);
 }
 
-.lg-mesa--libre     { background-color: #FFFFFF; }.lg-mesa--ocupada   { background-color: #FEE6E6; border-color: #FBD5D5; }
+.lg-mesa--libre     { background-color: #FFFFFF; }
+.lg-mesa--ocupada   { background-color: #FEE6E6; border-color: #FBD5D5; }
 .lg-mesa--reservada { background-color: #FFFDF5; border-color: #FDEBC8; }
-.lg-mesa--pagada    { background-color: #F8FAFC; border-color: #E2E8F0; }
-.lg-mesa--porpagar  { background-color: #FAF5FF; border-color: #E9D5FF; }
 
 .lg-mesa-top {
     display: flex;
@@ -689,8 +789,18 @@ body {
 
 .lg-mesa--ocupada .lg-mesa-foot   { color: #EF4444; }
 .lg-mesa--reservada .lg-mesa-foot { color: var(--lg-ambar-texto); }
-.lg-mesa--pagada .lg-mesa-foot    { color: var(--lg-pizarra-texto); }
-.lg-mesa--porpagar .lg-mesa-foot  { color: var(--lg-purpura-texto); }
+
+/* Reserva: el nombre de quien la hizo se lee de un vistazo */
+.lg-mesa-foot--reserva {
+    font-weight: 600;
+    gap: 7px;
+}
+
+.lg-mesa-reserva-nombre {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 /* Leyenda */
 .lg-legend {
@@ -760,6 +870,8 @@ body {
 .lg-btn--primary:hover { color: #fff; }
 .lg-btn--verde { background-color: var(--lg-verde); color: #fff; }
 .lg-btn--verde:hover { color: #fff; }
+.lg-btn--rojo { background-color: var(--lg-rojo); color: #fff; }
+.lg-btn--rojo:hover { color: #fff; }
 .lg-btn--ghost { background-color: transparent; border: 1px solid var(--lg-borde); }
 
 .lg-btn--sm {
@@ -862,16 +974,26 @@ body {
     color: var(--lg-rojo);
 }
 
-/* Producto agotado en el catálogo del modal */
+/* Producto sin stock: se sigue viendo, pero en gris y sin poder pulsarse.
+   Se atenúa un poco más que un botón deshabilitado normal para que resalte
+   que no es un fallo de la pantalla sino que no hay. */
 .modal-producto.is-agotado {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
-    background-color: var(--lg-gris);
+    background-color: #F1F5F9;
+    border-left-color: #CBD5E1 !important;
+    filter: grayscale(1);
 }
 
 .modal-producto.is-agotado:hover {
-    background-color: var(--lg-gris);
+    background-color: #F1F5F9;
     border-color: var(--lg-borde);
+    transform: none;
+}
+
+.modal-producto.is-agotado .modal-producto-nombre,
+.modal-producto.is-agotado .modal-producto-precio {
+    color: #94A3B8 !important;
 }
 
 .lg-empty {
@@ -1122,6 +1244,29 @@ body {
 }
 
 .lg-empty i { font-size: 2.2rem; display: block; margin-bottom: 12px; opacity: 0.6; }
+
+/* Chips: filtro de categorías en compras y permisos de un rol */
+.lg-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    border: 1px solid var(--lg-borde);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    background-color: var(--lg-blanco);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.lg-chip.is-activo {
+    background-color: var(--lg-rojo);
+    border-color: var(--lg-rojo);
+    color: #fff;
+}
+
+.lg-chip:hover {
+    background-color: var(--lg-gris);
+}
 
 /* AdminLTE colapsa el sidebar con -250px; lo ajustamos a nuestro ancho */
 .sidebar-mini.sidebar-collapse .main-sidebar {

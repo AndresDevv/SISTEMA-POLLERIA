@@ -5,6 +5,7 @@
 
 require_once __DIR__ . '/../../models/Venta.php';
 require_once __DIR__ . '/../../models/Pedido.php';
+require_once __DIR__ . '/../../models/Dashboard.php';
 
 $ventaModel   = new Venta();
 $pedidoModel  = new Pedido();
@@ -13,11 +14,11 @@ $ventasHoy    = $ventaModel->delDia();
 $pedidosHoy   = $pedidoModel->listar('hoy');
 $porCategoria = $ventaModel->porCategoria();
 $totalHoy     = $ventaModel->totalHoy();
-$ganancia     = $totalHoy;
 
-/**
- * Agrupa el total de los pedidos del día por categoría de producto.
- */
+// Egresos y gastos registrados hoy (alimentan el movements de caja)
+$gastosHoy = Dashboard::egresosPublicos();
+
+$ganancia    = $totalHoy - $gastosHoy;
 $porCategoriaPedidos = $pedidoModel->porCategoriaDia();
 
 $clientes = count($ventasHoy);
@@ -191,7 +192,7 @@ $resumen  = $porCategoriaPedidos;
         <div class="lg-movement">
             <span class="lg-dot lg-dot--out"><i class="fa fa-arrow-down"></i></span>
             <span class="lg-movement-label">Gastos del d&iacute;a</span>
-            <span class="lg-movement-value"><?= soles(0) ?></span>
+            <span class="lg-movement-value"><?= soles($gastosHoy) ?></span>
         </div>
 
     </div>

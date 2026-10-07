@@ -20,7 +20,10 @@ class Mesa
                     m.id,
                     m.numero,
                     m.capacidad,
-                    m.estado
+                    m.estado,
+                    m.reservado_por,
+                    m.reservado_hora,
+                    m.reservado_fecha
                 FROM mesas m
                 ORDER BY m.numero";
 
@@ -39,7 +42,8 @@ class Mesa
     public function porId(int $id): ?array
     {
         $stmt = $this->conexion->prepare(
-            "SELECT id, numero, capacidad, estado FROM mesas WHERE id = :id LIMIT 1"
+            "SELECT id, numero, capacidad, estado, reservado_por, reservado_hora, reservado_fecha
+             FROM mesas WHERE id = :id LIMIT 1"
         );
         $stmt->execute([':id' => $id]);
         $mesa = $stmt->fetch();
@@ -105,13 +109,39 @@ class Mesa
         $estado = $this->estadoVisual($mesa);
 
         return match ($estado) {
-            'ocupada' => $this->tiempoOcupacion($mesa) . ' min',
-            default   => ''
+            // En una reserva se muestra a nombre de quién quedó
+            'reservada' => $this->textoReserva($mesa),
+            'ocupada'   => $this->tiempoOcupacion($mesa) . ' min',
+            default     => ''
         };
     }
 
     /**
+     * Texto de la reserva: nombre de la persona y hora estimada.
+     */
+    private function textoReserva(array $mesa): string
+    {
+        $nombre = trim((string) ($mesa['reservado_por'] ?? ''));
+        $hora   = $mesa['reservado_hora'] ?? null;
+
+        if ($nombre === '' && !$hora) {
+            return 'Reservada';
+        }
+
+        $texto = $nombre !== '' ? $nombre : 'Reservada';
+
+        if ($hora) {
+            $texto .= ' · ' . date('H:i', strtotime($hora));
+        }
+
+        return $texto;
+    }
+
+    /**
      * Cambia el estado de una mesa (libre, ocupada o reservada).
+     *
+     * Al dejar de estar reservada se borran los datos de la reserva, para
+     * que no quede el nombre de alguien pegado a una mesa ya libre.
      */
     public function cambiarEstado(int $id, string $estado): bool
     {
@@ -121,22 +151,52 @@ class Mesa
             return false;
         }
 
-        $stmt = $this->conexion->prepare(
-            "UPDATE mesas SET estado = :estado WHERE id = :id"
-        );
+        $sql = "UPDATE mesas SET estado = :estado";
+
+        if ($estado !== 'reservada') {
+            $sql .= ', reservado_por = NULL, reservado_hora = NULL, reservado_fecha = NULL';
+        }
+
+        $sql .= ' WHERE id = :id';
+
+        $stmt = $this->conexion->prepare($sql);
 
         return $stmt->execute([':estado' => $estado, ':id' => $id]);
     }
 
     /**
-     * Registra una reserva: la mesa queda en amarillo.
+     * Registra una reserva: la mesa queda en amarillo y guarda a nombre de
+     * quién quedó, para que el salón muestre quién la reservó.
      *
      * @param string $nombre  a nombre de quién
      * @param string $hora    hora estimada, formato H:i
      */
-    public function reservar(int $id, string $nombre = '', string $hora = ''): bool
+    public function reservar(int $id, string $nombre = '', string $hora = ''): array
     {
-        return $this->cambiarEstado($id, 'reservada');
+        $nombre = mb_substr(trim($nombre), 0, 100);
+        $hora   = preg_match('/^\d{1,2}:\d{2}$/', $hora) ? $hora : null;
+
+        try {
+            $stmt = $this->conexion->prepare(
+                "UPDATE mesas
+                 SET estado = 'reservada',
+                     reservado_por = :nombre,
+                     reservado_hora = :hora,
+                     reservado_fecha = CURDATE()
+                 WHERE id = :id"
+            );
+
+            $stmt->execute([
+                ':nombre' => $nombre !== '' ? $nombre : null,
+                ':hora'   => $hora,
+                ':id'     => $id
+            ]);
+
+            return ['success' => true, 'message' => 'Mesa reservada.'];
+
+        } catch (PDOException $e) {
+            return ['success' => false, 'message' => 'No se pudo reservar: ' . $e->getMessage()];
+        }
     }
 
     /**

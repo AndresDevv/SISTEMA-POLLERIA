@@ -40,13 +40,11 @@ $usuarioActual = usuarioActual();
 
                 <div class="dropdown-divider"></div>
 
-                <a href="<?= url('dashboard') ?>" class="dropdown-item">
-                    <i class="fa fa-home mr-2"></i> Dashboard
-                </a>
-
-                <a href="<?= url('mesas') ?>" class="dropdown-item">
-                    <i class="fa fa-table mr-2"></i> Mesas y Pedidos
-                </a>
+                <?php if (esPermitido('mesas')): ?>
+                    <a href="<?= url('mesas') ?>" class="dropdown-item">
+                        <i class="fa fa-table mr-2"></i> Mesas y Pedidos
+                    </a>
+                <?php endif; ?>
 
                 <div class="dropdown-divider"></div>
 

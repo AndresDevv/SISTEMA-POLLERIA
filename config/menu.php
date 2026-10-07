@@ -3,9 +3,11 @@
 /**
  * Menú lateral del sistema.
  *
- * "roles" => null  : visible para cualquier usuario autenticado
- * "roles" => array : visible solo para esos roles
- *                   (si no, 'esPermitido()' decide con permisosPorDefecto())
+ * La visibilidad la decide \Permiso a partir de las tablas
+ * permisos / rol_permiso, no una lista fija de roles.
+ *
+ * "oculto": la página existe y se puede llegar por URL, pero no aparece en el menú
+ *           (por ejemplo, "Pedidos", que cuelga de Mesas y Pedidos).
  */
 
 function menuSistema(): array
@@ -14,128 +16,77 @@ function menuSistema(): array
         [
             'titulo' => 'Dashboard',
             'icono'  => 'fa fa-home',
-            'pagina' => 'dashboard',
-            'roles'  => null
+            'pagina' => 'dashboard'
         ],
         [
             'titulo' => 'Ventas',
             'icono'  => 'fa fa-bar-chart',
-            'pagina' => 'ventas',
-            'roles'  => null
+            'pagina' => 'ventas'
         ],
         [
             'titulo' => 'Mesas y Pedidos',
             'icono'  => 'fa fa-table',
-            'pagina' => 'mesas',
-            'roles'  => null
+            'pagina' => 'mesas'
         ],
         [
             'titulo' => 'Pedidos',
             'icono'  => 'fa fa-list-alt',
             'pagina' => 'pedidos',
-            'roles'  => null,
             'oculto' => true
         ],
         [
             'titulo' => 'Inventario',
             'icono'  => 'fa fa-cube',
-            'pagina' => 'inventario',
-            'roles'  => null
+            'pagina' => 'inventario'
         ],
         [
             'titulo' => 'Compras',
             'icono'  => 'fa fa-shopping-cart',
-            'pagina' => 'compras',
-            'roles'  => null
+            'pagina' => 'compras'
         ],
         [
             'titulo' => 'Finanzas',
             'icono'  => 'fa fa-folder-open',
-            'pagina' => 'finanzas',
-            'roles'  => ['administrador']
+            'pagina' => 'finanzas'
         ],
         [
             'titulo' => 'Personal',
             'icono'  => 'fa fa-users',
-            'pagina' => 'personal',
-            'roles'  => ['administrador']
+            'pagina' => 'personal'
         ],
         [
             'titulo' => 'Servicios',
-            'icono'  => 'fa fa-cutlery',
-            'pagina' => 'servicios',
-            'roles'  => null
+            'icono'  => 'fa fa-bolt',
+            'pagina' => 'servicios'
         ],
         [
             'titulo' => 'Reportes',
             'icono'  => 'fa fa-file-text',
-            'pagina' => 'reportes',
-            'roles'  => ['administrador', 'supervisor']
+            'pagina' => 'reportes'
         ],
         [
             'titulo' => 'Configuración',
             'icono'  => 'fa fa-cog',
-            'pagina' => 'configuracion',
-            'roles'  => ['administrador']
+            'pagina' => 'configuracion'
         ]
     ];
 }
 
 /**
- * Permisos por rol.
- *
- * Los nombres siguen la tabla `roles` de la base de datos:
- *   1 = Administrador, 2 = Mesero, 3 = Cocina
- */
-function permisosPorRol(): array
-{
-    return [
-        'administrador' => [
-            'dashboard', 'ventas', 'mesas', 'pedidos', 'inventario', 'compras',
-            'finanzas', 'personal', 'servicios', 'reportes', 'configuracion'
-        ],
-        'supervisor' => [
-            'dashboard', 'ventas', 'mesas', 'pedidos', 'inventario',
-            'compras', 'finanzas', 'servicios', 'reportes'
-        ],
-        'cajero' => [
-            'dashboard', 'ventas', 'mesas', 'pedidos', 'inventario', 'compras'
-        ],
-        'mesero' => [
-            'dashboard', 'ventas', 'mesas', 'pedidos', 'servicios'
-        ],
-        'cocina' => [
-            'dashboard', 'mesas', 'pedidos', 'inventario', 'servicios'
-        ]
-    ];
-}
-
-/**
- * Rol actual en minúsculas.
+ * Rol actual tal como viene de la base.
  */
 function rolActual(): string
 {
-    return strtolower(trim((string) ($_SESSION['rol'] ?? '')));
+    return trim((string) ($_SESSION['rol'] ?? ''));
 }
 
 /**
- * Indica si el usuario en sesión puede ver una página.
+ * Indica si el usuario en sesión puede ver una página,
+ * según los permisos de su rol.
  */
 function esPermitido(string $pagina): bool
 {
-    if (esAdministrador()) {
-        return true;
-    }
-
-    $permisos = permisosPorRol();
-    $rol = rolActual();
-
-    // Rol desconocido: solo el mínimo operativo
-    if (!isset($permisos[$rol])) {
-        return in_array($pagina, ['dashboard'], true);
-    }
-
-    return in_array($pagina, $permisos[$rol], true);
+    return \Permiso::puede($pagina);
 }
 
 /**
@@ -143,17 +94,15 @@ function esPermitido(string $pagina): bool
  */
 function menuVisible(array $item): bool
 {
-    if (esAdministrador()) {
-        return true;
+    if (!empty($item['roles'])) {
+        $rol = strtolower(rolActual());
+
+        if ($rol !== '' && !in_array($rol, array_map('strtolower', $item['roles']), true)) {
+            return false;
+        }
     }
 
-    if (empty($item['roles'])) {
-        return esPermitido($item['pagina']);
-    }
-
-    $rolActual = strtolower((string) ($_SESSION['rol'] ?? ''));
-
-    return in_array($rolActual, array_map('strtolower', $item['roles']), true);
+    return esPermitido($item['pagina']);
 }
 
 /**
@@ -162,6 +111,40 @@ function menuVisible(array $item): bool
 function url(string $pagina = ''): string
 {
     return $pagina === '' ? BASE_URL : BASE_URL . '?page=' . $pagina;
+}
+
+/**
+ * Primer nombre del usuario en sesión, para el saludo del menú.
+ * "Mesero de Prueba" -> "Mesero"
+ */
+function primerNombreDelUsuario(): string
+{
+    $completo = trim((string) ($_SESSION['nombre'] ?? ''));
+
+    if ($completo === '') {
+        return '';
+    }
+
+    $partes = preg_split('/\s+/', $completo);
+
+    return $partes[0] ?? '';
+}
+
+/**
+ * Primera página que el usuario en sesión puede ver.
+ *
+ * El mesero y el cocina no tienen dashboard, así que al entrar tienen que
+ * caer en algo que sí puedan ver y no en un error de permisos.
+ */
+function primeraPaginaPermitida(): string
+{
+    foreach (menuSistema() as $item) {
+        if (empty($item['oculto']) && menuVisible($item)) {
+            return $item['pagina'];
+        }
+    }
+
+    return 'dashboard';
 }
 
 /**
@@ -193,6 +176,31 @@ function encabezadoPagina(string $icono, string $titulo, string $subtitulo = '',
         <?php if ($acciones !== ''): ?>
             <div class="lg-page-head-actions"><?= $acciones ?></div>
         <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * Imprime las pestañas de un módulo.
+ *
+ * @param array $pestañas [['recurso' => 'x', 'titulo' => 'X', 'url' => '...'], ...]
+ */
+function PestanasModulo(array $pestañas, string $actual): void
+{
+    ?>
+    <div class="lg-segmentos mb-3">
+        <?php foreach ($pestañas as $p): ?>
+            <a href="<?= htmlspecialchars($p['url']) ?>"
+               class="lg-segmento<?= $p['clave'] === $actual ? ' is-activo' : '' ?>">
+                <?php if (!empty($p['icono'])): ?>
+                    <i class="fa <?= htmlspecialchars($p['icono']) ?>"></i>
+                <?php endif; ?>
+                <?= htmlspecialchars($p['titulo']) ?>
+                <?php if (isset($p['contador'])): ?>
+                    <span class="lg-segmento-badge"><?= (int) $p['contador'] ?></span>
+                <?php endif; ?>
+            </a>
+        <?php endforeach; ?>
     </div>
     <?php
 }

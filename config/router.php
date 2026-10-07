@@ -4,10 +4,11 @@
  * Router: define las páginas disponibles de la aplicación.
  *
  * Cada ruta puede tener:
- *   - vista     : archivo dentro de /views (sin extensión) que se incluirá
- *   - publica   : si es true no requiere sesión
- *   - titulo    : título del documento
- *   - permiso   : si es true exige un rol con acceso a la página
+ *   - vista   : archivo dentro de /views (sin extensión) que se incluirá
+ *   - publica : si es true no requiere sesión
+ *   - titulo  : título del documento
+ *   - accion  : acción especial (API, logout, exportar)
+ *   - permiso : permiso necesario para entrar
  */
 
 function rutas(): array
@@ -19,124 +20,146 @@ function rutas(): array
         ],
 
         'logout' => [
-            'accion'  => 'logout'
+            'accion' => 'logout'
         ],
 
         'dashboard' => [
-            'vista'   => 'admin/dashboard',
-            'titulo'  => 'Dashboard'
+            'vista'    => 'admin/dashboard',
+            'titulo'   => 'Dashboard',
+            'permiso'  => 'dashboard'
         ],
 
         'ventas' => [
             'vista'   => 'ventas/index',
-            'titulo'  => 'Ventas'
+            'titulo'  => 'Ventas',
+            'permiso' => 'ventas'
         ],
 
         'mesas' => [
             'vista'   => 'mesas/index',
-            'titulo'  => 'Mesas'
+            'titulo'  => 'Mesas',
+            'permiso' => 'mesas'
         ],
 
         'pedidos' => [
             'vista'   => 'mesas/pedidos',
-            'titulo'  => 'Pedidos'
+            'titulo'  => 'Pedidos',
+            'permiso' => 'pedidos_ver'
         ],
 
         'inventario' => [
             'vista'   => 'inventario/index',
-            'titulo'  => 'Inventario'
+            'titulo'  => 'Inventario',
+            'permiso' => 'inventario'
+        ],
+
+        'inventario/movimientos' => [
+            'vista'   => 'inventario/movimientos',
+            'titulo'  => 'Movimientos de inventario',
+            'permiso' => 'inventario'
         ],
 
         'compras' => [
             'vista'   => 'compras/index',
-            'titulo'  => 'Compras'
+            'titulo'  => 'Compras',
+            'permiso' => 'compras'
         ],
 
         'finanzas' => [
             'vista'   => 'finanzas/index',
             'titulo'  => 'Finanzas',
-            'permiso' => true
+            'permiso' => 'finanzas'
         ],
 
         'personal' => [
             'vista'   => 'personal/index',
             'titulo'  => 'Personal',
-            'permiso' => true
+            'permiso' => 'personal'
         ],
 
         'servicios' => [
             'vista'   => 'servicios/index',
-            'titulo'  => 'Servicios'
+            'titulo'  => 'Servicios',
+            'permiso' => 'servicios'
         ],
 
         'reportes' => [
             'vista'   => 'reportes/index',
             'titulo'  => 'Reportes',
-            'permiso' => true
-        ],
-
-        'categorias' => [
-            'vista'   => 'inventario/categorias',
-            'titulo'  => 'Categorías'
-        ],
-
-        'reportes/exportar' => [
-            'accion' => 'reporte_exportar',
-            'permiso' => true
+            'permiso' => 'reportes'
         ],
 
         'configuracion' => [
             'vista'   => 'configuracion/index',
             'titulo'  => 'Configuración',
-            'permiso' => true
+            'permiso' => 'configuracion'
         ],
 
-        // Acciones AJAX (no renderizan vistas)
+        // -----------------------------------------------
+        // Acciones AJAX
+        // -----------------------------------------------
         'api/pedido/crear' => [
-            'accion' => 'pedido_crear',
-            'api'    => true
+            'accion'  => 'pedido_crear',
+            'api'     => true,
+            'permiso' => 'pedidos_crear'
         ],
         'api/pedido/estado' => [
-            'accion' => 'pedido_estado',
-            'api'    => true
+            'accion'  => 'pedido_estado',
+            'api'     => true,
+            'permiso' => 'pedidos_estado'
         ],
-        // API de mesas: reservar, agregar y eliminar
-        'api/mesa/reservar' => [
-            'accion' => 'mesa_reservar',
-            'api'    => true
-        ],
-        'api/mesa/liberar' => [
-            'accion' => 'mesa_liberar',
-            'api'    => true
-        ],
-        'api/mesa/crear' => [
-            'accion' => 'mesa_crear',
-            'api'    => true
-        ],
-        'api/mesa/eliminar' => [
-            'accion' => 'mesa_eliminar',
-            'api'    => true
-        ],
-
         'api/pedido/listar' => [
-            'accion' => 'pedido_listar',
-            'api'    => true,
-            'soloGet' => true
+            'accion'  => 'pedido_listar',
+            'api'     => true,
+            'soloGet' => true,
+            'permiso' => 'pedidos_ver'
+        ],
+        'api/pedido/resumen' => [
+            'accion'  => 'pedido_resumen',
+            'api'     => true,
+            'soloGet' => true,
+            'permiso' => 'pedidos_ver'
         ],
         'api/pedido/actualizar' => [
-            'accion' => 'pedido_actualizar',
-            'api'    => true
+            'accion'  => 'pedido_actualizar',
+            'api'     => true,
+            'permiso' => 'pedidos_editar'
         ],
         'api/pedido/eliminar' => [
-            'accion' => 'pedido_eliminar',
-            'api'    => true
+            'accion'  => 'pedido_eliminar',
+            'api'     => true,
+            'permiso' => 'pedidos_editar'
         ],
         'api/pedido/cobrar' => [
-            'accion' => 'pedido_cobrar',
-            'api'    => true
+            'accion'  => 'pedido_cobrar',
+            'api'     => true,
+            'permiso' => 'cobrar'
         ],
 
-        // CRUD genérico de los módulos administrativos
+        'api/mesa/reservar' => [
+            'accion'  => 'mesa_reservar',
+            'api'     => true,
+            'permiso' => 'mesas_reservar'
+        ],
+        'api/mesa/liberar' => [
+            'accion'  => 'mesa_liberar',
+            'api'     => true,
+            'permiso' => 'mesas_reservar'
+        ],
+        // Agregar y eliminar mesas es solo del administrador. Antes estas dos
+        // rutas pedían 'mesas', que el mesero tiene, así que podía llamarlas
+        // directo aunque el botón no le saliera.
+        'api/mesa/crear' => [
+            'accion'  => 'mesa_crear',
+            'api'     => true,
+            'permiso' => 'mesas_editar'
+        ],
+        'api/mesa/eliminar' => [
+            'accion'  => 'mesa_eliminar',
+            'api'     => true,
+            'permiso' => 'mesas_editar'
+        ],
+
         'api/gestion/listar' => [
             'accion'  => 'gestion_listar',
             'api'     => true,
@@ -147,18 +170,59 @@ function rutas(): array
             'api'     => true,
             'soloGet' => true
         ],
+        // Estas cuatro no declaran permiso: cada recurso lleva el suyo
+        // y lo revisa GestionController antes de tocar la base.
         'api/gestion/crear' => [
-            'accion' => 'gestion_crear',
-            'api'    => true
+            'accion'  => 'gestion_crear',
+            'api'     => true
         ],
         'api/gestion/actualizar' => [
-            'accion' => 'gestion_actualizar',
-            'api'    => true
+            'accion'  => 'gestion_actualizar',
+            'api'     => true
         ],
         'api/gestion/eliminar' => [
-            'accion' => 'gestion_eliminar',
-            'api'    => true
+            'accion'  => 'gestion_eliminar',
+            'api'     => true
         ],
+
+        'api/inventario/ajustar' => [
+            'accion'  => 'inventario_ajustar',
+            'api'     => true,
+            'permiso' => 'inventario_editar'
+        ],
+
+        'api/compra/registrar' => [
+            'accion'  => 'compra_registrar',
+            'api'     => true,
+            'permiso' => 'compras'
+        ],
+        'api/compra/anular' => [
+            'accion'  => 'compra_anular',
+            'api'     => true,
+            'permiso' => 'compras'
+        ],
+        'api/compra/detalle' => [
+            'accion'  => 'compra_detalle',
+            'api'     => true,
+            'soloGet' => true,
+            'permiso' => 'compras'
+        ],
+
+        'api/personal/asistencia' => [
+            'accion'  => 'personal_asistencia',
+            'api'     => true,
+            'permiso' => 'personal'
+        ],
+        'api/personal/pago' => [
+            'accion'  => 'personal_pago',
+            'api'     => true,
+            'permiso' => 'personal'
+        ],
+
+        'reportes/exportar' => [
+            'accion'  => 'reporte_exportar',
+            'permiso' => 'reportes'
+        ]
     ];
 }
 

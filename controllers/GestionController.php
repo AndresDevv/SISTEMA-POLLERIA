@@ -1,13 +1,20 @@
 <?php
 
 require_once __DIR__ . '/../models/Gestion.php';
+require_once __DIR__ . '/../models/Permiso.php';
 
 /**
  * API CRUD genérica de los módulos administrativos.
+ *
+ * Cada recurso tiene su propio permiso (ver / editar), porque las rutas
+ * api/gestion/* son las mismas para todos los módulos y un solo permiso
+ * dejaría pasar escrituras, por ejemplo, de un mesero en finanzas.
  */
 class GestionController
 {
     private Gestion $gestion;
+
+    private ?array $cuerpo = null;
 
     public function __construct()
     {
@@ -16,30 +23,59 @@ class GestionController
 
     /**
      * Acepta JSON y formulario.
+     *
+     * php://input solo se puede leer una vez, así que el cuerpo se guarda:
+     * recurso() y crear() lo necesitan los dos.
      */
     private function cuerpo(): array
     {
+        if ($this->cuerpo !== null) {
+            return $this->cuerpo;
+        }
+
         $crudo = file_get_contents('php://input') ?: '';
 
         if ($crudo !== '') {
             $json = json_decode($crudo, true);
 
             if (is_array($json)) {
-                return $json;
+                return $this->cuerpo = $json;
             }
         }
 
-        return is_array($_POST) ? $_POST : [];
+        return $this->cuerpo = is_array($_POST) ? $_POST : [];
     }
 
     private function recurso(): ?string
     {
         $datos = $this->cuerpo();
-        $query = $_GET;
 
-        $recurso = $datos['recurso'] ?? $query['recurso'] ?? null;
+        $recurso = $datos['recurso'] ?? $_GET['recurso'] ?? null;
 
         return is_string($recurso) && Gestion::recurso($recurso) ? $recurso : null;
+    }
+
+    /**
+     * ¿El usuario en sesión tiene el permiso de este recurso?
+     */
+    private function permite(string $recurso, string $accion): bool
+    {
+        return Gestion::puede($recurso, $accion);
+    }
+
+    /**
+     * Corta la petición con 403 si falta el permiso.
+     */
+    private function exigir(string $recurso, string $accion): void
+    {
+        if ($this->permite($recurso, $accion)) {
+            return;
+        }
+
+        $this->responder([
+            'success' => false,
+            'message' => 'No tienes permiso para esta acción.'
+        ], 403);
     }
 
     public function listar(): void
@@ -49,6 +85,8 @@ class GestionController
         if (!$recurso) {
             $this->responder(['success' => false, 'filas' => []], 422);
         }
+
+        $this->exigir($recurso, 'ver');
 
         $buscar = $_GET['buscar'] ?? '';
 
@@ -60,6 +98,7 @@ class GestionController
 
     /**
      * Opciones para poblar los campos tipo relación.
+     * Solo expone tablas de recursos que el usuario puede ver.
      */
     public function opciones(): void
     {
@@ -67,6 +106,25 @@ class GestionController
 
         if (!is_string($tabla) || !preg_match('/^[a-z_]+$/', $tabla)) {
             $this->responder(['success' => false, 'filas' => []], 422);
+        }
+
+        $permitida = false;
+
+        foreach (Gestion::recursosConPermiso() as $recurso) {
+
+            $def = Gestion::recurso($recurso);
+
+            if (($def['tabla'] ?? '') === $tabla && $this->permite($recurso, 'ver')) {
+                $permitida = true;
+                break;
+            }
+        }
+
+        if (!$permitida) {
+            $this->responder([
+                'success' => false,
+                'message' => 'No tienes permiso para esta acción.'
+            ], 403);
         }
 
         $this->responder([
@@ -83,6 +141,8 @@ class GestionController
             $this->responder(['success' => false, 'message' => 'Recurso desconocido.'], 422);
         }
 
+        $this->exigir($recurso, 'editar');
+
         $resultado = $this->gestion->crear($recurso, $this->cuerpo());
 
         $this->responder($resultado, $resultado['success'] ? 201 : 422);
@@ -95,6 +155,8 @@ class GestionController
         if (!$recurso) {
             $this->responder(['success' => false, 'message' => 'Recurso desconocido.'], 422);
         }
+
+        $this->exigir($recurso, 'editar');
 
         $id = (int) ($this->cuerpo()['id'] ?? 0);
 
@@ -114,6 +176,8 @@ class GestionController
         if (!$recurso) {
             $this->responder(['success' => false, 'message' => 'Recurso desconocido.'], 422);
         }
+
+        $this->exigir($recurso, 'editar');
 
         $id = (int) ($this->cuerpo()['id'] ?? 0);
 

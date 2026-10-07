@@ -76,7 +76,7 @@ $indicadores = [
     ],
     [
         'icono'  => 'fa fa-cube',
-        'titulo' => 'Productos con stock bajo',
+        'titulo' => 'Productos con stock bajo', 
         'valor'  => (string) $m['stock_bajo'],
         'tono'   => 'is-red'
     ],

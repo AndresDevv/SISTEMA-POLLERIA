@@ -55,6 +55,15 @@ class Dashboard
 
     /**
      * Egresos del día, sumando egresos y gastos.
+     * Las vistas también lo usan para mostrarlo en caja.
+     */
+    public static function egresosPublicos(string $fecha = ''): float
+    {
+        return self::egresosDe(conexionDB(), self::validar($fecha));
+    }
+
+    /**
+     * Egresos de un día, sumando egresos y gastos.
      */
     private static function egresosDe(PDO $db, string $fecha): float
     {

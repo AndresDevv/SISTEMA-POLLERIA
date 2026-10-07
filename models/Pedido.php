@@ -139,6 +139,45 @@ class Pedido
         try {
             $this->conexion->beginTransaction();
 
+            $stmt = $this->conexion->prepare("SELECT usuario_id, mesa_id FROM pedidos WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $pedido = $stmt->fetch();
+
+            if (!$pedido) {
+                $this->conexion->rollBack();
+
+                return false;
+            }
+
+            $usuarioId = (int) ($pedido['usuario_id'] ?? 0);
+
+            // Stock: solo se mueve la diferencia entre lo que había y lo nuevo
+            $anteriores = $this->cantidadesPorProducto($id);
+            $nuevas = [];
+
+            foreach ($precios as $item) {
+                $nuevas[$item['id']] = ($nuevas[$item['id']] ?? 0) + (float) $item['cantidad'];
+            }
+
+            $todos = array_unique(array_merge(array_keys($anteriores), array_keys($nuevas)));
+
+            foreach ($todos as $idProducto) {
+                $delta = ($nuevas[$idProducto] ?? 0) - ($anteriores[$idProducto] ?? 0);
+
+                $error = $this->aplicarDeltaStock(
+                    (int) $idProducto,
+                    $delta,
+                    'Ajuste pedido N° ' . $id,
+                    $usuarioId
+                );
+
+                if ($error !== null) {
+                    $this->conexion->rollBack();
+
+                    return false;
+                }
+            }
+
             $stmt = $this->conexion->prepare("DELETE FROM detalle_pedidos WHERE pedido_id = :id");
             $stmt->execute([':id' => $id]);
 
@@ -175,11 +214,35 @@ class Pedido
 
     /**
      * Elimina un pedido con sus detalles.
+     *
+     * El stock que se había descontado vuelve al almacén, para que el
+     * inventario no se quede corto por un pedido que ya no existe.
      */
     public function eliminar(int $id): bool
     {
         try {
             $this->conexion->beginTransaction();
+
+            $stmt = $this->conexion->prepare("SELECT mesa_id, usuario_id FROM pedidos WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $pedido = $stmt->fetch();
+
+            if (!$pedido) {
+                $this->conexion->rollBack();
+
+                return false;
+            }
+
+            $usuarioId = (int) ($pedido['usuario_id'] ?? 0);
+
+            foreach ($this->cantidadesPorProducto($id) as $idProducto => $cantidad) {
+                $this->aplicarDeltaStock(
+                    (int) $idProducto,
+                    -$cantidad,
+                    'Eliminación pedido N° ' . $id,
+                    $usuarioId
+                );
+            }
 
             $stmt = $this->conexion->prepare("DELETE FROM ventas WHERE pedido_id = :id");
             $stmt->execute([':id' => $id]);
@@ -187,16 +250,10 @@ class Pedido
             $stmt = $this->conexion->prepare("DELETE FROM detalle_pedidos WHERE pedido_id = :id");
             $stmt->execute([':id' => $id]);
 
-            $stmt = $this->conexion->prepare("SELECT mesa_id FROM pedidos WHERE id = :id");
-            $stmt->execute([':id' => $id]);
-            $mesaId = $stmt->fetchColumn();
-
             $stmt = $this->conexion->prepare("DELETE FROM pedidos WHERE id = :id");
             $stmt->execute([':id' => $id]);
 
-            if ($mesaId) {
-                $this->liberarMesaSiProcede((int) $mesaId);
-            }
+            $this->liberarMesaSiProcede((int) $pedido['mesa_id']);
 
             $this->conexion->commit();
 
@@ -439,8 +496,18 @@ class Pedido
                 ];
             }
 
+            // Si el mismo producto viene repetido, se junta en una sola línea
+            foreach ($precios as &$linea) {
+                if ($linea['id'] === (int) $producto['id']) {
+                    $linea['cantidad'] += $cantidad;
+                    continue 2;
+                }
+            }
+            unset($linea);
+
             $precios[] = [
                 'id'       => (int) $producto['id'],
+                'nombre'   => $producto['nombre'],
                 'cantidad' => $cantidad,
                 'precio'   => (float) $producto['precio']
             ];
@@ -486,6 +553,23 @@ class Pedido
                 ]);
             }
 
+            // El stock baja al tomar el pedido: lo que está en cocina ya no
+            // está en el almacén. Si no alcanza, se cae toda la operación.
+            foreach ($precios as $item) {
+                $error = $this->aplicarDeltaStock(
+                    $item['id'],
+                    $item['cantidad'],
+                    'Pedido N° ' . $pedidoId,
+                    $usuarioId
+                );
+
+                if ($error !== null) {
+                    $this->conexion->rollBack();
+
+                    return ['success' => false, 'message' => $error];
+                }
+            }
+
             // La mesa queda ocupada mientras haya el pedido
             $stmt = $this->conexion->prepare(
                 "UPDATE mesas SET estado = 'ocupada' WHERE id = :id AND estado = 'libre'"
@@ -501,6 +585,86 @@ class Pedido
 
             return ['success' => false, 'message' => 'No se pudo guardar el pedido: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Aplica un cambio de stock y deja el movimiento correspondiente.
+     *
+     * $delta va con signo: positivo descuenta (salida), negativo repone
+     * (entrada). Se bloquea la fila del producto porque dos pedidos a la vez
+     * no pueden leer el mismo stock y descontarlo los dos.
+     *
+     * @return string|null mensaje de error, o null si todo salió bien
+     */
+    private function aplicarDeltaStock(
+        int $productoId,
+        float $delta,
+        string $motivo,
+        int $usuarioId
+    ): ?string {
+        if ($delta == 0.0) {
+            return null;
+        }
+
+        $stmt = $this->conexion->prepare(
+            "SELECT nombre, stock FROM productos WHERE id = :id FOR UPDATE"
+        );
+        $stmt->execute([':id' => $productoId]);
+        $producto = $stmt->fetch();
+
+        if (!$producto) {
+            return 'Uno de los productos ya no está disponible.';
+        }
+
+        $anterior = (float) $producto['stock'];
+        $nuevo    = $anterior - $delta;   // delta positivo resta, negativo suma
+
+        if ($nuevo < 0) {
+            return 'No hay stock suficiente de "' . $producto['nombre'] . '": quedan '
+                . rtrim(rtrim(number_format($anterior, 2, '.', ''), '0'), '.') . '.';
+        }
+
+        $stmt = $this->conexion->prepare("UPDATE productos SET stock = :stock WHERE id = :id");
+        $stmt->execute([':stock' => $nuevo, ':id' => $productoId]);
+
+        $stmt = $this->conexion->prepare(
+            "INSERT INTO movimientos_inventario
+                (producto_id, usuario_id, tipo, cantidad, stock_anterior, stock_nuevo, motivo)
+             VALUES (:producto_id, :usuario_id, :tipo, :cantidad, :anterior, :nuevo, :motivo)"
+        );
+        $stmt->execute([
+            ':producto_id' => $productoId,
+            ':usuario_id'  => $usuarioId > 0 ? $usuarioId : null,
+            ':tipo'        => $delta > 0 ? 'salida' : 'entrada',
+            ':cantidad'    => abs($delta),
+            ':anterior'    => $anterior,
+            ':nuevo'       => $nuevo,
+            ':motivo'      => $motivo
+        ]);
+
+        return null;
+    }
+
+    /**
+     * Cantidades de un pedido agrupadas por producto.
+     */
+    private function cantidadesPorProducto(int $pedidoId): array
+    {
+        $stmt = $this->conexion->prepare(
+            "SELECT producto_id, SUM(cantidad) AS cantidad
+             FROM detalle_pedidos
+             WHERE pedido_id = :id
+             GROUP BY producto_id"
+        );
+        $stmt->execute([':id' => $pedidoId]);
+
+        $cantidades = [];
+
+        foreach ($stmt->fetchAll() as $fila) {
+            $cantidades[(int) $fila['producto_id']] = (float) $fila['cantidad'];
+        }
+
+        return $cantidades;
     }
 
     /**

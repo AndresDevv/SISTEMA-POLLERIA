@@ -45,18 +45,13 @@ class MesaController
             $this->responder(['success' => false, 'message' => 'La mesa no existe.'], 404);
         }
 
-        $ok = $this->mesaModel->reservar(
+        $resultado = $this->mesaModel->reservar(
             $id,
             trim((string) ($datos['nombre'] ?? '')),
             trim((string) ($datos['hora'] ?? ''))
         );
 
-        $this->responder(
-            $ok
-                ? ['success' => true, 'message' => 'Mesa reservada.']
-                : ['success' => false, 'message' => 'No se pudo reservar la mesa.'],
-            $ok ? 200 : 422
-        );
+        $this->responder($resultado, $resultado['success'] ? 200 : 422);
     }
 
     /**

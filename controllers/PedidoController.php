@@ -3,18 +3,21 @@
 require_once __DIR__ . '/../models/Pedido.php';
 require_once __DIR__ . '/../models/Mesa.php';
 require_once __DIR__ . '/../models/Venta.php';
+require_once __DIR__ . '/../config/database.php';
 
 class PedidoController
 {
     private Pedido $pedidoModel;
     private Mesa $mesaModel;
     private Venta $ventaModel;
+    private PDO $db;
 
     public function __construct()
     {
         $this->pedidoModel = new Pedido();
         $this->mesaModel = new Mesa();
         $this->ventaModel = new Venta();
+        $this->db = conexionDB();
     }
 
     /**
@@ -212,6 +215,41 @@ class PedidoController
     /**
      * Devuelve los pedidos de una mesa, para mostrarlos en el modal.
      */
+    /**
+     * Huella de los pedidos activos.
+     *
+     * El mesero no tiene un botón de refrescar, así que compara este resumen
+     * con el que tenía al cargar la página. Si cocina cambió un estado, la
+     * huella cambia y la pantalla se recarga sola.
+     */
+public function resumen(): void
+    {
+        $stmt = $this->db->query(
+            "SELECT id, estado, total
+             FROM pedidos
+             WHERE estado IN ('pendiente','preparando','preparado')
+             ORDER BY id"
+        );
+
+        $pedidos = array_map(static function (array $fila): array {
+            return [
+                'id'     => (int) $fila['id'],
+                'estado' => $fila['estado'],
+                'total'  => (float) $fila['total']
+            ];
+        }, $stmt->fetchAll());
+
+        $stmt = $this->db->query(
+            "SELECT COUNT(*) FROM ventas WHERE estado = 'pagada'"
+        );
+
+        $this->responder([
+            'success' => true,
+            'huella'  => md5(json_encode([$pedidos, (int) $stmt->fetchColumn()])),
+            'total'   => count($pedidos)
+        ]);
+    }
+
     public function listar(): void
     {
         $mesaId = (int) ($_GET['mesa_id'] ?? 0);
