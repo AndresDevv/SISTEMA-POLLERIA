@@ -85,7 +85,8 @@ class Compra
 
         foreach ($items as $item) {
             $id       = (int) ($item['id'] ?? 0);
-            $cantidad = (float) ($item['cantidad'] ?? 0);
+            // Las cantidades son unidades enteras; el precio sí lleva céntimos
+            $cantidad = (int) ($item['cantidad'] ?? 0);
             $precio   = round((float) ($item['precio'] ?? 0), 2);
 
             if ($id <= 0 || $cantidad <= 0) {

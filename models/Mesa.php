@@ -31,6 +31,8 @@ class Mesa
         $mesas = $stmt->fetchAll();
 
         foreach ($mesas as &$mesa) {
+            // El estado se calcula una sola vez y se reutiliza, para no
+            // repetir la consulta de pedidos ni la corrección del enum
             $mesa['estado_visual'] = $this->estadoVisual($mesa);
             $mesa['tiempo']        = $this->tiempoOcupacion($mesa);
             $mesa['detalle']       = $this->detalle($mesa);
@@ -52,10 +54,50 @@ class Mesa
     }
 
     /**
+     * ¿La mesa tiene algún pedido sin cobrar?
+     *
+     * Esta es la única regla de ocupación del sistema, y la comparten la
+     * pantalla y la liberación automática.
+     *
+     * Lo que marca el final de una mesa es el COBRO, no el estado del
+     * pedido: un plato que se sirve sigue sin pagarse, así que la mesa
+     * tiene que seguir ocupada para que el mesero pueda cobrarla.
+     *
+     * @return array ['tiene' => bool, 'ultimo' => ?string fecha del último]
+     */
+    private function pendientesDeCobro(int $mesaId): array
+    {
+        $stmt = $this->conexion->prepare(
+            "SELECT COUNT(*) AS n, MAX(p.fecha_creacion) AS ultimo
+             FROM pedidos p
+             LEFT JOIN ventas v
+                    ON v.pedido_id = p.id AND v.estado = 'pagada'
+             WHERE p.mesa_id = :mesa
+               AND v.id IS NULL
+               AND p.estado <> 'anulado'"
+        );
+        $stmt->execute([':mesa' => $mesaId]);
+
+        $fila = $stmt->fetch() ?: ['n' => 0, 'ultimo' => null];
+
+        return [
+            'tiene'  => (int) $fila['n'] > 0,
+            'ultimo' => $fila['ultimo']
+        ];
+    }
+
+    /**
      * Traduce el estado de la base al que muestra la interfaz.
      *
-     * "Ocupada" también se deriva de tener pedidos sin terminar, para que una
-     * mesa no quede verde aunque el enum siga en 'libre'.
+     * Los pedidos son la fuente de verdad, no el enum. El enum se guarda
+     * 'ocupada' al tomar un pedido, pero puede quedarse desfasado si el
+     * pedido se cierra por otra vía. Por eso se comprueba en los dos
+     * sentidos:
+     *
+     *   - hay pedidos sin cobrar -> ocupada, aunque el enum diga 'libre'
+     *   - no hay pedidos sin cobrar -> libre, aunque diga 'ocupada'
+     *
+     * Solo la reserva manda sobre el enum, porque no depende de pedidos.
      */
     private function estadoVisual(array $mesa): string
     {
@@ -63,36 +105,50 @@ class Mesa
             return 'reservada';
         }
 
-        if ($mesa['estado'] === 'ocupada') {
-            return 'ocupada';
+        $estado = $this->pendientesDeCobro((int) $mesa['id'])['tiene']
+            ? 'ocupada'
+            : 'libre';
+
+        // El enum quedó desfasado: se corrige para que la base tampoco mienta
+        if ($mesa['estado'] !== $estado) {
+            $this->corregirEstado($mesa['id'], $estado);
+            $mesa['estado'] = $estado;
         }
 
-        $stmt = $this->conexion->prepare(
-            "SELECT COUNT(*)
-             FROM pedidos
-             WHERE mesa_id = :mesa
-               AND estado IN ('pendiente','preparando','preparado')"
-        );
-        $stmt->execute([':mesa' => $mesa['id']]);
-
-        return (int) $stmt->fetchColumn() > 0 ? 'ocupada' : 'libre';
+        return $estado;
     }
 
     /**
-     * Minutos transcurridos desde el último pedido entregado.
+     * Deja el enum de la mesa igual al estado real.
+     */
+    private function corregirEstado(int $mesaId, string $estado): void
+    {
+        try {
+            $stmt = $this->conexion->prepare(
+                "UPDATE mesas
+                 SET estado = :estado,
+                     reservado_por = NULL,
+                     reservado_hora = NULL,
+                     reservado_fecha = NULL
+                 WHERE id = :id AND estado <> 'reservada'"
+            );
+
+            $stmt->execute([':estado' => $estado, ':id' => $mesaId]);
+
+        } catch (PDOException $e) {
+            // Si no se puede corregir, al menos la pantalla ya muestra bien
+        }
+    }
+
+    /**
+     * Minutos transcurridos desde el último pedido sin cobrar.
+     *
+     * Se cuentan también los ya servidos, porque mientras no estén pagados
+     * la mesa sigue ocupada y el mesero necesita ver cuánto lleva.
      */
     private function tiempoOcupacion(array $mesa): ?int
     {
-        $stmt = $this->conexion->prepare(
-            "SELECT fecha_creacion
-             FROM pedidos
-             WHERE mesa_id = :mesa
-               AND estado IN ('pendiente','preparando','preparado','entregado')
-             ORDER BY fecha_creacion DESC
-             LIMIT 1"
-        );
-        $stmt->execute([':mesa' => $mesa['id']]);
-        $fecha = $stmt->fetchColumn();
+        $fecha = $this->pendientesDeCobro((int) $mesa['id'])['ultimo'];
 
         if (!$fecha) {
             return null;
@@ -103,10 +159,12 @@ class Mesa
 
     /**
      * Texto secundario de la tarjeta de mesa.
+     *
+     * Usa el estado ya calculado en listar(), no lo vuelve a pedir.
      */
     private function detalle(array $mesa): string
     {
-        $estado = $this->estadoVisual($mesa);
+        $estado = $mesa['estado_visual'] ?? $this->estadoVisual($mesa);
 
         return match ($estado) {
             // En una reserva se muestra a nombre de quién quedó

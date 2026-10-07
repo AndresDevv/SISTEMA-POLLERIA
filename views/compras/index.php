@@ -149,7 +149,7 @@ encabezadoPagina(
                             data-nombre-texto="<?= htmlspecialchars($p['nombre']) ?>">
                         <span class="modal-producto-nombre"><?= htmlspecialchars($p['nombre']) ?></span>
                         <span class="modal-producto-precio <?= $clase ?>">
-                            Stock: <?= number_format((float) $p['stock'], 2) ?>
+                            Stock: <?= unidades($p['stock']) ?>
                             &middot; <?= htmlspecialchars(estadosStock()[$nivel]['etiqueta']) ?>
                         </span>
                     </button>
@@ -251,7 +251,7 @@ encabezadoPagina(
                                 <td class="text-muted"><?= htmlspecialchars($c['usuario'] ?? '-') ?></td>
                                 <td class="text-muted"><?= date('d/m/Y H:i', strtotime($c['fecha'])) ?></td>
                                 <td class="num">
-                                    <?= rtrim(rtrim(number_format((float) $c['items'], 2, '.', ''), '0'), '.') ?>
+                                    <?= unidades($c['items']) ?>
                                     <?php if ((int) $c['productos'] > 1): ?>
                                         <span class="lg-muted">· <?= (int) $c['productos'] ?> prod.</span>
                                     <?php endif; ?>

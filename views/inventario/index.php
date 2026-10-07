@@ -118,10 +118,10 @@ endif;
                                     </span>
                                 </td>
                                 <td class="num" style="text-align:right;color:<?= $esEntrada ? '#2E9E4B' : ($esAjuste ? '#111' : '#EF4444') ?>;">
-                                    <?= $esSalida = ($m['tipo'] === 'salida') ? '-' : '+' ?><?= number_format((float) $m['cantidad'], 2) ?>
+                                    <?= $esSalida = ($m['tipo'] === 'salida') ? '-' : '+' ?><?= unidades($m['cantidad']) ?>
                                 </td>
-                                <td class="num text-muted" style="text-align:right;"><?= number_format((float) $m['stock_anterior'], 2) ?></td>
-                                <td class="num" style="text-align:right;font-weight:600;"><?= number_format((float) $m['stock_nuevo'], 2) ?></td>
+                                <td class="num text-muted" style="text-align:right;"><?= unidades($m['stock_anterior']) ?></td>
+                                <td class="num" style="text-align:right;font-weight:600;"><?= unidades($m['stock_nuevo']) ?></td>
                                 <td class="text-muted"><?= htmlspecialchars($m['motivo'] ?? '-') ?></td>
                                 <td class="text-muted"><?= htmlspecialchars($m['usuario'] ?? '-') ?></td>
                             </tr>

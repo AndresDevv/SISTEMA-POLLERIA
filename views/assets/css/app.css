@@ -75,6 +75,104 @@ body {
 }
 
 /* ---------------------------------------------------------
+   Panel de cocina: un pedido por tarjeta con sus productos
+
+   Rejilla propia en vez de .lg-grid-2 porque en tablet hay que
+   mantener DOS columnas: con una sola, una carta con cinco platos
+   queda alta y obliga a deslizar demasiado.
+   --------------------------------------------------------- */
+.lg-grid-cocina {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.lg-cocina-pedido {
+    border: 1px solid var(--lg-borde);
+    border-radius: 12px;
+    padding: 16px;
+    background-color: var(--lg-blanco);
+    border-left-width: 4px;
+    /* Si una mesa pidió más platos que otra, ambas cartas miden igual */
+    display: flex;
+    flex-direction: column;
+    align-content: start;
+}
+
+/* El color del borde repite el estado del pedido */
+.lg-cocina-pedido--pendiente  { border-left-color: var(--lg-pendiente-texto); }
+.lg-cocina-pedido--preparando { border-left-color: var(--lg-rojo); }
+.lg-cocina-pedido--preparado  { border-left-color: #2E9E4B; }
+
+.lg-cocina-cabeza {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--lg-borde);
+}
+
+.lg-cocina-items {
+    list-style: none;
+    margin: 0;
+    padding: 12px 0 0;
+}
+
+.lg-cocina-items li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--lg-borde);
+    font-size: 1rem;
+}
+
+.lg-cocina-items li:last-child {
+    border-bottom: 0;
+}
+
+.lg-cocina-cantidad {
+    flex-shrink: 0;
+    min-width: 34px;
+    font-weight: 700;
+    color: var(--lg-rojo);
+    font-size: 1.05rem;
+}
+
+.lg-cocina-nombre {
+    font-weight: 600;
+    color: #111;
+}
+
+/* En tablet caben dos columnas comfortable */
+@media (max-width: 991px) {
+    .lg-cocina-items li {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 575px) {
+    /* Una sola columna solo en teléfono */
+    .lg-grid-cocina {
+        grid-template-columns: 1fr;
+    }
+
+    .lg-cocina-pedido {
+        padding: 14px;
+    }
+
+    .lg-cocina-items li {
+        font-size: 1.05rem;
+        padding: 9px 0;
+    }
+
+    .lg-cocina-cantidad {
+        min-width: 30px;
+    }
+}
+
+/* ---------------------------------------------------------
    Saludo del usuario, arriba del menú
    --------------------------------------------------------- */
 .lg-saludo {
@@ -1007,13 +1105,131 @@ body {
     opacity: 0.45;
 }
 
+/* ---------------------------------------------------------
+   Cuerpo del modal de pedido: dos paneles con scroll propio
+
+   El problema que resuelve: "Pedidos ya registrados en esta
+   mesa" crecía hacia abajo y empujaba el catálogo fuera de
+   la pantalla, así que había que deslizar para poder pedir.
+   Ahora el catálogo es una columna fija con su propio scroll
+   y los pedidos anteriores van plegados en una línea.
+   --------------------------------------------------------- */
+#modalPedido .modal-dialog {
+    max-width: 1000px;
+}
+
+.lg-modal-cuerpo {
+    padding: 16px 20px;
+    /* El alto se acota para que cabecera y pie no se muevan */
+    height: min(78vh, 720px);
+    overflow: hidden;
+}
+
+.lg-modal-panes {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    height: 100%;
+}
+
+.lg-modal-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+}
+
+/* En tablet y escritorio, catálogo a la izquierda y pedido a la derecha */
+@media (min-width: 992px) {
+    .lg-modal-panes {
+        grid-template-columns: 7fr 5fr;
+    }
+}
+
+.lg-modal-pane-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.lg-modal-pane-head {
+    flex-shrink: 0;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--lg-borde);
+}
+
+/* En el panel de pedido no hay scroll propio: la lista interna ya lo tiene */
+.lg-modal-pane--pedido .modal-pedido-lista {
+    max-height: none;
+}
+
+/* El plegable de pedidos anteriores */
+.lg-plegable {
+    flex-shrink: 0;
+    border: 1px solid var(--lg-borde);
+    border-radius: 10px;
+    background-color: var(--lg-blanco);
+    margin-bottom: 14px;
+}
+
+.lg-plegable-cab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 0;
+    background: transparent;
+    font-size: 0.88rem;
+    text-align: left;
+    color: #111;
+}
+
+.lg-plegable-cab:hover {
+    background-color: var(--lg-amarillo-claro);
+    border-radius: 10px;
+}
+
+.lg-plegable-flecha {
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.lg-plegable.is-abierto .lg-plegable-flecha {
+    transform: rotate(180deg);
+}
+
+/* Plegado: no ocupa espacio. Abierto: alto acotado con su propio scroll */
+.lg-plegable-cuerpo {
+    display: none;
+    padding: 0 12px 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.lg-plegable.is-abierto .lg-plegable-cuerpo {
+    display: block;
+}
+
+.lg-plegable-cuerpo .lg-mesa {
+    border: 1px solid var(--lg-borde);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background-color: #FAFAFA;
+}
+
 .modal-catalogo {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    max-height: 44vh;
-    overflow-y: auto;
-    padding-right: 4px;
+    /* El scroll lo hace el panel contenedor */
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
 }
 
 .modal-producto {
@@ -1276,19 +1492,22 @@ body {
 /* ---------------------------------------------------------
    Menú lateral: estado abierto / cerrado
 
-   Se fuerza con !important porque AdminLTE define márgenes
-   también dentro de media queries propias y, sin esto, el
-   contenido no se mueve al ocultar el menú.
+   El contenido se separa del menú con `left`, no con `margin-left`.
+   Si se dejara el margen de AdminLTE, se sumaría al `left` y el
+   contenido quedaría corrido el doble. Por eso se pone a cero y se
+   fuerza con !important: AdminLTE lo declara dentro de sus propias
+   media queries y, sin esto, el margen ganaría.
    --------------------------------------------------------- */
 .layout-fixed .main-header,
 .layout-fixed .content-wrapper {
-    margin-left: var(--lg-sidebar) !important;
+    margin-left: 0 !important;
+    left: var(--lg-sidebar);
 }
 
 /* Animación del menú.
    El sidebar se desliza con transform (va por GPU) y el contenido acompaña
-   con la transición del margen. Se declara explícitamente para reemplazar la
-   de AdminLTE, que se quedaba pendiente e impedía que el margen llegara a 0. */
+   con la transición de `left`. Se declara explícitamente para reemplazar la
+   de AdminLTE, que se quedaba pendiente. */
 .main-sidebar {
     transition: transform 0.28s ease, margin-left 0.28s ease;
     will-change: transform;
@@ -1296,7 +1515,7 @@ body {
 
 .layout-fixed .main-header,
 .layout-fixed .content-wrapper {
-    transition: margin-left 0.28s ease;
+    transition: left 0.28s ease;
 }
 
 body.lg-menu-cerrado .main-sidebar {
@@ -1313,6 +1532,62 @@ body.lg-menu-cerrado .content-wrapper {
 }
 
 /* ---------------------------------------------------------
+   Desplazamiento independiente
+
+   Antes toda la página se desplazaba junta, así que al bajar
+   en una tabla larga el navbar y el menú lateral se iban
+   con ella. Ahora el documento no tiene scroll: lo que
+   desliza es solo el contenido.
+
+   Ojo: nada de transform/will-change en .content-wrapper,
+   porque eso convertiría al contenedor en referencia de los
+   position:fixed de los modales y los dejaría encerrados.
+   --------------------------------------------------------- */
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+.main-header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: var(--lg-sidebar);
+    z-index: 1035;
+}
+
+.main-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    /* Con muchos menús (el admin tiene 11) el sidebar se desliza solo */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.content-wrapper {
+    position: fixed;
+    top: var(--lg-header);
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Barra de scroll fina */
+    scrollbar-width: thin;
+}
+
+/* Ojo con el selector: layout-fixed está en el propio body, así que tiene
+   que ir en la misma cadena (body.lg-menu-cerrado.layout-fixed) y no como
+   descendiente (body.lg-menu-cerrado .layout-fixed), que nunca coincidiría. */
+body.lg-menu-cerrado.layout-fixed .main-header,
+body.lg-menu-cerrado.layout-fixed .content-wrapper {
+    left: 0 !important;
+}
+
+/* ---------------------------------------------------------
    Responsivo - tablet (prioridad: mesero / cocinero)
    --------------------------------------------------------- */
 @media (max-width: 1199px) {
@@ -1323,9 +1598,12 @@ body.lg-menu-cerrado .content-wrapper {
 @media (max-width: 991px) {
     :root { --lg-sidebar: 260px; }
 
+    /* En móvil el sidebar se desliza, no empuja: el contenido ocupa todo
+       el ancho y el menú se superpone con el velo oscuro. */
     .layout-fixed .main-header,
     .layout-fixed .content-wrapper {
         margin-left: 0 !important;
+        left: 0;
     }
 
     /* En móvil el sidebar arranca oculto y se abre con el botón */
@@ -1335,6 +1613,11 @@ body.lg-menu-cerrado .content-wrapper {
 
     body:not(.lg-menu-cerrado) .main-sidebar {
         margin-left: 0 !important;
+    }
+
+    /* Al abrir el menú en móvil no debe quedar scroll bloqueado detrás */
+    body:not(.lg-menu-cerrado).layout-fixed .content-wrapper {
+        overflow: hidden;
     }
 
     /* Velo oscuro al abrir el menú en móvil */

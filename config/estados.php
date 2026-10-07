@@ -153,6 +153,17 @@ function infoStock(int $cantidad): array
 }
 
 /**
+ * Formatea una cantidad de unidades, que siempre es entera.
+ *
+ * Se separó de soles() a propósito: los montos llevan céntimos, pero un
+ * stock o una cantidad de producto nunca se parte en decimales.
+ */
+function unidades($cantidad): string
+{
+    return number_format((int) $cantidad, 0, '.', ',');
+}
+
+/**
  * Formatea un monto en soles: 1234.5 → S/ 1,234.50
  */
 function soles(float $monto): string

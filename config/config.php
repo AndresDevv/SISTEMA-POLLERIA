@@ -16,7 +16,7 @@ define('APP_NOMBRE', 'LOS GOMEZ');
 define('APP_SIGLA', 'LOS GOMEZ');
 
 // VersiÃ³n de los assets (rompe la cachÃ© del navegador al cambiarla)
-define('APP_VERSION', '3.0.0');
+define('APP_VERSION', '3.9.0');
 
 // Rutas de assets
 define('ASSETS_URL', BASE_URL . 'views/assets/');

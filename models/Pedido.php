@@ -54,6 +54,65 @@ class Pedido
     }
 
     /**
+ * Pedidos activos con el detalle de sus productos.
+ *
+ * Es lo que necesita la cocina: no solo saber que la Mesa 3 pidió algo,
+ * sino qué platos tiene que preparar.
+ *
+ * El orden es estrictamente por llegada (el más antiguo primero) y NUNCA
+ * se reordena al cambiar el estado: una tarjeta se queda en su lugar hasta
+ * que se cobra la mesa. Si se ordenara por estado, al marcar "preparando"
+ * el pedido se movería y la cocina perdería de vista qué mesa llegó antes.
+ */
+public function paraCocina(): array
+    {
+        $pedidos = $this->listar('activos');
+
+        if (!$pedidos) {
+            return [];
+        }
+
+        // Un solo SELECT con todos los pedidos, en vez de uno por pedido
+        $ids = array_column($pedidos, 'id');
+        $marcadores = implode(',', array_fill(0, count($ids), '?'));
+
+        $stmt = $this->conexion->prepare(
+            "SELECT d.pedido_id, d.cantidad, pr.nombre
+             FROM detalle_pedidos d
+             INNER JOIN productos pr ON pr.id = d.producto_id
+             WHERE d.pedido_id IN ($marcadores)
+             ORDER BY d.id"
+        );
+        $stmt->execute($ids);
+
+        $porPedido = [];
+
+        foreach ($stmt->fetchAll() as $fila) {
+            $porPedido[(int) $fila['pedido_id']][] = [
+                'nombre'   => $fila['nombre'],
+                'cantidad' => (float) $fila['cantidad']
+            ];
+        }
+
+        foreach ($pedidos as &$pedido) {
+            $pedido['detalle'] = $porPedido[(int) $pedido['id']] ?? [];
+        }
+        unset($pedido);
+
+        // Orden de llegada: primero el que entró antes. El id desempata
+        // cuando dos pedidos tienen la misma marca de tiempo.
+        usort($pedidos, static function (array $a, array $b): int {
+            $comparacion = strcmp((string) $a['fecha_creacion'], (string) $b['fecha_creacion']);
+
+            return $comparacion !== 0
+                ? $comparacion
+                : ((int) $a['id'] <=> (int) $b['id']);
+        });
+
+        return $pedidos;
+    }
+
+    /**
      * Detalle de un pedido con sus productos.
      */
     public function conDetalle(int $id): ?array
@@ -385,15 +444,21 @@ class Pedido
 
     /**
      * Pone la mesa en 'libre' si ya no tiene pedidos sin cobrar.
+     *
+     * Una mesa queda libre al COBRAR, no al servir. El mismo criterio que
+     * usa Mesa::estadoVisual() para decidir qué se ve en pantalla, para que
+     * la base y la pantalla nunca se contradigan.
      */
     private function liberarMesaSiProcede(int $mesaId): void
     {
         $stmt = $this->conexion->prepare(
             "SELECT COUNT(*)
              FROM pedidos p
-             LEFT JOIN ventas v ON v.pedido_id = p.id
+             LEFT JOIN ventas v
+                    ON v.pedido_id = p.id AND v.estado = 'pagada'
              WHERE p.mesa_id = :mesa
-               AND v.id IS NULL"
+               AND v.id IS NULL
+               AND p.estado <> 'anulado'"
         );
         $stmt->execute([':mesa' => $mesaId]);
 
@@ -477,7 +542,8 @@ class Pedido
 
         foreach ($items as $item) {
             $idProducto = (int) ($item['id'] ?? 0);
-            $cantidad   = (float) ($item['cantidad'] ?? 0);
+            // Las cantidades son unidades enteras: nada de medias claves
+            $cantidad   = (int) ($item['cantidad'] ?? 0);
 
             if ($idProducto <= 0 || $cantidad <= 0) {
                 continue;
@@ -621,7 +687,7 @@ class Pedido
 
         if ($nuevo < 0) {
             return 'No hay stock suficiente de "' . $producto['nombre'] . '": quedan '
-                . rtrim(rtrim(number_format($anterior, 2, '.', ''), '0'), '.') . '.';
+                . number_format($anterior, 0, '.', ',') . '.';
         }
 
         $stmt = $this->conexion->prepare("UPDATE productos SET stock = :stock WHERE id = :id");

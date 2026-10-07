@@ -47,7 +47,7 @@ foreach (array_merge($pedidosHoy, $pedidoModel->listar('activos')) as $pedido) {
 /** ¿Qué panel se muestra? */
 $panelActual = $_GET['panel'] ?? 'mesas';
 
-if (!in_array($panelActual, ['mesas', 'pedidos', 'ventas'], true)) {
+if (!in_array($panelActual, ['mesas', 'pedidos', 'cocina', 'ventas'], true)) {
     $panelActual = 'mesas';
 }
 
@@ -56,6 +56,9 @@ if (!in_array($panelActual, ['mesas', 'pedidos', 'ventas'], true)) {
 if ($panelActual === 'ventas' && !esPermitido('ventas')) {
     $panelActual = 'mesas';
 }
+
+// Pedidos con su detalle, para el panel de cocina
+$pedidosCocina = $pedidoModel->paraCocina();
 
 /**
  * Genera una URL cambiando solo el panel.
@@ -97,6 +100,13 @@ encabezadoPagina(
     <a href="<?= urlPanel('pedidos') ?>" class="lg-segmento<?= $panelActual === 'pedidos' ? ' is-activo' : '' ?>">
         <i class="fa fa-list-alt"></i> Ver pedidos
         <span class="lg-segmento-badge"><?= count($pedidos) ?></span>
+    </a>
+
+    <a href="<?= urlPanel('cocina') ?>" class="lg-segmento<?= $panelActual === 'cocina' ? ' is-activo' : '' ?>">
+        <i class="fa fa-fire"></i> Cocina
+        <?php if ($pedidosCocina): ?>
+            <span class="lg-segmento-badge"><?= count($pedidosCocina) ?></span>
+        <?php endif; ?>
     </a>
 
     <?php if (esPermitido('ventas')): ?>
@@ -266,23 +276,31 @@ encabezadoPagina(
                 <p class="lg-card-subtitle"><?= count($pedidos) ?> pedido(s) pendiente(s)</p>
             </div>
 
-            <?php if (!esPermitido('pedidos_estado')): ?>
-                <span class="lg-muted" style="font-size:0.75rem;" title="Los cambios de cocina aparecen solos">
-                    <i class="fa fa-sync-alt"></i> Se actualiza solo
-                </span>
-            <?php endif; ?>
+            <span class="lg-muted" style="font-size:0.75rem;"
+                  title="El estado lo cambia cocina desde su pestaña">
+                <i class="fa fa-eye"></i> Solo consulta
+            </span>
         </div>
 
         <?php if (!$pedidos): ?>
 
             <div class="lg-empty">
                 <i class="fa fa-clipboard"></i>
-                <p class="mb-0">No hay pedidos registrados.</p>
+                <p class="mb-0">No hay pedidos pendientes.</p>
             </div>
 
         <?php else: ?>
 
-            <div class="table-responsive">
+            <?php
+    /**
+     * La columna Acciones solo se pinta si el rol tiene alguna acción que
+     * hacer. Al cocina no puede cobrar ni borrar, así que le aparecería una
+     * columna entera vacía.
+     */
+    $tieneAcciones = esPermitido('cobrar') || esPermitido('pedidos_editar');
+    ?>
+
+    <div class="table-responsive">
                 <table class="lg-table">
                     <thead>
                         <tr>
@@ -292,7 +310,9 @@ encabezadoPagina(
                             <th>Hora</th>
                             <th>Total</th>
                             <th>Estado</th>
-                            <th style="text-align:right;">Acciones</th>
+                            <?php if ($tieneAcciones): ?>
+                                <th style="text-align:right;">Acciones</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -318,6 +338,7 @@ encabezadoPagina(
                                     <?php endif; ?>
                                 </td>
 
+                                <?php if ($tieneAcciones): ?>
                                 <td style="text-align:right;white-space:nowrap;">
 
                                     <?php if ($cobrado): ?>
@@ -325,14 +346,10 @@ encabezadoPagina(
 
                                     <?php else: ?>
 
-                                        <?php if (esPermitido('pedidos_estado') && $ui['accion'] !== ''): ?>
-                                            <button type="button"
-                                                    class="lg-btn lg-btn--sm lg-btn--primary js-estado-pedido"
-                                                    data-id="<?= (int) $pedido['id'] ?>"
-                                                    data-estado="<?= htmlspecialchars($ui['accion']) ?>">
-                                                <i class="<?= $ui['icono'] ?>"></i> <?= htmlspecialchars($ui['texto']) ?>
-                                            </button>
-                                        <?php endif; ?>
+                                        <?php /* Esta tabla es solo de consulta.
+                                                 El estado se cambia desde la
+                                                 pestaña Cocina, que es donde
+                                                 también se ven los platos. */ ?>
 
                                         <?php if (esPermitido('cobrar')): ?>
                                             <button type="button"
@@ -356,6 +373,7 @@ encabezadoPagina(
                                     <?php endif; ?>
 
                                 </td>
+                                <?php endif; ?>
                             </tr>
 
                         <?php endforeach; ?>
@@ -391,6 +409,101 @@ encabezadoPagina(
                     })();
                 </script>
             <?php endif; ?>
+
+        <?php endif; ?>
+    </div>
+
+<?php elseif ($panelActual === 'cocina'): ?>
+
+    <div class="lg-card mb-3">
+        <div class="lg-card-head">
+            <span class="lg-card-icon"><i class="fa fa-fire"></i></span>
+            <div>
+                <h2 class="lg-card-title">Pedidos para preparar</h2>
+                <p class="lg-card-subtitle">
+                    <?php if ($pedidosCocina): ?>
+                        <?= count($pedidosCocina) ?> pedido(s) · en orden de llegada
+                    <?php else: ?>
+                        Todo al d&iacute;a
+                    <?php endif; ?>
+                </p>
+            </div>
+
+            <?php if (!esPermitido('pedidos_estado')): ?>
+                <span class="lg-muted" style="font-size:0.75rem;">
+                    <i class="fa fa-eye"></i> Solo lectura
+                </span>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!$pedidosCocina): ?>
+
+            <div class="lg-empty">
+                <i class="fa fa-check-circle-o"></i>
+                <p class="mb-0">No hay pedidos pendientes.</p>
+            </div>
+
+        <?php else: ?>
+
+            <div class="lg-grid-cocina">
+
+                <?php foreach ($pedidosCocina as $pedido): ?>
+                    <?php
+                    $ui    = estadoPedidoUI($pedido['estado']);
+                    $items = $pedido['detalle'];
+                    ?>
+
+                    <div class="lg-cocina-pedido lg-cocina-pedido--<?= htmlspecialchars($pedido['estado']) ?>">
+
+                        <div class="lg-cocina-cabeza">
+                            <div>
+                                <strong style="font-size:1.05rem;">
+                                    Mesa <?= (int) $pedido['mesa_numero'] ?>
+                                </strong>
+                                <span class="lg-muted" style="font-size:0.78rem;">
+                                    P-<?= str_pad((string) $pedido['id'], 4, '0', STR_PAD_LEFT) ?>
+                                    &middot; <?= date('H:i', strtotime($pedido['fecha_creacion'])) ?>
+                                </span>
+                            </div>
+
+                            <span class="lg-pill <?= $ui['pildora'] ?>">
+                                <?= htmlspecialchars($ui['etiqueta']) ?>
+                            </span>
+                        </div>
+
+                        <ul class="lg-cocina-items">
+                            <?php foreach ($items as $item): ?>
+                                <li>
+                                    <span class="lg-cocina-cantidad">
+                                        <?= rtrim(rtrim(number_format((float) $item['cantidad'], 2, '.', ''), '0'), '.') ?>×
+                                    </span>
+                                    <span class="lg-cocina-nombre"><?= htmlspecialchars($item['nombre']) ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+
+                        <?php if ($ui['accion'] !== '' && esPermitido('pedidos_estado')): ?>
+                            <button type="button"
+                                    class="lg-btn lg-btn--primary lg-btn--sm lg-cocina-avanzar"
+                                    data-id="<?= (int) $pedido['id'] ?>"
+                                    data-estado="<?= htmlspecialchars($ui['accion']) ?>">
+                                <i class="<?= $ui['icono'] ?>"></i> <?= htmlspecialchars($ui['texto']) ?>
+                            </button>
+                        <?php endif; ?>
+
+                    </div>
+                <?php endforeach; ?>
+
+            </div>
+
+            <div class="lg-info mt-3">
+                <i class="fa fa-info-circle"></i>
+                <span>
+                    Las tarjetas se quedan en su lugar seg&uacute;n el orden de llegada
+                    y no se mueven al cambiar el estado. Desaparecen cuando la mesa
+                    se cobra.
+                </span>
+            </div>
 
         <?php endif; ?>
     </div>

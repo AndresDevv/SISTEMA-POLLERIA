@@ -328,7 +328,9 @@
         // -------------------------------------------------
         // Cambio de estado de un pedido
         // -------------------------------------------------
-        $('.js-estado-pedido').on('click', function () {
+        // El estado de un pedido SOLO se cambia desde las tarjetas del panel de
+        // cocina. La tabla de "Ver pedidos" es de consulta.
+        $('.lg-cocina-avanzar').on('click', function () {
 
             var $boton = $(this);
             var original = $boton.html();
@@ -582,7 +584,7 @@
                 api('api/inventario/ajustar', {
                     producto_id: stock.id,
                     tipo: $('#stockTipo').val(),
-                    cantidad: parseFloat($('#stockCantidad').val()) || 0,
+                    cantidad: parseInt($('#stockCantidad').val(), 10) || 0,
                     motivo: $('#stockMotivo').val()
                 })
                 .done(function () {
@@ -623,9 +625,10 @@
 
                 $fila.append('<td style="font-weight:600;">' + item.nombre + '</td>');
 
-                var $cantidad = $('<input type="number" class="lg-input" step="0.01" min="0.01" style="min-height:38px;">').val(item.cantidad);
+                // La cantidad son unidades enteras; el precio sí lleva céntimos
+                var $cantidad = $('<input type="number" class="lg-input" step="1" min="1" style="min-height:38px;">').val(item.cantidad);
                 $cantidad.on('input', function () {
-                    compra.items[indice].cantidad = parseFloat($(this).val()) || 0;
+                    compra.items[indice].cantidad = parseInt($(this).val(), 10) || 0;
                     pintarCompra();
                 });
 
@@ -809,7 +812,7 @@
                     + '<tfoot><tr><th colspan="3">'
                     + (c.items || []).length + ' producto(s) · '
                     + (c.items || []).reduce(function (suma, i) {
-                        return suma + parseFloat(i.cantidad);
+                        return suma + parseInt(i.cantidad, 10);
                     }, 0)
                     + ' unidad(es)</th>'
                     + '<th style="text-align:right;">' + soles(c.total) + '</th></tr></tfoot>'
@@ -1184,21 +1187,37 @@
             }
 
             $wrap.show();
+            $wrap.removeClass('is-abierto');
+            $('#pedidoExistentesToggle').attr('aria-expanded', 'false');
+            $('#pedidoExistentesResumen').text('cargando...');
             $lista.html('<p class="lg-muted mb-0"><i class="fa fa-spinner fa-spin"></i> Cargando...</p>');
 
             $.get(APP_URL + '?page=api/pedido/listar&mesa_id=' + pedido.mesaId)
             .done(function (r) {
 
                 if (!r.pedidos || !r.pedidos.length) {
+                    $('#pedidoExistentesResumen').text('');
                     $lista.html('<p class="lg-muted mb-0">Esta mesa a&uacute;n no tiene pedidos.</p>');
                     return;
                 }
+
+                // Resumen en una línea: el plegable arranca cerrado para que
+                // el catálogo quede siempre visible sin deslizar
+                var suma = 0;
+
+                r.pedidos.forEach(function (p) {
+                    suma += p.total;
+                });
+
+                $('#pedidoExistentesResumen').text(
+                    '· ' + r.pedidos.length + ' pedido(s) · ' + soles(suma)
+                );
 
                 var html = '';
 
                 r.pedidos.forEach(function (p) {
                     html +=
-                        '<div class="lg-mesa lg-mesa--' + p.estado_clase + '" style="cursor:default;margin-bottom:8px;">' +
+                        '<div class="lg-mesa lg-mesa--' + p.estado_clase + '" style="cursor:default;">' +
                             '<div class="lg-mesa-top">' +
                                 '<div>' +
                                     '<h3 class="lg-mesa-name">P-' + String(p.id).padStart(4, '0') + '</h3>' +
@@ -1219,9 +1238,19 @@
                 $lista.html(html);
             })
             .fail(function () {
+                $('#pedidoExistentesResumen').text('');
                 $lista.html('<p class="lg-muted mb-0">No se pudieron cargar los pedidos de la mesa.</p>');
             });
         };
+
+        // Plegable de pedidos ya registrados
+        $('#pedidoExistentesToggle').on('click', function () {
+
+            var $wrap = $('#pedidoExistentesWrap');
+            var abierto = $wrap.toggleClass('is-abierto').hasClass('is-abierto');
+
+            $(this).attr('aria-expanded', abierto ? 'true' : 'false');
+        });
 
         // Abre el modal desde las tarjetas de mesa
         $('.lg-mesa-main').on('click', function () {

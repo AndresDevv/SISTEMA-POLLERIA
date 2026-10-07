@@ -15,8 +15,8 @@ class Inventario
      * Ajusta el stock de un producto y deja el movimiento.
      *
      * @param string $tipo   'entrada' | 'salida' | 'ajuste'
-     * @param float  $cantidad  cantidad a sumar (entrada), restar (salida)
-     *                         o valor final (ajuste)
+     * @param int    $cantidad  unidades a sumar (entrada), restar (salida)
+     *                          o valor final (ajuste). Siempre entero.
      */
     public function ajustar(int $productoId, string $tipo, float $cantidad, string $motivo = ''): array
     {
@@ -24,6 +24,13 @@ class Inventario
 
         if (!in_array($tipo, $permitidos, true)) {
             return ['success' => false, 'message' => 'Tipo de movimiento no válido.'];
+        }
+
+        // El stock se maneja en unidades enteras
+        $cantidad = (int) $cantidad;
+
+        if ($cantidad < 0) {
+            return ['success' => false, 'message' => 'La cantidad no puede ser negativa.'];
         }
 
         $usuarioId = (int) ($_SESSION['usuario_id'] ?? 0);
@@ -43,7 +50,7 @@ class Inventario
                 return ['success' => false, 'message' => 'El producto no existe.'];
             }
 
-            $anterior = (float) $producto['stock'];
+            $anterior = (int) $producto['stock'];
 
             $nuevo = match ($tipo) {
                 'entrada' => $anterior + $cantidad,

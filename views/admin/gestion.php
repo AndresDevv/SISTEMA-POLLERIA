@@ -182,19 +182,15 @@ class GestionControllerHelper
         }
 
         // El stock se pinta de verde si hay de sobra, amarillo si va justo
-        // y rojo si está por acabarse
+        // y rojo si está por acabarse. Las unidades son enteras.
         if ($columna === 'stock') {
             return '<span class="num lg-stock-tag '
                 . claseStock((int) $valor) . '">'
-                . number_format((float) $valor, 2) . '</span>';
+                . unidades($valor) . '</span>';
         }
 
-        if ($columna === 'stock_minimo') {
-            return '<span class="num">' . number_format((float) $valor, 2) . '</span>';
-        }
-
-        if ($columna === 'cantidad') {
-            return '<span class="num">' . number_format((float) $valor, 2) . '</span>';
+        if (in_array($columna, ['stock_minimo', 'cantidad'], true)) {
+            return '<span class="num">' . unidades($valor) . '</span>';
         }
 
         if (str_contains($columna, 'fecha')) {

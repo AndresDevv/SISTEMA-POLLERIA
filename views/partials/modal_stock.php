@@ -41,7 +41,7 @@ $metodos = [
                 </select>
 
                 <label class="lg-label" for="stockCantidad" id="stockEtiqueta">Cantidad a ingresar</label>
-                <input type="number" id="stockCantidad" class="lg-input mb-3" step="0.01" min="0" value="0">
+                <input type="number" id="stockCantidad" class="lg-input mb-3" step="1" min="0" value="0">
 
                 <label class="lg-label" for="stockMotivo">Motivo</label>
                 <input type="text" id="stockMotivo" class="lg-input" placeholder="Opcional">

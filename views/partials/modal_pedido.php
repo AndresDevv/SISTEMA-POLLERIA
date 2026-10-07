@@ -33,8 +33,10 @@ $categoriasModal = array_values(array_unique(array_column($productosModal, 'cate
                 </button>
             </div>
 
-            <!-- Cuerpo -->
-            <div class="modal-body" style="max-height:65vh;overflow-y:auto;">
+            <!-- Cuerpo: dos columnas con scroll propio, para que el catálogo
+                 quede siempre a la vista aunque la mesa tenga muchos
+                 pedidos ya registrados. -->
+            <div class="modal-body lg-modal-cuerpo">
 
                 <!-- Aviso de validación -->
                 <div class="lg-info mb-3" id="pedidoAviso" style="display:none;">
@@ -42,94 +44,111 @@ $categoriasModal = array_values(array_unique(array_column($productosModal, 'cate
                     <span id="pedidoAvisoTexto">Agrega al menos un producto antes de enviar el pedido.</span>
                 </div>
 
-                <!-- Pedidos que ya tiene la mesa -->
-                <div class="mb-3" id="pedidoExistentesWrap" style="display:none;">
-                    <p class="lg-subtitle-block" style="margin-top:0;">
-                        Pedidos ya registrados en esta mesa
-                    </p>
-                    <div id="pedidoExistentes"></div>
-                </div>
-
-                <p class="lg-subtitle-block" style="margin-top:0;">
-                    Agregar productos al pedido
-                </p>
-
-                <div class="row">
+                <div class="lg-modal-panes">
 
                     <!-- Selector de productos -->
-                    <div class="col-lg-7">
+                    <div class="lg-modal-pane lg-modal-pane--catalogo">
 
-                        <div class="lg-filters mb-3">
-                            <div class="lg-field">
-                                <input type="search" id="modalBuscar"
-                                       class="lg-input" placeholder="Buscar producto...">
-                            </div>
-                            <div class="lg-field">
-                                <select id="modalCategoria" class="lg-select">
-                                    <option value="">Todas</option>
-                                    <?php foreach ($categoriasModal as $cat): ?>
-                                        <option value="<?= htmlspecialchars($cat) ?>">
-                                            <?= htmlspecialchars($cat) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                        <div class="lg-modal-pane-head">
+                            <p class="lg-subtitle-block" style="margin:0;">
+                                Agregar productos al pedido
+                            </p>
+
+                            <div class="lg-filters mb-0">
+                                <div class="lg-field">
+                                    <input type="search" id="modalBuscar"
+                                           class="lg-input" placeholder="Buscar producto...">
+                                </div>
+                                <div class="lg-field" style="max-width:180px;">
+                                    <select id="modalCategoria" class="lg-select">
+                                        <option value="">Todas</option>
+                                        <?php foreach ($categoriasModal as $cat): ?>
+                                            <option value="<?= htmlspecialchars($cat) ?>">
+                                                <?= htmlspecialchars($cat) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
-                        <?php if (!$productosModal): ?>
+                        <div class="lg-modal-pane-scroll">
+                            <?php if (!$productosModal): ?>
 
-                            <div class="lg-empty">
-                                <i class="fa fa-cube"></i>
-                                <p class="mb-0">No hay productos registrados en la base de datos.</p>
-                            </div>
+                                <div class="lg-empty">
+                                    <i class="fa fa-cube"></i>
+                                    <p class="mb-0">No hay productos registrados en la base de datos.</p>
+                                </div>
 
-                        <?php else: ?>
+                            <?php else: ?>
 
-                            <div id="modalCatalogo" class="modal-catalogo">
-                                <?php foreach ($productosModal as $p): ?>
-                                    <?php
-                                    $nombreModal    = $p['nombre'] ?? 'Producto';
-                                    $categoriaModal = $p['categoria'] ?? '';
-                                    $precioModal    = (float) ($p['precio'] ?? 0);
-                                    $stockModal     = (int) ($p['stock'] ?? 0);
-                                    $minimoModal    = (int) ($p['minimo'] ?? 0);
-                                    $agotado        = $stockModal <= 0;
-                                    $nivelModal     = nivelStock($stockModal);
-                                    $claseModal     = claseStock($stockModal);
-                                    ?>
+                                <div id="modalCatalogo" class="modal-catalogo">
+                                    <?php foreach ($productosModal as $p): ?>
+                                        <?php
+                                        $nombreModal    = $p['nombre'] ?? 'Producto';
+                                        $categoriaModal = $p['categoria'] ?? '';
+                                        $precioModal    = (float) ($p['precio'] ?? 0);
+                                        $stockModal     = (int) ($p['stock'] ?? 0);
+                                        $minimoModal    = (int) ($p['minimo'] ?? 0);
+                                        $agotado        = $stockModal <= 0;
+                                        $nivelModal     = nivelStock($stockModal);
+                                        $claseModal     = claseStock($stockModal);
+                                        ?>
 
-                                    <button type="button"
-                                            class="modal-producto <?= $claseModal ?><?= $agotado ? ' is-agotado' : '' ?>"
-                                            data-nombre="<?= htmlspecialchars(strtolower($nombreModal)) ?>"
-                                            data-categoria="<?= htmlspecialchars($categoriaModal) ?>"
-                                            data-precio="<?= $precioModal ?>"
-                                            data-producto-id="<?= (int) ($p['id'] ?? 0) ?>"
-                                            data-producto="<?= htmlspecialchars($nombreModal) ?>"
-                                            data-stock="<?= (int) $stockModal ?>"
-                                            <?= $agotado ? 'disabled' : '' ?>>
+                                        <button type="button"
+                                                class="modal-producto <?= $claseModal ?><?= $agotado ? ' is-agotado' : '' ?>"
+                                                data-nombre="<?= htmlspecialchars(strtolower($nombreModal)) ?>"
+                                                data-categoria="<?= htmlspecialchars($categoriaModal) ?>"
+                                                data-precio="<?= $precioModal ?>"
+                                                data-producto-id="<?= (int) ($p['id'] ?? 0) ?>"
+                                                data-producto="<?= htmlspecialchars($nombreModal) ?>"
+                                                data-stock="<?= (int) $stockModal ?>"
+                                                <?= $agotado ? 'disabled' : '' ?>>
 
-                                        <span class="modal-producto-nombre">
-                                            <?= htmlspecialchars($nombreModal) ?>
-                                        </span>
+                                            <span class="modal-producto-nombre">
+                                                <?= htmlspecialchars($nombreModal) ?>
+                                            </span>
 
-                                        <span class="modal-producto-precio <?= $claseModal ?>">
-                                            <?= soles($precioModal) ?>
-                                            &middot; <?= $agotado
-                                                ? 'Agotado'
-                                                : htmlspecialchars(estadosStock()[$nivelModal]['etiqueta']) ?>
-                                        </span>
-                                    </button>
+                                            <span class="modal-producto-precio <?= $claseModal ?>">
+                                                <?= soles($precioModal) ?>
+                                                &middot; <?= $agotado
+                                                    ? 'Agotado'
+                                                    : htmlspecialchars(estadosStock()[$nivelModal]['etiqueta']) ?>
+                                            </span>
+                                        </button>
 
-                                <?php endforeach; ?>
-                            </div>
+                                    <?php endforeach; ?>
+                                </div>
 
-                        <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+
                     </div>
 
-                    <!-- Pedido en curso -->
-                    <div class="col-lg-5" style="min-width:0;">
+                    <!-- Pedido en curso + pedidos ya registrados -->
+                    <div class="lg-modal-pane lg-modal-pane--pedido">
 
-                        <div class="modal-pedido">
+                        <!--
+                            Los pedidos que ya tiene la mesa van plegados en una
+                            línea. Antes ocupaban todo el alto y empujaban el
+                            catálogo fuera de la pantalla.
+                        -->
+                        <div class="lg-plegable" id="pedidoExistentesWrap" style="display:none;">
+                            <button type="button" class="lg-plegable-cab"
+                                    id="pedidoExistentesToggle"
+                                    aria-expanded="false">
+                                <span>
+                                    <i class="fa fa-list-alt"></i>
+                                    <strong>Pedidos ya registrados</strong>
+                                    <span class="lg-muted" id="pedidoExistentesResumen"></span>
+                                </span>
+                                <i class="fa fa-chevron-down lg-plegable-flecha"></i>
+                            </button>
+
+                            <div class="lg-plegable-cuerpo" id="pedidoExistentes"></div>
+                        </div>
+
+                        <div class="modal-pedido lg-modal-pedido">
                             <div class="modal-pedido-head">
                                 <h6 style="font-weight:700;margin:0;">Pedido en curso</h6>
                                 <span class="lg-pill lg-pill--pizarra" id="pedidoItemsCount">0 items</span>
