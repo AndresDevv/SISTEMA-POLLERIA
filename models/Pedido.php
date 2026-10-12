@@ -54,17 +54,47 @@ class Pedido
     }
 
     /**
- * Pedidos activos con el detalle de sus productos.
- *
- * Es lo que necesita la cocina: no solo saber que la Mesa 3 pidió algo,
- * sino qué platos tiene que preparar.
- *
- * El orden es estrictamente por llegada (el más antiguo primero) y NUNCA
- * se reordena al cambiar el estado: una tarjeta se queda en su lugar hasta
- * que se cobra la mesa. Si se ordenara por estado, al marcar "preparando"
- * el pedido se movería y la cocina perdería de vista qué mesa llegó antes.
- */
-public function paraCocina(): array
+     * Pedidos que siguen sin cobrar, de cualquier día.
+     */
+    public function sinCobrar(): array
+    {
+        // Un pedido servido queda en 'entregado': deja de estar activo y, si
+        // es de otro día, tampoco sale en el listado del día. Sin esta lista
+        // un pedido abandonado sería incobrable desde la pantalla y su mesa
+        // se quedaría ocupada para siempre.
+        $sql = "SELECT
+                    p.id,
+                    p.estado,
+                    p.total,
+                    p.fecha_creacion,
+                    m.numero AS mesa_numero,
+                    u.nombre AS usuario_nombre,
+                    (SELECT COUNT(*) FROM detalle_pedidos d WHERE d.pedido_id = p.id) AS items
+                FROM pedidos p
+                INNER JOIN mesas m ON m.id = p.mesa_id
+                INNER JOIN usuarios u ON u.id = p.usuario_id
+                LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                WHERE v.id IS NULL
+                  AND p.estado <> 'anulado'
+                ORDER BY p.fecha_creacion";
+
+        $stmt = $this->conexion->query($sql);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Pedidos activos con el detalle de sus productos.
+     *
+     * Es lo que necesita la cocina: no solo saber que la Mesa 3 pidió algo,
+     * sino qué platos tiene que preparar.
+     *
+     * El orden es estrictamente por llegada (el más antiguo primero) y NUNCA
+     * se reordena al cambiar el estado: una tarjeta se queda en su lugar hasta
+     * que se cobra la mesa. Si se ordenara por estado, al marcar "preparando"
+     * el pedido se movería y la cocina perdería de vista qué mesa llegó antes.
+     */
+    public function paraCocina(): array
     {
         $pedidos = $this->listar('activos');
 

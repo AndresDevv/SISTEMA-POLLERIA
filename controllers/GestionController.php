@@ -98,7 +98,11 @@ class GestionController
 
     /**
      * Opciones para poblar los campos tipo relación.
-     * Solo expone tablas de recursos que el usuario puede ver.
+     *
+     * Se permiten dos casos: que la tabla sea la principal de un recurso que
+     * el usuario puede ver, o que la aparezca un campo tipo "relacion" de uno
+     * de esos recursos. El segundo caso es el de "roles", que no tiene CRUD
+     * propio pero sí se elige al crear un usuario.
      */
     public function opciones(): void
     {
@@ -114,9 +118,22 @@ class GestionController
 
             $def = Gestion::recurso($recurso);
 
-            if (($def['tabla'] ?? '') === $tabla && $this->permite($recurso, 'ver')) {
+            if (!$this->permite($recurso, 'ver')) {
+                continue;
+            }
+
+            if (($def['tabla'] ?? '') === $tabla) {
                 $permitida = true;
                 break;
+            }
+
+            // ¿Algún campo del recurso apunta a esta tabla?
+            foreach ($def['campos'] as $regla) {
+
+                if (($regla['tipo'] ?? '') === 'relacion' && ($regla['tabla'] ?? '') === $tabla) {
+                    $permitida = true;
+                    break 2;
+                }
             }
         }
 

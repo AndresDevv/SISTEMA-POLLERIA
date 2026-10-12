@@ -12,13 +12,13 @@ require_once APP_ROOT . '/models/Gestion.php';
 
 $personalModel = new Personal();
 
-$pestana = $_GET['tab'] ?? 'colaboradores';
+$pestana = $_GET['tab'] ?? 'trabajadores';
 
-if (!in_array($pestana, ['colaboradores', 'asistencia', 'pagos'], true)) {
-    $pestana = 'colaboradores';
+if (!in_array($pestana, ['trabajadores', 'asistencia', 'pagos'], true)) {
+    $pestana = 'trabajadores';
 }
 
-$colaboradores = $personalModel->colaboradores();
+$trabajadores = $personalModel->trabajadores();
 $asistencias  = $personalModel->asistenciasHoy();
 $pagos        = $personalModel->pagos();
 
@@ -28,7 +28,7 @@ $pagos        = $personalModel->pagos();
 $pestanasPersonal = static function (string $actual): void {
     ?>
     <div class="lg-segmentos mb-3">
-        <a href="<?= url('personal') ?>" class="lg-segmento<?= $actual === 'colaboradores' ? ' is-activo' : '' ?>">
+        <a href="<?= url('personal') ?>" class="lg-segmento<?= $actual === 'trabajadores' ? ' is-activo' : '' ?>">
             <i class="fa fa-users"></i> Trabajadores
         </a>
         <a href="<?= url('personal') ?>&tab=asistencia" class="lg-segmento<?= $actual === 'asistencia' ? ' is-activo' : '' ?>">
@@ -41,7 +41,7 @@ $pestanasPersonal = static function (string $actual): void {
     <?php
 };
 
-if ($pestana === 'colaboradores'):
+if ($pestana === 'trabajadores'):
 
     $pestanaActual  = $pestana;
     $recurso        = 'empleados';
@@ -50,7 +50,7 @@ if ($pestana === 'colaboradores'):
     $subtitulo      = 'Datos de los trabajadores de la pollería';
 
     $recursosExtra = [
-        ['clave' => 'colaboradores', 'recurso' => 'empleados', 'pagina' => 'personal',
+        ['clave' => 'trabajadores', 'recurso' => 'empleados', 'pagina' => 'personal',
          'titulo' => 'Trabajadores', 'icono' => 'fa fa-users'],
         ['clave' => 'asistencia',    'recurso' => 'empleados', 'pagina' => 'personal&tab=asistencia',
          'titulo' => 'Asistencia', 'icono' => 'fa fa-clock-o'],
@@ -69,7 +69,7 @@ $pestanasPersonal($pestana);
 encabezadoPagina(
     'fa fa-users',
     'Personal',
-    'Colaboradores, asistencia y pagos del equipo'
+    'Trabajadores, asistencia y pagos del equipo'
 );
 ?>
 
@@ -84,17 +84,17 @@ encabezadoPagina(
             </div>
         </div>
 
-        <?php if (!$colaboradores): ?>
+        <?php if (!$trabajadores): ?>
             <div class="lg-empty">
                 <i class="fa fa-users"></i>
-                <p class="mb-0">No hay colaboradores registrados.</p>
+                <p class="mb-0">No hay trabajadores registrados.</p>
             </div>
         <?php else: ?>
             <div class="table-responsive">
                 <table class="lg-table">
                     <thead>
                         <tr>
-                            <th>Colaborador</th>
+                            <th>Trabajador</th>
                             <th>Cargo</th>
                             <th>Entrada</th>
                             <th>Salida</th>
@@ -103,7 +103,7 @@ encabezadoPagina(
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($colaboradores as $col): ?>
+                        <?php foreach ($trabajadores as $col): ?>
                             <?php
                             $asistencia = null;
                             foreach ($asistencias as $a) {
@@ -162,14 +162,14 @@ encabezadoPagina(
             </div>
         </div>
 
-        <?php if (!$colaboradores): ?>
-            <div class="lg-empty"><i class="fa fa-users"></i><p class="mb-0">No hay colaboradores.</p></div>
+        <?php if (!$trabajadores): ?>
+            <div class="lg-empty"><i class="fa fa-users"></i><p class="mb-0">No hay trabajadores.</p></div>
         <?php else: ?>
             <div class="lg-filters">
                 <div class="lg-field">
-                    <label class="lg-label" for="pagoEmpleado">Colaborador</label>
+                    <label class="lg-label" for="pagoEmpleado">Trabajador</label>
                     <select id="pagoEmpleado" class="lg-select">
-                        <?php foreach ($colaboradores as $col): ?>
+                        <?php foreach ($trabajadores as $col): ?>
                             <option value="<?= (int) $col['id'] ?>"><?= htmlspecialchars($col['nombre']) ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -215,7 +215,7 @@ encabezadoPagina(
                 <table class="lg-table">
                     <thead>
                         <tr>
-                            <th>Colaborador</th>
+                            <th>Trabajador</th>
                             <th>Cargo</th>
                             <th>Per&iacute;odo</th>
                             <th>Fecha de pago</th>

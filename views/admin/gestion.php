@@ -24,9 +24,23 @@ $columnas = array_keys($filas ? $filas[0] : array_fill_keys(['id'], 1));
 // La pestaña activa la marca el módulo: el nombre de la pestaña puede no
 // coincidir con el del recurso (Personal > Trabajadores usa "empleados").
 $pestanaActual = $pestanaActual ?? $recurso;
-// La columna de una relación se titula con la etiqueta del campo que la
-// alimenta (por ejemplo "Categoría" en productos, "Rol" en usuarios).
-$etiquetaRelacion = 'Relación';
+
+/**
+ * Título de cada columna.
+ *
+ * Se usa la etiqueta real del campo ("Fecha de ingreso", "DNI", "Teléfono")
+ * en vez del nombre crudo de la columna, que salía como "Fecha Ingreso" o
+ * "Dni". Las columnas que no vienen de un campo caen en un nombre limpio.
+ */
+$etiquetasColumnas = [];
+
+foreach ($def['campos'] as $campo => $regla) {
+    $etiquetasColumnas[$campo] = $regla['etiqueta'] ?? ucfirst(str_replace('_', ' ', $campo));
+}
+
+// 'relacion' es el nombre técnico del campo que alimenta una columna de
+// relación; se rotula con la etiqueta de ese campo.
+$etiquetaRelacion = $etiquetasColumnas['relacion'] ?? 'Relación';
 
 foreach ($def['campos'] as $campo => $regla) {
     if (($regla['tipo'] ?? '') === 'relacion') {
@@ -58,7 +72,12 @@ foreach ($def['campos'] as $campo => $regla) {
         <span class="lg-card-icon"><i class="fa fa-list"></i></span>
 
         <div class="flex-grow-1">
-            <h2 class="lg-card-title"><?= htmlspecialchars($def['titulo']) ?>s</h2>
+            <?php
+    // En español no basta con añadir una "s": "Trabajador" + "s" salía
+    // como "Trabajadors". Cada recurso declara su plural cuando hace falta.
+    $tituloPlural = $def['tituloPlural'] ?? ($def['titulo'] . 's');
+    ?>
+                <h2 class="lg-card-title"><?= htmlspecialchars($tituloPlural) ?></h2>
             <p class="lg-card-subtitle"><?= count($filas) ?> registro(s)</p>
         </div>
 
@@ -96,9 +115,11 @@ foreach ($def['campos'] as $campo => $regla) {
                     <tr>
                         <?php foreach ($columnas as $col): ?>
                             <?php if ($col === 'id') { continue; } ?>
-                            <th><?= $col === 'relacion'
-                                    ? htmlspecialchars($etiquetaRelacion)
-                                    : htmlspecialchars(ucfirst(str_replace('_', ' ', $col))) ?></th>
+                            <th><?= htmlspecialchars(
+                                $col === 'relacion'
+                                    ? $etiquetaRelacion
+                                    : ($etiquetasColumnas[$col] ?? ucfirst(str_replace('_', ' ', $col)))
+                            ) ?></th>
                         <?php endforeach; ?>
                         <?php if ($puedeEditar): ?>
                             <th style="text-align:right;">Acciones</th>
@@ -110,7 +131,7 @@ foreach ($def['campos'] as $campo => $regla) {
                         <tr>
                             <?php foreach ($columnas as $col): ?>
                                 <?php if ($col === 'id') { continue; } ?>
-                                <td><?= GestionControllerHelper::texto($col, $fila[$col] ?? '', $fila) ?></td>
+                                <td><?= GestionControllerHelper::texto($col, $fila[$col] ?? '', $fila, $def['campos']) ?></td>
                             <?php endforeach; ?>
 
                             <?php if (!$puedeEditar) { continue; } ?>
@@ -160,11 +181,16 @@ foreach ($def['campos'] as $campo => $regla) {
  */
 class GestionControllerHelper
 {
+    /** Tipos de campo que se muestran como texto normal, sin formato */
+    private const COLUMNAS_PLAINAS = ['dni', 'telefono', 'usuario', 'documento', 'direccion'];
+
     /**
-     * @param array $fila la fila completa, necesaria para comparar el stock
-     *                    con su mínimo y decidir el color
+     * @param array  $fila   la fila completa, necesaria para comparar el stock
+     *                       con su mínimo y decidir el color
+     * @param array  $reglas definición de los campos, para saber si un valor
+     *                       viene de un enum y debe verse en mayúscula
      */
-    public static function texto(string $columna, $valor, array $fila = []): string
+    public static function texto(string $columna, $valor, array $fila = [], array $reglas = []): string
     {
         if ($valor === null || $valor === '') {
             return '<span class="lg-muted">&mdash;</span>';
@@ -175,6 +201,12 @@ class GestionControllerHelper
 
             return '<span class="lg-pill ' . (((int) $valor === 1) ? 'lg-pill--verde' : 'lg-pill--pizarra') . '">'
                 . $texto . '</span>';
+        }
+
+        // Un enum se guarda en minúsculas pero se lee en mayúscula:
+        // "mesero" -> "Mesero"
+        if (($reglas[$columna]['tipo'] ?? '') === 'enum') {
+            return htmlspecialchars(ucfirst((string) $valor));
         }
 
         if (in_array($columna, ['precio', 'monto', 'total', 'subtotal'], true)) {
@@ -201,6 +233,11 @@ class GestionControllerHelper
 
         if (in_array($columna, ['tipo', 'estado_pago'], true)) {
             return htmlspecialchars(ucfirst((string) $valor));
+        }
+
+        // DNI, teléfono y documento: solo dígitos, sin nada de formato
+        if (in_array($columna, self::COLUMNAS_PLAINAS, true)) {
+            return htmlspecialchars((string) $valor);
         }
 
         return htmlspecialchars((string) $valor);

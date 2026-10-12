@@ -21,7 +21,7 @@ INSERT INTO permisos (nombre, descripcion) VALUES
 ('inventario_editar','Crear productos y ajustar stock'),
 ('compras',          'Registrar compras y proveedores'),
 ('finanzas',         'Ver ingresos, egresos y gastos'),
-('personal',         'Ver colaboradores, asistencia y pagos'),
+('personal',         'Ver trabajadores, asistencia y pagos'),
 ('servicios',        'Ver servicios básicos y vencimientos'),
 ('reportes',         'Ver y exportar reportes'),
 ('configuracion',    'Administrar usuarios, roles y datos del negocio')

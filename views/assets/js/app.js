@@ -107,6 +107,17 @@
 
                         $controlo = $('<input type="number" step="0.01" min="0" class="lg-input">').val(valor);
 
+                    } else if (regla.tipo === 'digitos') {
+
+                        // Solo números: el teclado del móvil muestra el
+                        // teclado numérico y se descartan letras y símbolos
+                        $controlo = $('<input type="text" inputmode="numeric" pattern="[0-9]*" class="lg-input">');
+                        $controlo.val(valor === null || valor === undefined ? '' : String(valor).replace(/\D/g, ''));
+
+                        $controlo.on('input', function () {
+                            this.value = this.value.replace(/\D/g, '');
+                        });
+
                     } else {
 
                         $controlo = $('<input type="text" class="lg-input">').val(valor);
@@ -119,6 +130,22 @@
                     }
 
                     $grupo.append($label).append($controlo);
+
+                    // Ayuda para los campos que solo aceptan dígitos
+                    if (regla.tipo === 'digitos') {
+                        var $ayuda = $('<small class="lg-muted"></small>')
+                            .text('Solo ' + regla.digitos + ' dígitos, sin letras ni símbolos.');
+
+                        $grupo.append($ayuda);
+
+                        $controlo.on('input', function () {
+                            var largo = this.value.length;
+                            var bien = largo === Number(regla.digitos) || largo === 0;
+
+                            $ayuda.css('color', bien ? '' : '#EF4444');
+                        });
+                    }
+
                     $contenedor.append($grupo);
                 });
             };
@@ -150,6 +177,29 @@
             $('#formGuardar').on('click', function () {
 
                 var datos = { recurso: formulario.recurso };
+
+                // Revisa antes de mandar: si un campo de dígitos va mal, se
+                // avisa dentro del modal en vez de enviar y recargar
+                for (var campo in formulario.campos) {
+
+                    var regla = formulario.campos[campo];
+                    var $c = $('#formCampos [data-campo="' + campo + '"]');
+                    var valor = $c.length ? String($c.val() || '').replace(/\D/g, '') : '';
+
+                    if (!regla.digitos) {
+                        continue;
+                    }
+
+                    if (valor !== '' && valor.length !== Number(regla.digitos)) {
+                        $('#formAvisoTexto').text(
+                            regla.etiqueta + ' debe tener ' + regla.digitos
+                            + ' dígitos (escribiste ' + valor.length + ').'
+                        );
+                        $('#formAviso').show();
+                        $c.trigger('focus');
+                        return;
+                    }
+                }
 
                 $('#formCampos [data-campo]').each(function () {
                     datos[$(this).data('campo')] = $(this).val();

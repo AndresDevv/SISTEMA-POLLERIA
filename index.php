@@ -170,38 +170,114 @@ if (isset($accionesApi[$accionActual])) {
     $api->$metodo();
 }
 
-// --- Guardado de roles y permisos (Configuración > Roles) ---------------
+// --- Roles (Configuración > Roles) ---------------------------------------
+// Los permisos de cada rol no se editan desde la pantalla: se asignan solos
+// según el perfil elegido (mesero, cocina, cajero, limpieza, administrador).
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && $pagina === 'configuracion'
-    && isset($_POST['guardar_rol'])) {
+    && (isset($_POST['guardar_rol']) || isset($_POST['crear_rol']) || isset($_POST['eliminar_rol']))) {
 
     require_once __DIR__ . '/config/database.php';
+    require_once __DIR__ . '/config/permisos.php';
 
-    $rolId   = (int) ($_POST['rol_id'] ?? 0);
-    $estado  = isset($_POST['estado']) ? (int) $_POST['estado'] : 1;
-    $permisos = $_POST['permisos'] ?? [];
+    $db = conexionDB();
 
-    if ($rolId > 0) {
+    $rolId  = (int) ($_POST['rol_id'] ?? 0);
+    $nombre = trim((string) ($_POST['nombre'] ?? ''));
 
-        $db = conexionDB();
+    // --- Crear un rol nuevo ---------------------------------------------
+    if (isset($_POST['crear_rol'])) {
 
-        $stmt = $db->prepare("UPDATE roles SET estado = :estado WHERE id = :id");
-        $stmt->execute([':estado' => $estado, ':id' => $rolId]);
+        $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
+        $perfilClave = (string) ($_POST['perfil'] ?? 'mesero');
+        $perfiles    = perfilesPredefinidos();
 
-        $db->prepare("DELETE FROM rol_permiso WHERE rol_id = :rol")->execute([':rol' => $rolId]);
+        $perfil = $perfiles[$perfilClave] ?? $perfiles['mesero'];
 
-        if (is_array($permisos) && $permisos) {
-
-            $stmt = $db->prepare(
-                "INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (:rol, :permiso)"
-            );
-
-            foreach ($permisos as $permisoId) {
-                $stmt->execute([':rol' => $rolId, ':permiso' => (int) $permisoId]);
-            }
+        if ($descripcion === '') {
+            $descripcion = $perfil['descripcion'];
         }
 
-        // Si cambiaron los permisos, se limpia la cache de la sesion
+        if ($nombre === '') {
+            $nombre = $perfil['nombre'];
+        }
+
+        $existe = $db->prepare("SELECT id FROM roles WHERE nombre = :nombre");
+        $existe->execute([':nombre' => $nombre]);
+
+        if ($existe->fetch()) {
+
+            $_SESSION['mensaje'] = ['tipo' => 'error', 'texto' => 'Ya existe un rol con ese nombre.'];
+
+        } else {
+            $db->prepare(
+                "INSERT INTO roles (nombre, descripcion, estado) VALUES (:nombre, :descripcion, 1)"
+            )->execute([':nombre' => $nombre, ':descripcion' => $descripcion]);
+
+            $nuevoId = (int) $db->lastInsertId();
+
+            // Se le asignan los permisos del perfil elegido
+            $permisos = $db->query("SELECT id, nombre FROM permisos")->fetchAll();
+            $ids = permisosDelPerfil($perfil, $permisos);
+
+            if ($ids) {
+                $stmt = $db->prepare(
+                    "INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (:rol, :permiso)"
+                );
+
+                foreach ($ids as $id) {
+                    $stmt->execute([':rol' => $nuevoId, ':permiso' => $id]);
+                }
+            }
+
+            $_SESSION['mensaje'] = [
+                'tipo'  => 'ok',
+                'texto' => 'Rol "' . $nombre . '" creado. Ya puede usarse al agregar usuarios.'
+            ];
+        }
+
+        Permiso::limpiarCache();
+        redirigir('?page=configuracion&tab=roles');
+    }
+
+    // --- Eliminar un rol ------------------------------------------------
+    if (isset($_POST['eliminar_rol'])) {
+
+        $enUso = $db->prepare("SELECT COUNT(*) FROM usuarios WHERE rol_id = :rol");
+        $enUso->execute([':rol' => $rolId]);
+        $cuenta = (int) $enUso->fetchColumn();
+
+        if ($rolId > 0 && $cuenta === 0) {
+
+            $db->prepare("DELETE FROM rol_permiso WHERE rol_id = :rol")->execute([':rol' => $rolId]);
+            $db->prepare("DELETE FROM roles WHERE id = :rol")->execute([':rol' => $rolId]);
+
+            $_SESSION['mensaje'] = ['tipo' => 'ok', 'texto' => 'Rol eliminado.'];
+
+        } elseif ($cuenta > 0) {
+
+            $_SESSION['mensaje'] = [
+                'tipo'  => 'error',
+                'texto' => 'Ese rol tiene usuarios asignados. Quítaselos antes de eliminarlo.'
+            ];
+        }
+
+        Permiso::limpiarCache();
+        redirigir('?page=configuracion&tab=roles');
+    }
+
+    // --- Guardar nombre, descripción y estado ---------------------------
+    if ($rolId > 0 && $nombre !== '') {
+
+        $db->prepare(
+            "UPDATE roles SET nombre = :nombre, descripcion = :descripcion, estado = :estado WHERE id = :id"
+        )->execute([
+            ':nombre'      => $nombre,
+            ':descripcion' => trim((string) ($_POST['descripcion'] ?? '')),
+            ':estado'      => isset($_POST['estado']) ? (int) $_POST['estado'] : 1,
+            ':id'          => $rolId,
+        ]);
+
         Permiso::limpiarCache();
     }
 
@@ -255,6 +331,28 @@ $conLayout = sesionActiva();
 if ($conLayout) {
     // El header ya incluye navbar y sidebar
     require APP_ROOT . '/views/layouts/header.php';
+
+    // Aviso de la acción anterior (rol creado, eliminado, etc). Se muestra
+    // una sola vez y se borra al imprimirlo.
+    if (!empty($_SESSION['mensaje'])) {
+
+        $aviso = $_SESSION['mensaje'];
+        unset($_SESSION['mensaje']);
+
+        $esError = ($aviso['tipo'] ?? '') === 'error';
+        ?>
+        <div class="lg-flash <?= $esError ? 'lg-flash--error' : 'lg-flash--ok' ?>" role="status">
+            <i class="fa <?= $esError ? 'fa-exclamation-circle' : 'fa-check-circle' ?>"></i>
+            <span><?= htmlspecialchars($aviso['texto'] ?? '') ?></span>
+        </div>
+        <script>
+        (function () {
+            var $aviso = $('.lg-flash').first();
+            window.setTimeout(function () { $aviso.fadeOut(400); }, 4500);
+        })();
+        </script>
+        <?php
+    }
 }
 
 require $archivoVista;

@@ -27,13 +27,19 @@ $metodosPago = $ventaModel->metodosPago();
 /**
  * Pedidos a mostrar, sin repetir.
  *
- * Antes se concatenaban la lista de activos con la de pedidos del día, y un
- * pedido pendiente de hoy aparecía en ambas: se veía duplicado en pantalla.
+ * Tres fuentes: los del día, los que siguen en cocina, y los que están sin
+ * cobrar de cualquier fecha. La tercera es la importante: un pedido servido
+ * ya no está activo, así que sin ella un cobro olvidado se quedaba invisible
+ * y su mesa bloqueada para siempre.
  */
 $pedidos = [];
 $vistos  = [];
 
-foreach (array_merge($pedidosHoy, $pedidoModel->listar('activos')) as $pedido) {
+foreach (array_merge(
+    $pedidosHoy,
+    $pedidoModel->listar('activos'),
+    $pedidoModel->sinCobrar()
+) as $pedido) {
     $clave = (int) $pedido['id'];
 
     if (isset($vistos[$clave])) {
@@ -41,8 +47,23 @@ foreach (array_merge($pedidosHoy, $pedidoModel->listar('activos')) as $pedido) {
     }
 
     $vistos[$clave] = true;
+    $pedido['sin_cobrar'] = !$ventaModel->yaCobrado($clave);
     $pedidos[] = $pedido;
 }
+
+/**
+ * Cobros que se quedaron pendientes de otro día.
+ *
+ * Son los que mantienen una mesa ocupada y los que más fácil se pierden de
+ * vista, así que se avisa arriba y se marcan fila por fila.
+ */
+$hoy = date('Y-m-d');
+
+$cobrosOlvidados = array_filter($pedidos, static function (array $p) use ($hoy): bool {
+    return !empty($p['sin_cobrar'])
+        && $p['estado'] === 'entregado'
+        && date('Y-m-d', strtotime($p['fecha_creacion'])) !== $hoy;
+});
 
 /** ¿Qué panel se muestra? */
 $panelActual = $_GET['panel'] ?? 'mesas';
@@ -273,7 +294,12 @@ encabezadoPagina(
             <span class="lg-card-icon"><i class="fa fa-list-alt"></i></span>
             <div>
                 <h2 class="lg-card-title">Pedidos en curso</h2>
-                <p class="lg-card-subtitle"><?= count($pedidos) ?> pedido(s) pendiente(s)</p>
+                <p class="lg-card-subtitle">
+                    <?= count($pedidos) ?> pedido(s) en pantalla
+                    <?php if ($cobrosOlvidados): ?>
+                        &middot; <?= count($cobrosOlvidados) ?> sin cobrar
+                    <?php endif; ?>
+                </p>
             </div>
 
             <span class="lg-muted" style="font-size:0.75rem;"
@@ -290,6 +316,16 @@ encabezadoPagina(
             </div>
 
         <?php else: ?>
+
+            <?php if ($cobrosOlvidados): ?>
+                <div class="lg-info mb-3" style="background-color:#FFF7ED;border-color:#FED7AA;color:#9A3412;">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <span>
+                        Hay <?= count($cobrosOlvidados) ?> pedido(s) servido(s) sin cobrar de
+                        otros d&iacute;as. Est&aacute;n mantendo su mesa ocupada hasta que se cobren.
+                    </span>
+                </div>
+            <?php endif; ?>
 
             <?php
     /**
@@ -320,13 +356,30 @@ encabezadoPagina(
                             <?php
                             $ui      = estadoPedidoUI($pedido['estado']);
                             $cobrado = $ventaModel->yaCobrado((int) $pedido['id']);
+                            $fecha   = date('Y-m-d', strtotime($pedido['fecha_creacion']));
+                            // Servido y sin cobrar, y de un día anterior al de hoy
+                            $olvidado = !$cobrado
+                                && $pedido['estado'] === 'entregado'
+                                && $fecha !== $hoy;
                             ?>
 
-                            <tr>
-                                <td style="font-weight:600;">P-<?= str_pad((string) $pedido['id'], 4, '0', STR_PAD_LEFT) ?></td>
+                            <tr<?= $olvidado ? ' style="background-color:#FFF7ED;"' : '' ?>>
+                                <td style="font-weight:600;">
+                                    P-<?= str_pad((string) $pedido['id'], 4, '0', STR_PAD_LEFT) ?>
+                                    <?php if ($olvidado): ?>
+                                        <span class="lg-pill lg-pill--ambar" style="margin-left:6px;">
+                                            Sin cobrar
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>Mesa <?= (int) $pedido['mesa_numero'] ?></td>
                                 <td class="num"><?= (int) $pedido['items'] ?></td>
-                                <td class="text-muted"><?= date('H:i', strtotime($pedido['fecha_creacion'])) ?></td>
+                                <td class="text-muted">
+                                    <?= date('d/m H:i', strtotime($pedido['fecha_creacion'])) ?>
+                                    <?php if ($fecha !== $hoy): ?>
+                                        <br><small><?= date('d/m/Y', strtotime($pedido['fecha_creacion'])) ?></small>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="num"><?= soles((float) $pedido['total']) ?></td>
                                 <td>
                                     <?php if ($cobrado): ?>

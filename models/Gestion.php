@@ -49,6 +49,7 @@ class Gestion
             'categorias' => [
                 'tabla'  => 'categorias',
                 'titulo' => 'Categoría',
+                'tituloPlural' => 'Categorías',
                 'modulo' => 'inventario',
                 'orden'  => 'nombre',
                 'campos' => [
@@ -62,6 +63,7 @@ class Gestion
             'proveedores' => [
                 'tabla'  => 'proveedores',
                 'titulo' => 'Proveedor',
+                'tituloPlural' => 'Proveedores',
                 'modulo' => 'compras',
                 'orden'  => 'nombre',
                 'campos' => [
@@ -74,29 +76,33 @@ class Gestion
                 'listado' => '*'
             ],
 
-            // Ojo: la tabla empleados no tiene columna "nombre"; el nombre
-            // vive en usuarios, así que el colaborador se elige por su usuario.
             'empleados' => [
                 'tabla'  => 'empleados',
-                'titulo' => 'Colaborador',
+                'titulo' => 'Trabajador',
+                'tituloPlural' => 'Trabajadores',
                 'modulo' => 'personal',
-                'orden'  => 'u.nombre',
+                'orden'  => 'e.nombre',
                 'campos' => [
-                    'usuario_id'   => ['tipo' => 'relacion', 'etiqueta' => 'Usuario', 'tabla' => 'usuarios', 'requerido' => true],
-                    'cargo'        => ['tipo' => 'texto', 'etiqueta' => 'Cargo (mesero, cocinero, cajero)'],
-                    'dni'          => ['tipo' => 'texto', 'etiqueta' => 'DNI'],
-                    'telefono'     => ['tipo' => 'texto', 'etiqueta' => 'Teléfono'],
-                    'direccion'    => ['tipo' => 'texto', 'etiqueta' => 'Dirección'],
+                    'nombre'        => ['tipo' => 'texto', 'etiqueta' => 'Nombre y apellidos', 'requerido' => true],
+                    'cargo'         => ['tipo' => 'enum', 'etiqueta' => 'Cargo', 'requerido' => true,
+                                         'opciones' => ['mesero', 'cocinero', 'cajero', 'administrador'],
+                                         'default'  => 'mesero'],
+                    'dni'           => ['tipo' => 'digitos', 'etiqueta' => 'DNI', 'digitos' => 8, 'requerido' => true],
+                    'telefono'      => ['tipo' => 'digitos', 'etiqueta' => 'Teléfono', 'digitos' => 9],
+                    'direccion'     => ['tipo' => 'texto', 'etiqueta' => 'Dirección'],
                     'fecha_ingreso' => ['tipo' => 'fecha', 'etiqueta' => 'Fecha de ingreso'],
-                    'estado'       => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]
+                    'usuario_id'    => ['tipo' => 'relacion', 'etiqueta' => 'Usuario de acceso (opcional)',
+                                         'tabla' => 'usuarios'],
+                    'estado'        => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]
                 ],
-                'listado' => 'e.id, u.nombre, e.cargo, e.dni, e.telefono, e.fecha_ingreso, e.estado',
-                'join'    => 'INNER JOIN usuarios u ON u.id = e.usuario_id'
+                'listado' => 'e.id, e.nombre, e.cargo, e.dni, e.telefono, e.direccion, e.fecha_ingreso, e.estado',
+                'join'    => ''
             ],
 
             'usuarios' => [
                 'tabla'  => 'usuarios',
                 'titulo' => 'Usuario',
+                'tituloPlural' => 'Usuarios',
                 'modulo' => 'configuracion',
                 'orden'  => 'u.id DESC',
                 'campos' => [
@@ -113,6 +119,7 @@ class Gestion
             'servicios' => [
                 'tabla'  => 'servicios',
                 'titulo' => 'Servicio',
+                'tituloPlural' => 'Servicios',
                 'modulo' => 'servicios',
                 'orden'  => 'fecha_vencimiento DESC',
                 'campos' => [
@@ -131,6 +138,7 @@ class Gestion
             'egresos' => [
                 'tabla'  => 'egresos',
                 'titulo' => 'Egreso',
+                'tituloPlural' => 'Egresos',
                 'modulo' => 'finanzas',
                 'orden'  => 'e.fecha DESC',
                 'campos' => [
@@ -146,6 +154,7 @@ class Gestion
             'ingresos' => [
                 'tabla'  => 'ingresos',
                 'titulo' => 'Ingreso',
+                'tituloPlural' => 'Ingresos',
                 'modulo' => 'finanzas',
                 'orden'  => 'i.fecha DESC',
                 'campos' => [
@@ -161,6 +170,7 @@ class Gestion
             'gastos' => [
                 'tabla'  => 'gastos',
                 'titulo' => 'Gasto',
+                'tituloPlural' => 'Gastos',
                 'modulo' => 'finanzas',
                 'orden'  => 'g.fecha DESC',
                 'campos' => [
@@ -176,6 +186,7 @@ class Gestion
             'configuracion_negocio' => [
                 'tabla'  => 'configuracion_negocio',
                 'titulo' => 'Configuración',
+                'tituloPlural' => 'Configuración',
                 'modulo' => 'configuracion',
                 'orden'  => 'id',
                 'singleton' => true,
@@ -350,6 +361,18 @@ class Gestion
                 return ['success' => false, 'message' => 'El campo "' . $regla['etiqueta'] . '" es obligatorio.'];
             }
 
+            $errorDigitos = $this->errorDeDigitos($regla, $datos[$campo] ?? '');
+
+            if ($errorDigitos !== null) {
+                return ['success' => false, 'message' => $errorDigitos];
+            }
+
+            $errorEnum = $this->errorDeEnum($regla, $datos[$campo] ?? '');
+
+            if ($errorEnum !== null) {
+                return ['success' => false, 'message' => $errorEnum];
+            }
+
             $campos[] = $campo;
             $valores[] = $valor;
         }
@@ -361,7 +384,7 @@ class Gestion
         }
 
         // Usuario que registra, salvo que el recurso ya lo declare como campo
-        // (en empleados, usuario_id es justamente el colaborador que se elige)
+        // (en empleados, usuario_id es justamente el trabajador que se elige)
         if (!in_array('usuario_id', $campos, true)
             && in_array('usuario_id', $this->columnas($def['tabla']), true)) {
             $campos[] = 'usuario_id';
@@ -415,6 +438,18 @@ class Gestion
 
             if ($valor === null && !empty($regla['requerido'])) {
                 return ['success' => false, 'message' => 'El campo "' . $regla['etiqueta'] . '" es obligatorio.'];
+            }
+
+            $errorDigitos = $this->errorDeDigitos($regla, $datos[$campo]);
+
+            if ($errorDigitos !== null) {
+                return ['success' => false, 'message' => $errorDigitos];
+            }
+
+            $errorEnum = $this->errorDeEnum($regla, $datos[$campo]);
+
+            if ($errorEnum !== null) {
+                return ['success' => false, 'message' => $errorEnum];
             }
 
             if ($campo === 'password') {
@@ -484,8 +519,63 @@ class Gestion
             'check'              => (int) (bool) $valor,
             'enum'               => in_array($valor, $regla['opciones'] ?? [], true) ? $valor : ($regla['default'] ?? null),
             'fecha'              => preg_replace('/[^0-9\-]/', '', (string) $valor) ?: null,
+            // Se queda solo con los dígitos: ni letras ni símbolos sobreviven
+            'digitos'            => preg_replace('/\D/', '', (string) $valor),
             default              => (string) $valor
         };
+    }
+
+    /**
+     * Revisa que un campo de solo dígitos tenga el largo exacto.
+     *
+     * @return string|null mensaje de error, o null si está bien
+     */
+    private function errorDeDigitos(array $regla, $valor): ?string
+    {
+        if (empty($regla['digitos'])) {
+            return null;
+        }
+
+        $solo = preg_replace('/\D/', '', (string) $valor);
+
+        // Vacío solo es problema si el campo es obligatorio
+        if ($solo === '') {
+            return null;
+        }
+
+        $largo = strlen($solo);
+
+        if ($largo !== (int) $regla['digitos']) {
+            return $regla['etiqueta'] . ' debe tener ' . $regla['digitos']
+                . ' dígitos (escribiste ' . $largo . ').';
+        }
+
+        return null;
+    }
+
+    /**
+     * Revisa que un enum venga de la lista de opciones.
+     *
+     * Antes un valor desconocido caía al valor por defecto en silencio, así
+     * que un cargo "gerente" se guardaba como "mesero" sin avisar nada. Es
+     * mejor rechazar y decir qué opciones hay.
+     *
+     * @return string|null mensaje de error, o null si está bien
+     */
+    private function errorDeEnum(array $regla, $valor): ?string
+    {
+        if (($regla['tipo'] ?? '') !== 'enum' || $valor === null || $valor === '') {
+            return null;
+        }
+
+        $opciones = $regla['opciones'] ?? [];
+
+        if (in_array($valor, $opciones, true)) {
+            return null;
+        }
+
+        return '"' . $regla['etiqueta'] . '" no es válido. '
+            . 'Elige entre: ' . implode(', ', array_map('ucfirst', $opciones)) . '.';
     }
 
     /**

@@ -12,18 +12,19 @@ class Personal
     }
 
     /**
-     * Colaboradores con su usuario y rol asociado.
-     *
-     * Ojo: en la tabla empleados no hay columna "nombre"; el nombre real
-     * vive en usuarios, así que se toma de ahí. Un empleado sin usuario
-     * queda con el cargo como referencia.
+     * Trabajadores con su usuario de acceso y rol, si tuvieran.
      */
-    public function colaboradores(): array
+    public function trabajadores(): array
     {
         return $this->conexion->query(
-            "SELECT e.id, e.cargo, e.dni, e.telefono, e.direccion,
-                    e.fecha_ingreso, e.estado,
-                    COALESCE(u.nombre, e.cargo, 'Colaborador') AS nombre,
+            "SELECT e.id,
+                    COALESCE(e.nombre, u.nombre, e.cargo, 'Trabajador') AS nombre,
+                    e.cargo,
+                    e.dni,
+                    e.telefono,
+                    e.direccion,
+                    e.fecha_ingreso,
+                    e.estado,
                     u.usuario,
                     r.nombre AS rol
              FROM empleados e
@@ -39,7 +40,7 @@ class Personal
     public function asistenciasHoy(): array
     {
         return $this->conexion->query(
-            "SELECT a.*, COALESCE(u.nombre, e.cargo, 'Colaborador') AS empleado
+            "SELECT a.*, COALESCE(e.nombre, u.nombre, e.cargo, 'Trabajador') AS empleado
              FROM asistencias a
              INNER JOIN empleados e ON e.id = a.empleado_id
              LEFT JOIN usuarios u ON u.id = e.usuario_id
@@ -49,7 +50,7 @@ class Personal
     }
 
     /**
-     * Marca entrada o salida de un colaborador.
+     * Marca entrada o salida de un trabajador.
      */
     public function registrarAsistencia(int $empleadoId, string $tipo): array
     {
@@ -63,7 +64,7 @@ class Personal
         $stmt->execute([':id' => $empleadoId]);
 
         if ((int) $stmt->fetchColumn() === 0) {
-            return ['success' => false, 'message' => 'El colaborador no existe.'];
+            return ['success' => false, 'message' => 'El trabajador no existe.'];
         }
 
         // Solo una asistencia por día
@@ -106,7 +107,7 @@ class Personal
      */
     public function pagos(int $limite = 100): array
     {
-        $sql = "SELECT p.*, COALESCE(u.nombre, e.cargo, 'Colaborador') AS empleado, e.cargo
+        $sql = "SELECT p.*, COALESCE(e.nombre, u.nombre, e.cargo, 'Trabajador') AS empleado, e.cargo
                 FROM pagos_personal p
                 INNER JOIN empleados e ON e.id = p.empleado_id
                 LEFT JOIN usuarios u ON u.id = e.usuario_id
@@ -117,7 +118,7 @@ class Personal
     }
 
     /**
-     * Registra el pago de un colaborador.
+     * Registra el pago de un trabajador.
      */
     public function registrarPago(int $empleadoId, string $periodo, float $monto, string $observacion = ''): array
     {
@@ -129,7 +130,7 @@ class Personal
         $stmt->execute([':id' => $empleadoId]);
 
         if ((int) $stmt->fetchColumn() === 0) {
-            return ['success' => false, 'message' => 'El colaborador no existe.'];
+            return ['success' => false, 'message' => 'El trabajador no existe.'];
         }
 
         $stmt = $this->conexion->prepare(

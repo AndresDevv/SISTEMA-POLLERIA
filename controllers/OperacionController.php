@@ -109,7 +109,7 @@ public function compraDetalle(): void
     }
 
     /**
-     * Registra entrada o salida de un colaborador.
+     * Registra entrada o salida de un trabajador.
      */
     public function asistencia(): void
     {
@@ -124,7 +124,7 @@ public function compraDetalle(): void
     }
 
     /**
-     * Registra el pago de un colaborador.
+     * Registra el pago de un trabajador.
      */
     public function pago(): void
     {
