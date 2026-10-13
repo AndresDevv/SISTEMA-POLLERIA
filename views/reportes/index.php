@@ -149,13 +149,13 @@ encabezadoPagina(
     <?php foreach ($rangos as $clave => $rango): ?>
         <a href="<?= url('reportes') ?>&amp;periodo=<?= $clave ?>"
            class="lg-segmento<?= $periodo === $clave ? ' is-activo' : '' ?>">
-            <i class="fa fa-calendar-<?= $clave === 'dia' ? 'day' : ($clave === 'semana' ? 'week' : 'month') ?>"></i>
+            <i class="fa <?= $clave === 'dia' ? 'fa-calendar-check-o' : ($clave === 'semana' ? 'fa-calendar' : 'fa-calendar-o') ?>"></i>
             <?= htmlspecialchars($rango['etiqueta']) ?>
         </a>
     <?php endforeach; ?>
     <a href="<?= url('reportes') ?>&amp;periodo=personalizado"
        class="lg-segmento<?= $periodo === 'personalizado' ? ' is-activo' : '' ?>">
-        <i class="fa fa-calendar-alt"></i> Personalizado
+        <i class="fa fa-calendar"></i> Personalizado
     </a>
 </div>
 
@@ -207,7 +207,7 @@ encabezadoPagina(
                 <p class="lg-stat-label mb-1">Gastos del per&iacute;odo</p>
                 <div class="lg-stat-value is-red" style="font-size:1.6rem;"><?= soles($totalGastos) ?></div>
             </div>
-            <span class="lg-card-icon"><i class="fa fa-money-bill-wave"></i></span>
+            <span class="lg-card-icon"><i class="fa fa-money"></i></span>
         </div>
     </div>
 
@@ -218,7 +218,7 @@ encabezadoPagina(
                 <div class="lg-stat-value <?= $totalGanancia >= 0 ? 'is-green' : 'is-red' ?>"
                      style="font-size:1.6rem;"><?= soles($totalGanancia) ?></div>
             </div>
-            <span class="lg-card-icon"><i class="fa fa-chart-line"></i></span>
+            <span class="lg-card-icon"><i class="fa fa-line-chart"></i></span>
         </div>
     </div>
 
@@ -242,7 +242,7 @@ encabezadoPagina(
                 <p class="lg-stat-label mb-1">Tickets emitidos</p>
                 <div class="lg-stat-value is-dark" style="font-size:1.6rem;"><?= array_sum(array_column($porDia, 'ventas')) ?></div>
             </div>
-            <span class="lg-card-icon"><i class="fa fa-receipt"></i></span>
+            <span class="lg-card-icon"><i class="fa fa-ticket"></i></span>
         </div>
     </div>
 

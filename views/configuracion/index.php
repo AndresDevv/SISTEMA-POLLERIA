@@ -26,7 +26,7 @@ $pestanasConfig = static function (string $actual): void {
             <i class="fa fa-user"></i> Usuarios
         </a>
         <a href="<?= url('configuracion') ?>&tab=roles" class="lg-segmento<?= $actual === 'roles' ? ' is-activo' : '' ?>">
-            <i class="fa fa-user-tag"></i> Roles
+            <i class="fa fa-id-badge"></i> Roles
         </a>
         <a href="<?= url('configuracion') ?>&tab=negocio" class="lg-segmento<?= $actual === 'negocio' ? ' is-activo' : '' ?>">
             <i class="fa fa-cog"></i> Negocio
@@ -41,11 +41,11 @@ if ($pestana !== 'roles'):
 
     $recursosExtra = [
         ['clave' => 'usuarios', 'recurso' => $pestana === 'negocio' ? 'configuracion_negocio' : 'usuarios',
-         'pagina' => 'configuracion',                   'titulo' => 'Usuarios', 'icono' => 'fa fa-user'],
+            'pagina' => 'configuracion',                   'titulo' => 'Usuarios', 'icono' => 'fa fa-user'],
         ['clave' => 'roles',    'recurso' => 'usuarios', 'pagina' => 'configuracion&tab=roles',
-         'titulo' => 'Roles', 'icono' => 'fa fa-user-tag'],
+            'titulo' => 'Roles', 'icono' => 'fa fa-id-badge'],
         ['clave' => 'negocio',  'recurso' => 'usuarios', 'pagina' => 'configuracion&tab=negocio',
-         'titulo' => 'Negocio', 'icono' => 'fa fa-cog']
+            'titulo' => 'Negocio', 'icono' => 'fa fa-cog']
     ];
 
     $recurso       = $pestana === 'negocio' ? 'configuracion_negocio' : 'usuarios';
@@ -63,9 +63,9 @@ endif;
 $pestanasConfig($pestana);
 
 encabezadoPagina(
-    'fa fa-user-tag',
+    'fa fa-id-badge',
     'Roles',
-    'Cada rol es un tipo de persona. El sistema ya sabe qu&eacute; men&uacute;s puede ver cada uno.'
+    'Cada rol es un tipo de persona. Al crear un rol marcas qué menús puede ver.'
 );
 
 require_once APP_ROOT . '/config/permisos.php';
@@ -75,8 +75,8 @@ $db = conexionDB();
 $roles = $db->query(
     "SELECT r.id, r.nombre, r.descripcion, r.estado,
             (SELECT COUNT(*) FROM usuarios u WHERE u.rol_id = r.id) AS usuarios
-     FROM roles r
-     ORDER BY r.id"
+        FROM roles r
+        ORDER BY r.id"
 )->fetchAll();
 
 $permisos = $db->query("SELECT id, nombre, descripcion FROM permisos ORDER BY id")->fetchAll();
@@ -92,8 +92,6 @@ foreach ($db->query("SELECT rol_id, permiso_id FROM rol_permiso")->fetchAll() as
 $grupos = permisosAgrupados($permisos);
 
 $totalPermisos = count($permisos);
-$perfiles      = perfilesPredefinidos();
-
 /**
  * El administrador puede ser cualquier rol con el permiso "configuracion".
  * Si lo tiene, ve todos los menús sin importar la lista.
@@ -109,22 +107,6 @@ foreach ($permisos as $p) {
 $esAdmin = static function (array $ids) use ($permisoConfig): bool {
     return $permisoConfig !== null && in_array($permisoConfig, $ids, true);
 };
-
-/** ¿Los permisos del rol coinciden con su perfil predefinido? */
-$coincideConPerfil = static function (array $ids, string $nombreRol) use ($permisos, $esAdmin): bool {
-    $perfil = perfilDeRol($nombreRol);
-
-    if ($perfil === null) {
-        return false;
-    }
-
-    $esperados = permisosDelPerfil($perfil, $permisos, $esAdmin($ids));
-    $actuales  = $ids;
-    sort($esperados);
-    sort($actuales);
-
-    return $esperados === $actuales;
-};
 ?>
 
 <!-- ============================ AGREGAR ROL NUEVO ======================= -->
@@ -135,43 +117,71 @@ $coincideConPerfil = static function (array $ids, string $nombreRol) use ($permi
         <div class="flex-grow-1">
             <h2 class="lg-card-title">Agregar un rol nuevo</h2>
             <p class="lg-card-subtitle">
-                Elige de qu&eacute; tipo de persona se trata y el sistema le asigna
-                sola los men&uacute;s que le corresponden.
+                Escribe el nombre, para qu&eacute; sirve y marca qu&eacute; puede ver.
             </p>
         </div>
     </div>
 
-    <form method="POST" action="<?= url('configuracion') ?>&tab=roles" class="row">
-        <div class="col-md-3 mb-3">
-            <label class="lg-label" for="rolNombre">Nombre del rol</label>
-            <input type="text" class="lg-input" id="rolNombre" name="nombre"
-                   placeholder="Cajero" maxlength="40" required>
+    <form method="POST" action="<?= url('configuracion') ?>&tab=roles">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="lg-label" for="rolNombre">Nombre del rol</label>
+                <input type="text" class="lg-input" id="rolNombre" name="nombre"
+                        placeholder="Cajero" maxlength="40" required>
+            </div>
+
+            <div class="col-md-8 mb-3">
+                <label class="lg-label" for="rolDescripcion">Para qué sirve</label>
+                <input type="text" class="lg-input" id="rolDescripcion" name="descripcion"
+                    placeholder="Cobra los pedidos y lleva la caja del día" maxlength="160">
+            </div>
         </div>
 
-        <div class="col-md-5 mb-3">
-            <label class="lg-label" for="rolDescripcion">Para qu&eacute; sirve</label>
-            <input type="text" class="lg-input" id="rolDescripcion" name="descripcion"
-                   placeholder="Cobra los pedidos y lleva la caja del d&iacute;a" maxlength="160">
-        </div>
+        <label class="lg-label">
+            Qué menús y botones puede usar este rol
+        </label>
 
-        <div class="col-md-3 mb-3">
-            <label class="lg-label" for="rolPerfil">Tipo de persona</label>
-            <select class="lg-select" id="rolPerfil" name="perfil">
-                <?php foreach ($perfiles as $clave => $perfil): ?>
-                    <option value="<?= htmlspecialchars($clave) ?>">
-                        <?= htmlspecialchars($perfil['nombre']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <small class="lg-muted" id="ayudaPerfil">
-                <?= htmlspecialchars($perfiles['mesero']['descripcion']) ?>
-            </small>
-        </div>
+        <?php foreach ($grupos as $grupo): ?>
+            <div class="lg-rol-grupo">
+                <div class="lg-rol-grupo-head">
+                    <i class="<?= htmlspecialchars($grupo['icono']) ?>"></i>
+                    <span><?= htmlspecialchars($grupo['titulo']) ?></span>
+                    <?php if ($grupo['nota'] !== ''): ?>
+                        <small class="lg-muted"><?= htmlspecialchars($grupo['nota']) ?></small>
+                    <?php endif; ?>
+                </div>
 
-        <div class="col-md-1 mb-3 d-flex align-items-end">
-            <button type="submit" name="crear_rol" value="1" class="lg-btn lg-btn--primary w-100">
-                <i class="fa fa-plus"></i> Crear
+                <div class="lg-rol-grupo-items">
+                    <?php foreach ($grupo['permisos'] as $permiso): ?>
+                        <label class="lg-chip lg-chip--permiso">
+                            <input type="checkbox" name="permisos[]" value="<?= (int) $permiso['id'] ?>"
+                                class="js-permiso-nuevo">
+                            <span>
+                                <strong><?= htmlspecialchars($permiso['nombre']) ?></strong>
+                                <small class="lg-muted d-block"><?= htmlspecialchars($permiso['ayuda']) ?></small>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button type="submit" name="crear_rol" value="1" class="lg-btn lg-btn--primary">
+                <i class="fa fa-plus"></i> Crear rol
             </button>
+
+            <button type="button" class="lg-btn lg-btn--ghost js-marcar-todo">
+                <i class="fa fa-check"></i> Marcar todos
+            </button>
+
+            <button type="button" class="lg-btn lg-btn--ghost js-desmarcar-todo">
+                <i class="fa fa-times"></i> Desmarcar todos
+            </button>
+
+            <span class="lg-muted js-cuenta">
+                0 de <?= $totalPermisos ?> permisos marcados
+            </span>
         </div>
     </form>
 </div>
@@ -180,12 +190,13 @@ $coincideConPerfil = static function (array $ids, string $nombreRol) use ($permi
 
 <div class="lg-card">
     <div class="lg-card-head">
-        <span class="lg-card-icon"><i class="fa fa-user-tag"></i></span>
+        <span class="lg-card-icon"><i class="fa fa-id-badge"></i></span>
         <div class="flex-grow-1">
             <h2 class="lg-card-title">Roles del sistema</h2>
             <p class="lg-card-subtitle">
-                Al crear un usuario soloeligir&aacute;s su rol, y &eacute;ste ya
-                sabr&aacute; qu&eacute; men&uacute;s puede ver.
+                <i class="fa fa-info-circle"></i>
+                Al crear un usuario solo eligirás su rol, y éste ya
+                sabrá qué menús puede ver.
             </p>
         </div>
     </div>
@@ -195,8 +206,8 @@ $coincideConPerfil = static function (array $ids, string $nombreRol) use ($permi
             <thead>
                 <tr>
                     <th>Rol</th>
-                    <th>Para qu&eacute; sirve</th>
-                    <th>Men&uacute;s que puede ver</th>
+                    <th>Para qué sirve</th>
+                    <th>Menús que puede ver</th>
                     <th class="text-center">Usuarios</th>
                     <th class="text-center">Estado</th>
                     <th class="text-right">Acciones</th>
@@ -205,24 +216,19 @@ $coincideConPerfil = static function (array $ids, string $nombreRol) use ($permi
             <tbody>
                 <?php foreach ($roles as $rol): ?>
                     <?php
-                    $rolId    = (int) $rol['id'];
-                    $ids      = $porRol[$rolId] ?? [];
-                    $modulos  = modulosDelRol($ids, $grupos);
-                    $admin    = $esAdmin($ids);
-                    $perfil   = perfilDeRol($rol['nombre']);
+                    $rolId   = (int) $rol['id'];
+                    $ids     = $porRol[$rolId] ?? [];
+                    $modulos = modulosDelRol($ids, $grupos);
+                    $admin   = $esAdmin($ids);
                     ?>
                     <tr>
                         <td>
                             <span class="lg-fila-nombre">
                                 <span class="lg-fila-icono">
-                                    <?php // Los perfiles ya traen la clase completa, p. ej. "fa fa-star" ?>
-                                    <i class="<?= htmlspecialchars($perfil['icono'] ?? 'fa fa-user-tag') ?>"></i>
+                                    <i class="fa fa-id-badge"></i>
                                 </span>
                                 <span class="lg-fila-texto">
                                     <strong><?= htmlspecialchars($rol['nombre']) ?></strong>
-                                    <?php if ($perfil === null): ?>
-                                        <small class="lg-pill lg-pill--pizarra">A medida</small>
-                                    <?php endif; ?>
                                 </span>
                             </span>
                         </td>
@@ -232,7 +238,7 @@ $coincideConPerfil = static function (array $ids, string $nombreRol) use ($permi
                         <td>
                             <span class="lg-pilas">
                                 <?php if ($admin): ?>
-                                    <span class="lg-pill lg-pill--verde">Todos los men&uacute;s</span>
+                                    <span class="lg-pill lg-pill--verde">Todos los menús</span>
                                 <?php elseif ($modulos): ?>
                                     <?php foreach ($modulos as $modulo): ?>
                                         <span class="lg-pill lg-pill--pizarra">
@@ -269,7 +275,7 @@ $coincideConPerfil = static function (array $ids, string $nombreRol) use ($permi
                                     <i class="fa fa-trash-o"></i> Eliminar
                                 </button>
                                 <form id="form-eliminar-<?= $rolId ?>" method="POST"
-                                      action="<?= url('configuracion') ?>&tab=roles" style="display:none;">
+                                    action="<?= url('configuracion') ?>&tab=roles" style="display:none;">
                                     <input type="hidden" name="rol_id" value="<?= $rolId ?>">
                                 </form>
                             <?php else: ?>
@@ -286,40 +292,44 @@ $coincideConPerfil = static function (array $ids, string $nombreRol) use ($permi
 
     <p class="lg-muted mt-3 mb-0" style="font-size:.82rem;">
         <i class="fa fa-info-circle"></i>
-        Los permisos de cada rol son fijos y no se editan aqu&iacute;. Si necesitas
-        cambiar qu&eacute; ve alguien, crea un rol nuevo con el tipo de persona
-        que le corresponda.
+        Los permisos se marcan al crear el rol. Para cambiar qué ve uno que ya
+        existe, crea otro rol con los permisos que necesitas.
     </p>
 </div>
 
 <script>
 $(function () {
 
-    // Al elegir el tipo de persona, se explica de qué se encarga
-    var descripciones = <?= json_encode(
-        array_map(static fn (array $p): string => $p['descripcion'], $perfiles),
-        JSON_UNESCAPED_UNICODE
-    ) ?>;
-
-    $('#rolPerfil').on('change', function () {
-        $('#ayudaPerfil').text(descripciones[this.value] || '');
+    // Marcar y desmarcar en bloque, para el formulario de rol nuevo
+    $('.js-marcar-todo').on('click', function () {
+        $('.js-permiso-nuevo').prop('checked', true).trigger('change');
     });
 
-    // El nombre se escribe solo con el tipo de persona elegido
-    $('#rolNombre').on('input', function () {
-        if ($(this).data('tocado')) {
-            return;
-        }
+    $('.js-desmarcar-todo').on('click', function () {
+        $('.js-permiso-nuevo').prop('checked', false).trigger('change');
+    });
 
-        var nombre = $(this).val();
+    // Contador y resaltado de las casillas marcadas
+    var refrescar = function () {
+        var $marcadas = $('.js-permiso-nuevo:checked');
 
-        // Solo autocompleta mientras el campo esté limpio
-        if (nombre === '' || $(this).data('nombre') === nombre) {
-            $(this).val($('#rolPerfil option:selected').text());
-            $(this).data('nombre', $(this).val());
+        $('.js-cuenta').text(
+            $marcadas.length + ' de ' + $('.js-permiso-nuevo').length + ' permisos marcados'
+        );
+
+        $('.lg-chip--permiso').each(function () {
+            $(this).toggleClass('is-activo', $(this).find('.js-permiso-nuevo').is(':checked'));
+        });
+    };
+
+    $(document).on('change', '.js-permiso-nuevo', refrescar);
+    refrescar();
+
+    // Aviso si se sale con permisos marcados sin haber creado el rol
+    $(window).on('beforeunload', function () {
+        if ($('.js-permiso-nuevo:checked').length) {
+            return 'Hay permisos marcados que no guardaste.';
         }
-    }).on('keyup', function () {
-        $(this).data('tocado', true);
     });
 
 });

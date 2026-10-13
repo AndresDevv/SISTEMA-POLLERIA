@@ -35,7 +35,7 @@ $pestanasInventario = static function (string $actual) use ($movimientos): void 
             <i class="fa fa-tags"></i> Categorías
         </a>
         <a href="<?= url('inventario/movimientos') ?>" class="lg-segmento<?= $actual === 'movimientos' ? ' is-activo' : '' ?>">
-            <i class="fa fa-exchange-alt"></i> Movimientos
+            <i class="fa fa-exchange"></i> Movimientos
             <span class="lg-segmento-badge"><?= count($movimientos) ?></span>
         </a>
     </div>
@@ -56,7 +56,7 @@ if ($recurso !== 'movimientos'):
         ['clave' => 'categorias',  'recurso' => 'categorias', 'pagina' => 'inventario&tab=categorias',
          'titulo' => 'Categorías',  'icono' => 'fa fa-tags'],
         ['clave' => 'movimientos', 'recurso' => $recursoCrud, 'pagina' => 'inventario/movimientos',
-         'titulo' => 'Movimientos', 'icono' => 'fa fa-exchange-alt']
+         'titulo' => 'Movimientos', 'icono' => 'fa fa-exchange']
     ];
 
     $recurso = $recursoCrud;
@@ -76,7 +76,7 @@ endif;
 
     <div class="lg-card">
         <div class="lg-card-head">
-            <span class="lg-card-icon"><i class="fa fa-exchange-alt"></i></span>
+            <span class="lg-card-icon"><i class="fa fa-exchange"></i></span>
             <div>
                 <h2 class="lg-card-title">Movimientos de inventario</h2>
                 <p class="lg-card-subtitle">Entradas, salidas y ajustes de stock</p>
@@ -85,7 +85,7 @@ endif;
 
         <?php if (!$movimientos): ?>
             <div class="lg-empty">
-                <i class="fa fa-exchange-alt"></i>
+                <i class="fa fa-exchange"></i>
                 <p class="mb-0">A&uacute;n no hay movimientos registrados.</p>
             </div>
         <?php else: ?>

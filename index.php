@@ -171,14 +171,13 @@ if (isset($accionesApi[$accionActual])) {
 }
 
 // --- Roles (Configuración > Roles) ---------------------------------------
-// Los permisos de cada rol no se editan desde la pantalla: se asignan solos
-// según el perfil elegido (mesero, cocina, cajero, limpieza, administrador).
+// Los permisos se marcan al crear el rol. Para los roles ya existentes solo
+// se actualizan nombre, descripción y estado.
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && $pagina === 'configuracion'
     && (isset($_POST['guardar_rol']) || isset($_POST['crear_rol']) || isset($_POST['eliminar_rol']))) {
 
     require_once __DIR__ . '/config/database.php';
-    require_once __DIR__ . '/config/permisos.php';
 
     $db = conexionDB();
 
@@ -189,51 +188,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     if (isset($_POST['crear_rol'])) {
 
         $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
-        $perfilClave = (string) ($_POST['perfil'] ?? 'mesero');
-        $perfiles    = perfilesPredefinidos();
-
-        $perfil = $perfiles[$perfilClave] ?? $perfiles['mesero'];
-
-        if ($descripcion === '') {
-            $descripcion = $perfil['descripcion'];
-        }
+        $marcados    = $_POST['permisos'] ?? [];
 
         if ($nombre === '') {
-            $nombre = $perfil['nombre'];
-        }
 
-        $existe = $db->prepare("SELECT id FROM roles WHERE nombre = :nombre");
-        $existe->execute([':nombre' => $nombre]);
-
-        if ($existe->fetch()) {
-
-            $_SESSION['mensaje'] = ['tipo' => 'error', 'texto' => 'Ya existe un rol con ese nombre.'];
+            $_SESSION['mensaje'] = [
+                'tipo'  => 'error',
+                'texto' => 'Escribe el nombre del rol.'
+            ];
 
         } else {
-            $db->prepare(
-                "INSERT INTO roles (nombre, descripcion, estado) VALUES (:nombre, :descripcion, 1)"
-            )->execute([':nombre' => $nombre, ':descripcion' => $descripcion]);
+            $existe = $db->prepare("SELECT id FROM roles WHERE nombre = :nombre");
+            $existe->execute([':nombre' => $nombre]);
 
-            $nuevoId = (int) $db->lastInsertId();
+            if ($existe->fetch()) {
 
-            // Se le asignan los permisos del perfil elegido
-            $permisos = $db->query("SELECT id, nombre FROM permisos")->fetchAll();
-            $ids = permisosDelPerfil($perfil, $permisos);
+                $_SESSION['mensaje'] = ['tipo' => 'error', 'texto' => 'Ya existe un rol con ese nombre.'];
 
-            if ($ids) {
+            } elseif (!is_array($marcados) || !$marcados) {
+
+                $_SESSION['mensaje'] = [
+                    'tipo'  => 'error',
+                    'texto' => 'Marca al menos un permiso para el rol, si no no podrá ver nada.'
+                ];
+
+            } else {
+                $db->prepare(
+                    "INSERT INTO roles (nombre, descripcion, estado) VALUES (:nombre, :descripcion, 1)"
+                )->execute([':nombre' => $nombre, ':descripcion' => $descripcion]);
+
+                $nuevoId = (int) $db->lastInsertId();
+
+                // Solo se guardan los permisos marcados y que existen en la base
+                $validos = array_map(
+                    static fn (array $p): int => (int) $p['id'],
+                    $db->query("SELECT id FROM permisos")->fetchAll()
+                );
+
                 $stmt = $db->prepare(
                     "INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (:rol, :permiso)"
                 );
 
-                foreach ($ids as $id) {
-                    $stmt->execute([':rol' => $nuevoId, ':permiso' => $id]);
-                }
-            }
+                foreach ($marcados as $id) {
 
-            $_SESSION['mensaje'] = [
-                'tipo'  => 'ok',
-                'texto' => 'Rol "' . $nombre . '" creado. Ya puede usarse al agregar usuarios.'
-            ];
+                    $id = (int) $id;
+
+                    if (in_array($id, $validos, true)) {
+                        $stmt->execute([':rol' => $nuevoId, ':permiso' => $id]);
+                    }
+                }
+
+                $cuenta = count(array_unique(array_map('intval', $marcados)));
+
+                $_SESSION['mensaje'] = [
+                    'tipo'  => 'ok',
+                    'texto' => 'Rol "' . $nombre . '" creado con ' . $cuenta
+                             . ' permiso' . ($cuenta === 1 ? '' : 's')
+                             . '. Ya puede usarse al agregar usuarios.'
+                ];
+            }
         }
 
         Permiso::limpiarCache();

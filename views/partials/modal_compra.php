@@ -13,7 +13,7 @@
 
             <div class="modal-header" style="border-bottom:1px solid #EFEFEF;">
                 <h5 class="modal-title" style="font-weight:700;">
-                    <i class="fa fa-receipt"></i> <span id="compraDetalleTitulo">Compra</span>
+                    <i class="fa fa-ticket"></i> <span id="compraDetalleTitulo">Compra</span>
                 </h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>

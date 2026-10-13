@@ -108,7 +108,7 @@ $resumen  = $porCategoriaPedidos;
         <?php if (!$ventasHoy): ?>
 
             <div class="lg-empty">
-                <i class="fa fa-receipt"></i>
+                <i class="fa fa-ticket"></i>
                 <p class="mb-0">No hay ventas registradas hoy.</p>
             </div>
 

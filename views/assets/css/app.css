@@ -472,6 +472,12 @@ body {
     margin: 2px 0 0;
 }
 
+/* Icono dentro de un subtítulo */
+.lg-card-subtitle > i {
+    margin-right: 4px;
+    opacity: 0.7;
+}
+
 .lg-card-head {
     display: flex;
     align-items: center;
@@ -1493,6 +1499,102 @@ body {
 
 .lg-chip:hover {
     background-color: var(--lg-gris);
+}
+
+/* --- Permisos por rol (Configuración > Roles) ------------------------- */
+
+/* Un permiso con su explicación debajo, en vez de una fila de casillas */
+.lg-chip--permiso {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 400;
+}
+
+.lg-chip--permiso input {
+    margin-top: 3px;
+    flex: 0 0 auto;
+}
+
+/* El texto crece, pero la explicación no puede partir la tarjeta */
+.lg-chip--permiso > span {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.lg-chip--permiso strong {
+    display: block;
+    font-weight: 600;
+    font-size: 0.86rem;
+    line-height: 1.3;
+}
+
+.lg-chip--permiso small {
+    font-size: 0.76rem;
+    line-height: 1.35;
+    margin-top: 2px;
+}
+
+/* Marcado: fondo suave y borde del color de marca.
+   Se usa :has() y también una clase .is-activo que pone el JavaScript,
+   para que el resaltado no dependa del navegador. */
+.lg-chip--permiso:has(input:checked),
+.lg-chip--permiso.is-activo {
+    background-color: var(--lg-rojo-claro);
+    border-color: var(--lg-rojo);
+}
+
+.lg-chip--permiso:hover {
+    background-color: var(--lg-gris);
+}
+
+.lg-chip--permiso:has(input:checked):hover,
+.lg-chip--permiso.is-activo:hover {
+    background-color: var(--lg-rojo-claro);
+}
+
+/* Bloque de un módulo: título arriba, permisos en una rejilla */
+.lg-rol-grupo {
+    border: 1px solid var(--lg-borde);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.lg-rol-grupo-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    margin-bottom: 10px;
+    color: var(--lg-texto);
+}
+
+.lg-rol-grupo-head > i {
+    color: var(--lg-rojo);
+}
+
+.lg-rol-grupo-head small {
+    font-weight: 400;
+    font-size: 0.78rem;
+}
+
+/* Dos columnas en tablet, una sola en teléfono */
+.lg-rol-grupo-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+@media (max-width: 767px) {
+    .lg-rol-grupo-items {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Etiquetas que se apilan con separación parejo */
