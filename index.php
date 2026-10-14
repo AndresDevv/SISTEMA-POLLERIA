@@ -20,6 +20,7 @@ require_once __DIR__ . '/models/Permiso.php';
 require_once __DIR__ . '/config/router.php';
 require_once __DIR__ . '/config/menu.php';
 require_once __DIR__ . '/config/estados.php';
+require_once __DIR__ . '/config/paginacion.php';
 
 $pagina = isset($_GET['page']) && is_string($_GET['page']) ? $_GET['page'] : 'dashboard';
 $ruta   = resolverRuta($pagina);
@@ -103,6 +104,7 @@ $accionesApi = [
     'pedido_actualizar'  => ['PedidoController', 'actualizar'],
     'pedido_eliminar'    => ['PedidoController', 'eliminar'],
     'pedido_cobrar'      => ['PedidoController', 'cobrar'],
+    'pulso'              => ['PulsoController', 'pulso'],
     'mesa_reservar'      => ['MesaController', 'reservar'],
     'mesa_liberar'       => ['MesaController', 'liberar'],
     'mesa_crear'         => ['MesaController', 'crear'],

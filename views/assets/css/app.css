@@ -1,4 +1,5 @@
 /* =========================================================
+/* =========================================================
    LOS GOMEZ - Sistema de diseño
    Basado en los diseños de Figma (dashboard, ventas, mesas)
    ========================================================= */
@@ -20,8 +21,6 @@
     --lg-ambar-texto: #D97706;
     --lg-pizarra-fondo: #E2E8F0;
     --lg-pizarra-texto: #64748B;
-    --lg-purpura-fondo: #F3E8FF;
-    --lg-purpura-texto: #A855F7;
     --lg-pendiente-fondo: #FFFEC1;
     --lg-pendiente-texto: #A39A49;
 
@@ -443,20 +442,15 @@ body {
 .lg-btn.lg-mesa-badge--libre     { background-color: var(--lg-verde-fondo);        color: #10B981; }
 .lg-btn.lg-mesa-badge--ocupada   { background-color: var(--lg-rojo-estado-fondo);  color: #EF4444; }
 .lg-btn.lg-mesa-badge--reservada { background-color: var(--lg-ambar-fondo);        color: var(--lg-ambar-texto); }
-.lg-btn.lg-mesa-badge--pagada    { background-color: var(--lg-pizarra-fondo);      color: var(--lg-pizarra-texto); }
-.lg-btn.lg-mesa-badge--porpagar  { background-color: var(--lg-purpura-fondo);      color: var(--lg-purpura-texto); }
 
 .lg-btn.lg-mesa-badge--libre:hover,
 .lg-btn.lg-mesa-badge--ocupada:hover,
-.lg-btn.lg-mesa-badge--reservada:hover,
-.lg-btn.lg-mesa-badge--pagada:hover,
-.lg-btn.lg-mesa-badge--porpagar:hover {
+.lg-btn.lg-mesa-badge--reservada:hover {
     filter: brightness(0.97);
     color: inherit;
 }
 
 .lg-card--flat {
-    box-shadow: none;
     border: 1px solid var(--lg-borde);
 }
 
@@ -827,6 +821,13 @@ body {
 .lg-mesa--ocupada   { background-color: #FEE6E6; border-color: #FBD5D5; }
 .lg-mesa--reservada { background-color: #FFFDF5; border-color: #FDEBC8; }
 
+/* Tarjetas del usuario de cocina. Una mesa con pedido sin aceptar tiene que
+   saltar a la vista, así que va en amarillo y con un borde marcado. */
+.lg-mesa--pendiente  { background-color: #FFFBEB; border-color: #FCD34D; }
+.lg-mesa--preparando { background-color: #FEE6E6; border-color: #FBD5D5; }
+.lg-mesa--listo      { background-color: #ECFDF5; border-color: #A7F3D0; }
+.lg-mesa--servido    { background-color: #F8FAFC; border-color: #E2E8F0; }
+
 .lg-mesa-top {
     display: flex;
     align-items: flex-start;
@@ -869,10 +870,12 @@ body {
 .lg-mesa-badge i { font-size: 0.85rem; }
 
 .lg-mesa-badge--libre     { background-color: var(--lg-verde-fondo);        color: #10B981; }
-.lg-mesa-badge--ocupada   { background-color: var(--lg-rojo-estado-fondo);  color: #EF4444; }
-.lg-mesa-badge--reservada { background-color: var(--lg-ambar-fondo);        color: var(--lg-ambar-texto); }
-.lg-mesa-badge--pagada    { background-color: var(--lg-pizarra-fondo);      color: var(--lg-pizarra-texto); }
-.lg-mesa-badge--porpagar  { background-color: var(--lg-purpura-fondo);      color: var(--lg-purpura-texto); }
+
+/* Estados que solo ve el usuario de cocina: el punto en que está la comida */
+.lg-mesa-badge--pendiente  { background-color: var(--lg-ambar-fondo);        color: var(--lg-ambar-texto); }
+.lg-mesa-badge--preparando { background-color: var(--lg-rojo-estado-fondo);  color: #EF4444; }
+.lg-mesa-badge--listo      { background-color: var(--lg-verde-fondo);        color: #10B981; }
+.lg-mesa-badge--servido    { background-color: var(--lg-pizarra-fondo);      color: var(--lg-pizarra-texto); }
 
 .lg-mesa-foot {
     margin-top: auto;
@@ -1177,9 +1180,34 @@ body {
     border-bottom: 1px solid var(--lg-borde);
 }
 
-/* En el panel de pedido no hay scroll propio: la lista interna ya lo tiene */
+/* Panel del pedido: el alto se reparte entre el plegable, la lista de
+   productos (que es la que scrollea) y la caja del Total (fija abajo).
+   Antes la lista crecía sin límite y empujaba el Total fuera de la pantalla,
+   sin scroll para llegar a él. */
+.lg-modal-pane--pedido {
+    height: 100%;
+}
+
+.lg-modal-pane--pedido .modal-pedido {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.lg-modal-pane--pedido .modal-pedido-head {
+    flex-shrink: 0;
+}
+
+/* El Total nunca se comprime ni se sale del panel */
+.lg-modal-pane--pedido .lg-total-box {
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
 .lg-modal-pane--pedido .modal-pedido-lista {
+    flex: 1 1 auto;
+    min-height: 80px;
     max-height: none;
+    overflow-y: auto;
 }
 
 /* El plegable de pedidos anteriores */
@@ -1455,6 +1483,30 @@ body {
     .modal-pedido-lista {
         max-height: none;
     }
+
+    /* Apilados, los dos paneles no pueden repartirse un alto fijo: el
+       contenedor crece y scrollea el cuerpo del modal. El Total sigue
+       anclado abajo de su panel y la lista acota su propio alto. */
+    .lg-modal-cuerpo {
+        height: auto;
+    }
+
+    .lg-modal-panes {
+        height: auto;
+        overflow: visible;
+    }
+
+    .lg-modal-pane--pedido {
+        height: auto;
+    }
+
+    .lg-modal-pane--pedido .modal-pedido {
+        flex: 0 0 auto;
+    }
+
+    .lg-modal-pane--pedido .modal-pedido-lista {
+        max-height: 38vh;
+    }
 }
 
 /* ---------------------------------------------------------
@@ -1604,6 +1656,300 @@ body {
     gap: 4px;
 }
 
+/* Aviso de "hay informacion nueva". Sale mientras se espera un momento
+   seguro para actualizar: hay un modal abierto o alguien escribiendo. */
+.lg-flash--pulso {
+    position: fixed;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    margin-bottom: 0;
+    background-color: #F1F5F9;
+    border-color: #CBD5E1;
+    color: #334155;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.lg-flash--pulso i { animation: lg-gira 1.4s linear infinite; }
+
+@keyframes lg-gira { to { transform: rotate(360deg); } }
+
+/* A quien no le gustan las animaciones se le quita el girador */
+@media (prefers-reduced-motion: reduce) {
+    .lg-flash--pulso i { animation: none; }
+}
+
+/* ---------------------------------------------------------
+   Comanda de cocina (modal de pedidos de una mesa)
+
+   A propósito NO reutiliza las tarjetas cuadradas del panel
+   de cocina general: aquí cabe el detalle de una sola mesa,
+   así que se presenta como una comanda de papel, con la
+   franja de color al costado y los pasos en fila.
+   --------------------------------------------------------- */
+.lg-comanda {
+    display: flex;
+    background-color: var(--lg-blanco);
+    border: 1px solid var(--lg-borde);
+    border-left: 5px solid var(--lg-borde);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.lg-comanda--pendiente  { border-left-color: #F59E0B; }
+.lg-comanda--preparando { border-left-color: #EF4444; }
+.lg-comanda--preparado  { border-left-color: #10B981; }
+.lg-comanda--entregado  { border-left-color: #CBD5E1; opacity: 0.75; }
+
+.lg-comanda-cuerpo {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 14px 16px;
+}
+
+/* Cabecera: código a la izquierda, hora y total a la derecha */
+.lg-comanda-cabeza {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed var(--lg-borde);
+}
+
+.lg-comanda-codigo {
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+}
+
+.lg-comanda-codigo small {
+    font-weight: 400;
+    font-size: 0.76rem;
+    color: var(--lg-texto-suave);
+    margin-left: 6px;
+}
+
+.lg-comanda-total {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--lg-texto);
+}
+
+/* Productos: dos columnas en tablet, una en teléfono */
+.lg-comanda-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 16px;
+}
+
+@media (max-width: 575px) {
+    .lg-comanda-items { grid-template-columns: 1fr; }
+}
+
+.lg-comanda-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.94rem;
+    padding: 3px 0;
+}
+
+/* Cantidad en un cuadro, como el ticket de un comanda */
+.lg-comanda-cantidad {
+    flex: 0 0 auto;
+    min-width: 30px;
+    height: 26px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background-color: var(--lg-gris);
+    color: #111;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.lg-comanda--pendiente .lg-comanda-cantidad  { background-color: var(--lg-ambar-fondo); color: var(--lg-ambar-texto); }
+.lg-comanda--preparando .lg-comanda-cantidad { background-color: var(--lg-rojo-estado-fondo); color: #EF4444; }
+
+.lg-comanda-nombre {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Pie: pasos del pedido y el botón que avanza */
+.lg-comanda-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--lg-borde);
+}
+
+/* Los cuatro pasos: recibido, en cocina, listo, servido */
+.lg-comanda-pasos {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.lg-comanda-paso {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--lg-texto-suave);
+    white-space: nowrap;
+}
+
+.lg-comanda-paso::after {
+    content: "";
+    flex: 1 1 auto;
+    min-width: 10px;
+    height: 2px;
+    margin: 0 8px;
+    border-radius: 2px;
+    background-color: var(--lg-borde);
+}
+
+.lg-comanda-paso:last-child::after { content: none; }
+
+.lg-comanda-punto {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--lg-borde);
+    background-color: var(--lg-blanco);
+    flex: 0 0 auto;
+}
+
+/* Paso ya superado: pintado */
+.lg-comanda-paso.is-hecho .lg-comanda-punto {
+    border-color: var(--lg-verde-fondo);
+    background-color: var(--lg-verde-fondo);
+}
+
+.lg-comanda-paso.is-hecho { color: #059669; }
+
+/* Paso en el que está ahora: el que se rellena */
+.lg-comanda-paso.is-actual .lg-comanda-punto {
+    border-color: #F59E0B;
+    background-color: #F59E0B;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.lg-comanda--preparando .lg-comanda-paso.is-actual .lg-comanda-punto {
+    border-color: #EF4444;
+    background-color: #EF4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+}
+
+.lg-comanda--preparado .lg-comanda-paso.is-actual .lg-comanda-punto {
+    border-color: #10B981;
+    background-color: #10B981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.lg-comanda-paso.is-actual { color: #111; font-weight: 700; }
+
+/* En teléfono los pasos se apilan y se ocultan las rayas */
+@media (max-width: 575px) {
+    .lg-comanda-pie { flex-direction: column; align-items: stretch; }
+    .lg-comanda-paso { font-size: 0.68rem; }
+    .lg-comanda-paso::after { min-width: 6px; margin: 0 4px; }
+}
+
+/* ---------------------------------------------------------
+   Paginación de tablas
+   --------------------------------------------------------- */
+.lg-paginacion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 14px 0;
+}
+
+.lg-paginacion-resumen {
+    font-size: 0.82rem;
+}
+
+.lg-paginacion-botones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.lg-pag-boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--lg-borde);
+    border-radius: 8px;
+    background-color: var(--lg-blanco);
+    color: #111;
+    font-size: 0.84rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.lg-pag-boton:hover {
+    background-color: var(--lg-gris);
+    color: #111;
+}
+
+.lg-pag-boton.is-activo {
+    background-color: var(--lg-rojo);
+    border-color: var(--lg-rojo);
+    color: #fff;
+}
+
+/* Flecha de los extremos cuando no hay a dónde ir */
+.lg-pag-boton.is-inactivo {
+    color: var(--lg-texto-suave);
+    opacity: 0.45;
+    cursor: default;
+}
+
+.lg-pag-puntos {
+    padding: 0 2px;
+    color: var(--lg-texto-suave);
+}
+
+/* En teléfono los botones no se encogen hasta quedar ilegibles */
+@media (max-width: 575px) {
+    .lg-pag-boton {
+        min-width: 34px;
+        height: 40px;
+    }
+
+    .lg-paginacion {
+        justify-content: center;
+    }
+}
+
 /* Icono junto al nombre en una fila de tabla (Roles, Personal, etc) */
 .lg-fila-nombre {
     display: flex;
@@ -1663,6 +2009,20 @@ body {
     color: #7F1D1D;
 }
 
+/* Aviso de pedido nuevo en cocina: tiene que verse por encima de todo */
+.lg-flash--alerta {
+    position: fixed;
+    top: 76px;
+    right: 24px;
+    z-index: 2000;
+    margin-bottom: 0;
+    min-width: 280px;
+    background-color: #FFFBEB;
+    border-color: #FCD34D;
+    color: #92400E;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
 /* AdminLTE colapsa el sidebar con -250px; lo ajustamos a nuestro ancho */
 .sidebar-mini.sidebar-collapse .main-sidebar {
     margin-left: calc(-1 * var(--lg-sidebar));
@@ -1695,10 +2055,6 @@ body {
 .layout-fixed .main-header,
 .layout-fixed .content-wrapper {
     transition: left 0.28s ease;
-}
-
-body.lg-menu-cerrado .main-sidebar {
-    transform: translateX(-18px);
 }
 
 body.lg-menu-cerrado .main-sidebar {
@@ -1741,6 +2097,16 @@ body {
     top: 0;
     bottom: 0;
     left: 0;
+
+    /**
+     * El menú va POR ENCIMA del navbar.
+     *
+     * El navbar tiene z-index 1035 y el sidebar no tenía ninguno, así que
+     * al abrir el menú en una pantalla estrecha quedaba dibujado debajo y
+     * parecía escondido detrás de la barra.
+     */
+    z-index: 1045;
+
     /* Con muchos menús (el admin tiene 11) el sidebar se desliza solo */
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1768,44 +2134,58 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
 
 /* ---------------------------------------------------------
    Responsivo - tablet (prioridad: mesero / cocinero)
+
+   El equipo de salon no usa PC: usa tablet. Por eso los cortes estan
+   puestos donde importan de verdad y no pensando en el escritorio:
+
+     1200px+   tablet en horizontal con menu fijo
+      992-1199 tablet en horizontal justo (menu fijo y mas angosto)
+      768-991  tablet en vertical (el menu se desliza sobre el contenido)
+      <=767    telefono
    --------------------------------------------------------- */
 @media (max-width: 1199px) {
+
+    /* Menu mas angosto para dejarle sitio al contenido */
+    :root { --lg-sidebar: 240px; }
+
     .lg-mesas { grid-template-columns: repeat(3, 1fr); }
     .lg-grid-3 { grid-template-columns: repeat(2, 1fr); }
+    .lg-stats { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 991px) {
     :root { --lg-sidebar: 260px; }
 
-    /* En móvil el sidebar se desliza, no empuja: el contenido ocupa todo
-       el ancho y el menú se superpone con el velo oscuro. */
+    /* En tablet el sidebar se desliza, no empuja: el contenido ocupa todo
+       el ancho y el menu se superpone con el velo oscuro. */
     .layout-fixed .main-header,
     .layout-fixed .content-wrapper {
         margin-left: 0 !important;
         left: 0;
     }
 
-    /* En móvil el sidebar arranca oculto y se abre con el botón */
+    /* Arranca oculto y se abre con el boton de la barra superior */
     .main-sidebar {
         margin-left: calc(-1 * var(--lg-sidebar)) !important;
+        box-shadow: 4px 0 18px rgba(0, 0, 0, 0.18);
     }
 
     body:not(.lg-menu-cerrado) .main-sidebar {
         margin-left: 0 !important;
     }
 
-    /* Al abrir el menú en móvil no debe quedar scroll bloqueado detrás */
+    /* Con el menu abierto no debe quedar scroll bloqueado detras */
     body:not(.lg-menu-cerrado).layout-fixed .content-wrapper {
         overflow: hidden;
     }
 
-    /* Velo oscuro al abrir el menú en móvil */
+    /* Velo oscuro: por debajo del menu y del navbar */
     body:not(.lg-menu-cerrado) .content-wrapper::before {
         content: "";
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.35);
-        z-index: 1000;
+        z-index: 1030;
     }
 
     .content { padding: 20px 18px 32px; }
@@ -1816,6 +2196,10 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
 
     .lg-mesas { grid-template-columns: repeat(2, 1fr); gap: 14px; }
 
+    /* En tablet las comandas de cocina van a una columna: con dos quedan
+       demasiado estrechas para leer los productos con el dedo. */
+    .lg-grid-cocina { grid-template-columns: 1fr; }
+
     .lg-page-head h1 { font-size: 1.55rem; }
     .lg-page-head .lg-page-icon { width: 42px; height: 42px; }
 
@@ -1823,6 +2207,37 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
     .lg-stat .lg-stat-icon { width: 56px; height: 56px; font-size: 1.35rem; }
     .lg-stat .lg-stat-value,
     .lg-stat-value { font-size: 1.5rem; }
+
+    /* Pulsera de pestanas y botones mas grandes: se tocan con el dedo,
+       no con el puntero fino de un raton. */
+    .lg-segmento {
+        min-height: 50px;
+        padding: 0 18px;
+        font-size: 0.92rem;
+    }
+
+    .lg-btn { min-height: 46px; padding: 0 18px; }
+    .lg-btn.lg-btn--sm { min-height: 42px; padding: 0 14px; }
+
+    /* Las mesas se tocan enteras */
+    .lg-mesa { padding: 16px; }
+    .lg-mesa-badge { font-size: 0.78rem; padding: 6px 10px; }
+    .lg-mesa-cta { min-height: 40px; }
+
+    /* Filas de tabla con altura comoda para el dedo */
+    .lg-table tbody td { padding: 15px 14px; }
+
+    /* Si la tabla no cabe, se desliza sola sin romper el diseno */
+    .table-responsive { -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 767px) {
+
+    .lg-mesas { grid-template-columns: 1fr; }
+    .lg-stats { grid-template-columns: 1fr; }
+
+    /* Las comandas y sus productos tambien a una columna */
+    .lg-comanda-items { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 575px) {

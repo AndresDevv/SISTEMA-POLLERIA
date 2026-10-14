@@ -18,8 +18,15 @@ if (!$def) {
 }
 
 $buscar = $_GET['buscar'] ?? '';
-$filas  = $gestion->listar($recurso, $buscar);
-$columnas = array_keys($filas ? $filas[0] : array_fill_keys(['id'], 1));
+$todas  = $gestion->listar($recurso, $buscar);
+
+// Los encabezados se sacan del conjunto completo, no de la página actual:
+// si "?p=2" no trae filas, la tabla saldría sin columnas.
+$columnas = array_keys($todas ? $todas[0] : array_fill_keys(['id'], 1));
+
+// Paginación: 20 filas por tabla, para que la lista no se alargue hasta abajo
+$paginacion = paginar($todas, 20);
+$filas = $paginacion['filas'];
 
 // La pestaña activa la marca el módulo: el nombre de la pestaña puede no
 // coincidir con el del recurso (Personal > Trabajadores usa "empleados").
@@ -164,6 +171,8 @@ foreach ($def['campos'] as $campo => $regla) {
                 </tbody>
             </table>
         </div>
+
+        <?php barraPaginacion($paginacion); ?>
 
     <?php endif; ?>
 

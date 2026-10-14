@@ -24,6 +24,9 @@ $ventas     = $ventaModel->delDia();
 $productos  = $productoModel->listar();
 $metodosPago = $ventaModel->metodosPago();
 
+// Paginación de la lista de ventas del día
+$pagVentas = paginar($ventas, 15);
+
 /**
  * Pedidos a mostrar, sin repetir.
  *
@@ -65,10 +68,52 @@ $cobrosOlvidados = array_filter($pedidos, static function (array $p) use ($hoy):
         && date('Y-m-d', strtotime($p['fecha_creacion'])) !== $hoy;
 });
 
+/**
+ * Cuántos pedidos hay sin aceptar en todo el salón.
+ *
+ * Es el número que va en la pestaña "Ver mesas" del usuario de cocina y el
+ * que usa para avisar con la alarma cuando llega uno nuevo.
+ */
+$pedidosPendientesCocina = count(array_filter(
+    $pedidos,
+    static fn (array $p): bool => $p['estado'] === 'pendiente'
+));
+
+// Ids y momento de los pedidos sin aceptar al cargar la página. Sirven para
+// detectar lo que entre después: un id nuevo es un pedido nuevo, y una fecha
+// distinta es que le agregaron productos a uno que ya estaba en cocina.
+$idsPendientesIniciales = array_values(array_map(
+    static fn (array $p): array => [
+        'id'   => (int) $p['id'],
+        'alta' => (string) ($p['fecha_actualizacion'] ?? ''),
+    ],
+    array_filter($pedidos, static fn (array $p): bool => $p['estado'] === 'pendiente')
+));
+
 /** ¿Qué panel se muestra? */
 $panelActual = $_GET['panel'] ?? 'mesas';
 
 if (!in_array($panelActual, ['mesas', 'pedidos', 'cocina', 'ventas'], true)) {
+    $panelActual = 'mesas';
+}
+
+// El panel de cocina es de quien puede cambiar el estado de un pedido
+// (aceptar, marcar listo, servir). El mesero no lo ve: si lo pide por URL,
+// vuelve al de mesas.
+$veCocina = esPermitido('pedidos_estado');
+
+/**
+ * Usuario de cocina.
+ *
+ * Es el que avanza los pedidos pero no registra ni cobra: trabaja mesa por
+ * mesa, así que no le sirven las listas globales. Solo ve "Ver mesas", y ahí
+ * cada tarjeta muestra el estado de sus pedidos en vez de si está ocupada.
+ */
+$soloCocina = esPermitido('pedidos_estado')
+    && !esPermitido('pedidos_crear')
+    && !esPermitido('ventas');
+
+if ($soloCocina && $panelActual !== 'mesas') {
     $panelActual = 'mesas';
 }
 
@@ -79,7 +124,11 @@ if ($panelActual === 'ventas' && !esPermitido('ventas')) {
 }
 
 // Pedidos con su detalle, para el panel de cocina
-$pedidosCocina = $pedidoModel->paraCocina();
+$pedidosCocina = ($veCocina && !$soloCocina) ? $pedidoModel->paraCocina() : [];
+
+// Última novedad ya mostrada. Si se empieza en 0, el primer poll devolvería
+// todas las novedades viejas y cocina oiría la alarma por cosas que ya vio.
+$ultimaNovedadInicial = $soloCocina ? (int) $pedidoModel->ultimaNovedad() : 0;
 
 /**
  * Genera una URL cambiando solo el panel.
@@ -116,19 +165,30 @@ encabezadoPagina(
 
     <a href="<?= urlPanel('mesas') ?>" class="lg-segmento<?= $panelActual === 'mesas' ? ' is-activo' : '' ?>">
         <i class="fa fa-table"></i> Ver mesas
-    </a>
-
-    <a href="<?= urlPanel('pedidos') ?>" class="lg-segmento<?= $panelActual === 'pedidos' ? ' is-activo' : '' ?>">
-        <i class="fa fa-list-alt"></i> Ver pedidos
-        <span class="lg-segmento-badge"><?= count($pedidos) ?></span>
-    </a>
-
-    <a href="<?= urlPanel('cocina') ?>" class="lg-segmento<?= $panelActual === 'cocina' ? ' is-activo' : '' ?>">
-        <i class="fa fa-fire"></i> Cocina
-        <?php if ($pedidosCocina): ?>
-            <span class="lg-segmento-badge"><?= count($pedidosCocina) ?></span>
+        <?php if ($soloCocina && $pedidosPendientesCocina): ?>
+            <span class="lg-segmento-badge"><?= $pedidosPendientesCocina ?></span>
         <?php endif; ?>
     </a>
+
+    <?php /* El usuario de cocina trabaja mesa por mesa: las listas globales
+            no le aportan nada, así que no se le muestran. */ ?>
+    <?php if (!$soloCocina): ?>
+
+        <a href="<?= urlPanel('pedidos') ?>" class="lg-segmento<?= $panelActual === 'pedidos' ? ' is-activo' : '' ?>">
+            <i class="fa fa-list-alt"></i> Ver pedidos
+            <span class="lg-segmento-badge"><?= count($pedidos) ?></span>
+        </a>
+
+        <?php if ($veCocina): ?>
+            <a href="<?= urlPanel('cocina') ?>" class="lg-segmento<?= $panelActual === 'cocina' ? ' is-activo' : '' ?>">
+                <i class="fa fa-fire"></i> Cocina
+                <?php if ($pedidosCocina): ?>
+                    <span class="lg-segmento-badge"><?= count($pedidosCocina) ?></span>
+                <?php endif; ?>
+            </a>
+        <?php endif; ?>
+
+    <?php endif; ?>
 
     <?php if (esPermitido('ventas')): ?>
         <a href="<?= urlPanel('ventas') ?>" class="lg-segmento<?= $panelActual === 'ventas' ? ' is-activo' : '' ?>">
@@ -161,7 +221,7 @@ encabezadoPagina(
             <?php endif; ?>
 
             <div class="lg-legend">
-                <?php foreach (estadosMesa() as $clave => $datos): ?>
+                <?php foreach ($soloCocina ? estadosMesaCocina() : estadosMesa() as $clave => $datos): ?>
                     <span class="lg-legend-item">
                         <span class="lg-legend-dot" style="background-color:<?= $datos['color'] ?>"></span>
                         <?= htmlspecialchars($datos['etiqueta']) ?>
@@ -175,24 +235,29 @@ encabezadoPagina(
         <div class="lg-mesas">
 
             <?php foreach ($mesas as $mesa): ?>
-                <?php $estado = estadosMesa()[$mesa['estado_visual']] ?? estadosMesa()['libre']; ?>
-
                 <?php
+                    /* El usuario de cocina ve el estado de los pedidos de la
+                       mesa; el resto sigue viendo si está libre u ocupada. */
+                    $claveEstado = $soloCocina ? $mesa['estado_cocina'] : $mesa['estado_visual'];
+                    $catalogo    = $soloCocina ? estadosMesaCocina() : estadosMesa();
+                    $estado      = $catalogo[$claveEstado] ?? $catalogo['libre'];
+
                     // Quien puede ver las mesas no siempre puede tomar pedidos:
                     // cocina solo consulta, el mesero registra y manda a cocina.
                     $puedePedir = esPermitido('pedidos_crear');
                     $puedeEditarMesa = esPermitido('mesas_editar');
                     $puedeReservarMesa = esPermitido('mesas_reservar');
                     ?>
-                    <div class="lg-mesa lg-mesa--<?= htmlspecialchars($mesa['estado_visual']) ?>"
+                    <div class="lg-mesa lg-mesa--<?= htmlspecialchars($claveEstado) ?>"
                          data-mesa-id="<?= (int) $mesa['id'] ?>">
 
-                    <!-- Abrir pedido -->
+                    <!-- Abrir pedido, o ver los pedidos de la mesa si es cocina -->
                     <button type="button"
                             class="lg-mesa-main"
                             data-mesa="Mesa <?= (int) $mesa['numero'] ?>"
                             data-mesa-id="<?= (int) $mesa['id'] ?>"
-                            data-capacidad="<?= (int) $mesa['capacidad'] ?> personas">
+                            data-capacidad="<?= (int) $mesa['capacidad'] ?> personas"
+                            <?= $soloCocina ? 'data-ver-pedidos="1"' : '' ?>>
 
                         <div class="lg-mesa-top">
 
@@ -204,14 +269,14 @@ encabezadoPagina(
                                 </div>
                             </div>
 
-                            <span class="lg-mesa-badge lg-mesa-badge--<?= htmlspecialchars($mesa['estado_visual']) ?>">
+                            <span class="lg-mesa-badge lg-mesa-badge--<?= htmlspecialchars($claveEstado) ?>">
                                 <i class="<?= $estado['icono'] ?>"></i>
                                 <?= htmlspecialchars($estado['etiqueta']) ?>
                             </span>
 
                         </div>
 
-                        <?php if (!empty($mesa['detalle'])): ?>
+                        <?php if (!empty($mesa['detalle']) && !$soloCocina): ?>
                             <div class="lg-mesa-foot<?= $mesa['estado_visual'] === 'reservada' ? ' lg-mesa-foot--reserva' : '' ?>">
                                 <i class="fa <?= $mesa['estado_visual'] === 'reservada' ? 'fa-user' : 'fa-clock-o' ?>"></i>
                                 <span class="lg-mesa-reserva-nombre">
@@ -220,7 +285,15 @@ encabezadoPagina(
                             </div>
                         <?php endif; ?>
 
-                        <?php if ($puedePedir): ?>
+                        <?php if ($soloCocina): ?>
+                            <div class="lg-mesa-cta">
+                                <?php if ($mesa['estado_cocina'] === 'libre'): ?>
+                                    <i class="fa fa-check"></i> Sin pedidos
+                                <?php else: ?>
+                                    <i class="fa fa-eye"></i> Ver pedidos
+                                <?php endif; ?>
+                            </div>
+                        <?php elseif ($puedePedir): ?>
                             <div class="lg-mesa-cta">
                                 <i class="fa fa-plus"></i> Agregar pedido
                             </div>
@@ -266,27 +339,21 @@ encabezadoPagina(
 
         <div class="lg-info mt-3">
             <i class="fa fa-info-circle"></i>
-            <span>Toca una mesa para agregar un pedido y enviarlo a la cocina.</span>
+            <span>
+                <?= $soloCocina
+                    ? 'Toca una mesa para ver qu&eacute; se pidi&oacute; y cambiar el estado del pedido.'
+                    : 'Toca una mesa para agregar un pedido y enviarlo a la cocina.' ?>
+            </span>
         </div>
 
     <?php endif; ?>
 
 <?php elseif ($panelActual === 'pedidos'): ?>
+<?php
 
-    <?php
-    /**
-     * Huella de los pedidos al cargar la página, para que el mesero note los
-     * cambios de estado que vaya haciendo cocina. Se usa md5 de los mismos
-     * datos que devuelve api/pedido/resumen.
-     */
-    $huellaPedidos = md5(json_encode([
-        array_map(static fn (array $p): array => [
-            'id'     => (int) $p['id'],
-            'estado' => $p['estado'],
-            'total'  => (float) $p['total']
-        ], $pedidos),
-        (int) $ventaModel->totalPagadas()
-    ]));
+    // 15 pedidos por pagina: son suficientes para trabajar y la lista no
+    // crece sin fin.
+    $pagPedidos = paginar($pedidos, 15);
     ?>
 
     <div class="lg-card">
@@ -352,7 +419,7 @@ encabezadoPagina(
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($pedidos as $pedido): ?>
+                        <?php foreach ($pagPedidos['filas'] as $pedido): ?>
                             <?php
                             $ui      = estadoPedidoUI($pedido['estado']);
                             $cobrado = $ventaModel->yaCobrado((int) $pedido['id']);
@@ -434,34 +501,9 @@ encabezadoPagina(
                 </table>
             </div>
 
-            <?php if (!esPermitido('pedidos_estado')): ?>
-                <script>
-                    /**
-                     * El mesero ve aquí lo que cocina va marcando. Como no
-                     * tiene un botón que refresque, se comprueba cada 30 s y
-                     * solo se recarga si algo cambió y no hay ningún modal
-                     * abierto (para no interrumpir un cobro en curso).
-                     */
-                    (function () {
-                        var huella = <?= json_encode($huellaPedidos) ?>;
+            <?php barraPaginacion($pagPedidos,
+                'Pedidos ' . $pagPedidos['desde'] . '-' . $pagPedidos['hasta'] . ' de ' . $pagPedidos['total']); ?>
 
-                        setInterval(function () {
-
-                            if ($('.modal.show').length) {
-                                return;
-                            }
-
-                            apiGet('api/pedido/resumen')
-                            .done(function (r) {
-
-                                if (r.huella !== huella) {
-                                    window.location.reload();
-                                }
-                            });
-                        }, 30000);
-                    })();
-                </script>
-            <?php endif; ?>
 
         <?php endif; ?>
     </div>
@@ -601,7 +643,7 @@ encabezadoPagina(
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($ventas as $venta): ?>
+                            <?php foreach ($pagVentas['filas'] as $venta): ?>
                                 <tr>
                                     <td style="font-weight:600;">V-<?= str_pad((string) $venta['id'], 4, '0', STR_PAD_LEFT) ?></td>
                                     <td>Mesa <?= (int) $venta['mesa_numero'] ?></td>
@@ -616,6 +658,9 @@ encabezadoPagina(
                         </tbody>
                     </table>
                 </div>
+
+                <?php barraPaginacion($pagVentas,
+                    'Ventas ' . $pagVentas['desde'] . '-' . $pagVentas['hasta'] . ' de ' . $pagVentas['total']); ?>
 
             <?php endif; ?>
         </div>
@@ -673,6 +718,11 @@ if (esPermitido('pedidos_crear')) {
     require APP_ROOT . '/views/partials/modal_pedido.php';
 }
 
+// El usuario de cocina abre el detalle de la mesa desde su tarjeta
+if ($soloCocina) {
+    require APP_ROOT . '/views/partials/modal_mesa_pedidos.php';
+}
+
 if (esPermitido('cobrar')) {
     require APP_ROOT . '/views/partials/modal_cobro.php';
 }
@@ -685,3 +735,149 @@ if (esPermitido('mesas_reservar')) {
     require APP_ROOT . '/views/partials/modal_reserva.php';
 }
 ?>
+
+<?php /* Aviso de pedido nuevo. Solo lo necesita quien está en cocina: es el
+        que tiene que enterarse de que el mesero acaba de mandar algo. */ ?>
+<?php if ($soloCocina): ?>
+    <script>
+    /**
+     * Sondeo de cocina: solo la campana y el aviso de pedido nuevo.
+     *
+     * El refresco de los datos NO se hace aqui. Lo lleva el motor de tiempo
+     * real de app.js, que revisa toda la base en todas las paginas y para
+     * todos los roles: cobros, estados, stock, gastos. Aqui unicamente se
+     * avisa de lo que entra, que es lo que el resto no puede hacer.
+     *
+     * Arranca con 'load' y no con $(function(){}) porque este script esta
+     * en el cuerpo de la pagina y jQuery como app.js se cargan despues,
+     * en el pie.
+     */
+    window.addEventListener('load', function () {
+
+        /**
+         * Cada cuanto se mira si entro algo.
+         *
+         * Seis segundos se nota rapido en la cocina sin castigar el servidor:
+         * el refresco de los datos va cada 5 segundos por su cuenta, asi que
+         * esto solo va atras, nunca adelante.
+         */
+        var CADA_CUANTO_MS = 6000;
+
+        /**
+         * Pedidos que ya estaban en cocina al abrir la pagina.
+         *
+         * Se guardan para no dar la bienvenida por pedido nuevo a las comandas
+         * que ya estaban trabajando cuando el cocinero se sentó.
+         */
+        var yaVistos = <?= json_encode($idsPendientesIniciales) ?>;
+
+        /**
+         * Ultima novedad ya mostrada. El servidor solo devuelve las que
+         * tengan id mayor, asi que no se avisa dos veces por lo mismo.
+         */
+        var ultimaNovedad = <?= (int) ($ultimaNovedadInicial ?? 0) ?>;
+
+        /**
+         * Cartel flotante con el detalle de lo que llego.
+         *
+         * Vive fuera del recuadro de contenido, asi que sobrevive al
+         * refresco de los datos.
+         */
+        var mostrarAviso = function (lineas) {
+
+            Alarma.tocar();
+
+            var aviso = document.createElement('div');
+            aviso.className = 'lg-flash lg-flash--alerta';
+            aviso.setAttribute('role', 'alert');
+
+            aviso.innerHTML = '<i class="fa fa-bell"></i><div>' + lineas.join('<br>') + '</div>';
+
+            document.body.appendChild(aviso);
+
+            window.setTimeout(function () {
+                $(aviso).fadeOut(400, function () {
+                    aviso.remove();
+                });
+            }, 5000);
+
+        };
+
+        window.setInterval(function () {
+
+            // Si hay un modal abierto, se espera: el cocinero está ocupado
+            // y recargarle debajo lo dejaría a medias.
+            if (document.querySelector('.modal.show')) {
+                return;
+            }
+
+            apiGet('api/pedido/resumen', { desde: ultimaNovedad })
+            .done(function (r) {
+                /**
+                 * Pedidos que hay que nombrar en el aviso.
+                 *
+                 * Solo dos cosas las ameritan: que el pedido sea nuevo de
+                 * verdad (no lo tenia en la lista) o que le hayan agregado
+                 * productos (eso llega por las novedades, de arriba).
+                 *
+                 * Ya no se compara la fecha de cambio porque al mover el
+                 * estado de un pedido la base le actualiza esa misma fecha:
+                 * el propio cocinero se disparaba avisos a si mismo.
+                 */
+                var vistos = {};
+
+                yaVistos.forEach(function (p) { vistos[p.id] = true; });
+
+                var pedidosNuevos = [];
+                var avisos = [];
+
+                // Lo que se le sumo a una comanda que ya estaba en cocina
+                (r.novedades || []).forEach(function (n) {
+
+                    avisos.push(
+                        '<strong>Pedido nuevo agregado</strong> - Mesa ' + n.mesa
+                        + ' (P-' + String(n.pedido_id).padStart(4, '0') + '): ' + n.texto
+                    );
+
+                    ultimaNovedad = Math.max(ultimaNovedad, Number(n.id));
+
+                    // Queda como visto, para no anunciarlo ademas como nuevo
+                    yaVistos.push({ id: Number(n.pedido_id), alta: n.alta || '' });
+                });
+
+                // Y los pedidos que de verdad no tenia en la lista
+                (r.pendientes || []).forEach(function (p) {
+
+                    var id = Number(p.id);
+
+                    if (vistos[id] === undefined) {
+                        pedidosNuevos.push(p.mesa);
+                        yaVistos.push({ id: id, alta: p.alta });
+                    }
+                });
+
+                // Los pedidos nuevos, nombrando su mesa
+                if (pedidosNuevos.length) {
+                    pedidosNuevos.forEach(function (mesa) {
+                        avisos.push(
+                            '<strong>Pedido nuevo de la mesa</strong> (' + mesa + ').'
+                        );
+                    });
+                }
+
+                if (!avisos.length) {
+                    return;
+                }
+
+                mostrarAviso(avisos);
+
+                // El contador de la pestaña lo pone el propio refresco que
+                // hace mostrarAviso, con los numeros que ya trae el servidor.
+            });
+
+        }, CADA_CUANTO_MS);
+
+    });
+    </script>
+<?php endif; ?>
+

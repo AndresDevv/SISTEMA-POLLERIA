@@ -23,6 +23,7 @@ class Pedido
                     p.estado,
                     p.total,
                     p.fecha_creacion,
+                    p.fecha_actualizacion,
                     m.numero AS mesa_numero,
                     u.nombre AS usuario_nombre,
                     (SELECT COUNT(*) FROM detalle_pedidos d WHERE d.pedido_id = p.id) AS items
@@ -177,16 +178,78 @@ class Pedido
     }
 
     /**
-     * Pedidos de una mesa, del más reciente al más antiguo.
+     * Id de la última novedad registrada.
+     *
+     * Es el punto de partida del aviso de cocina: si se empieza en 0, el
+     * primer poll devolvería todas las novedades viejas y sonaría la alarma
+     * por cosas que ya vio.
      */
-    public function porMesa(int $mesaId): array
+    public function ultimaNovedad(): int
     {
-        $stmt = $this->conexion->prepare(
-            "SELECT id, estado, total, fecha_creacion
-             FROM pedidos
-             WHERE mesa_id = :mesa
-             ORDER BY fecha_creacion DESC, id DESC"
-        );
+        try {
+            return (int) $this->conexion
+                ->query("SELECT COALESCE(MAX(id), 0) FROM pedido_novedades")
+                ->fetchColumn();
+
+        } catch (PDOException $e) {
+            // Si la tabla aún no existe (SQL sin cargar), se sigue sin
+            // novedades en vez de romper la pantalla.
+            return 0;
+        }
+    }
+
+    /**
+     * Novedades de pedidos sin cobrar posteriores a un id.
+     *
+     * @return array [['id' =>, 'pedido_id' =>, 'mesa' =>, 'texto' =>], ...]
+     */
+    public function novedades(int $desde, int $limite = 30): array
+    {
+        try {
+            $stmt = $this->conexion->prepare(
+                "SELECT n.id, n.pedido_id, n.texto, m.numero AS mesa
+                 FROM pedido_novedades n
+                 INNER JOIN pedidos p ON p.id = n.pedido_id
+                 INNER JOIN mesas m   ON m.id = p.mesa_id
+                 LEFT JOIN ventas v  ON v.pedido_id = p.id AND v.estado = 'pagada'
+                 WHERE n.id > :desde AND v.id IS NULL
+                 ORDER BY n.id
+                 LIMIT " . (int) $limite
+            );
+            $stmt->execute([':desde' => $desde]);
+
+            return array_map(static fn (array $n): array => [
+                'id'        => (int) $n['id'],
+                'pedido_id' => (int) $n['pedido_id'],
+                'mesa'      => (int) $n['mesa'],
+                'texto'     => $n['texto'],
+            ], $stmt->fetchAll());
+
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Pedidos de una mesa, del más reciente al más antiguo.
+     *
+     * Por defecto solo los del día: al abrir el modal de una mesa solo
+     * interesa lo que se está pidiendo ahora, no el historial de días
+     * anteriores, que además tapaba el catálogo.
+     */
+    public function porMesa(int $mesaId, bool $soloHoy = true): array
+    {
+        $sql = "SELECT id, estado, total, fecha_creacion
+                FROM pedidos
+                WHERE mesa_id = :mesa";
+
+        if ($soloHoy) {
+            $sql .= " AND DATE(fecha_creacion) = CURDATE()";
+        }
+
+        $sql .= " ORDER BY fecha_creacion DESC, id DESC";
+
+        $stmt = $this->conexion->prepare($sql);
         $stmt->execute([':mesa' => $mesaId]);
 
         return $stmt->fetchAll();
@@ -555,11 +618,16 @@ class Pedido
     /**
      * Crea un pedido con sus ítems en una transacción.
      *
+     * Si la mesa ya tiene un pedido ABIERTO de hoy, los productos se suman a
+     * ese pedido en vez de crear uno nuevo: es lo normal cuando el mismo
+     * cliente pide otra cosa a los pocos minutos.
+     *
      * @param int   $mesaId
      * @param int   $usuarioId
      * @param array $items [['id' => producto_id, 'cantidad' => float], ...]
      *
-     * @return array ['success' => bool, 'id' => int, 'message' => string]
+     * @return array ['success' => bool, 'id' => int, 'message' => string,
+     *               'sumado' => bool]
      */
     public function crear(int $mesaId, int $usuarioId, array $items): array
     {
@@ -622,32 +690,117 @@ class Pedido
         try {
             $this->conexion->beginTransaction();
 
+            /**
+             * Pedido abierto de esta mesa, si lo hay.
+             *
+             * "Abierto" = todavía en cocina (ni servido ni cobrado). Solo se
+             * mira el de hoy: una mesa que quedó abierta de ayer no debe
+             * absorber el pedido de hoy.
+             */
             $stmt = $this->conexion->prepare(
-                "INSERT INTO pedidos (mesa_id, usuario_id, estado, total)
-                 VALUES (:mesa_id, :usuario_id, 'pendiente', :total)"
+                "SELECT p.id, p.estado
+                 FROM pedidos p
+                 LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                 WHERE p.mesa_id = :mesa
+                   AND v.id IS NULL
+                   AND p.estado IN ('pendiente','preparando','preparado')
+                   AND DATE(p.fecha_creacion) = CURDATE()
+                 ORDER BY p.fecha_creacion DESC, p.id DESC
+                 LIMIT 1"
             );
-            $stmt->execute([
-                ':mesa_id'    => $mesaId,
-                ':usuario_id' => $usuarioId,
-                ':total'      => $total
-            ]);
+            $stmt->execute([':mesa' => $mesaId]);
+            $abierto = $stmt->fetch();
 
-            $pedidoId = (int) $this->conexion->lastInsertId();
+            $sumado = false;
 
-            $stmt = $this->conexion->prepare(
-                "INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
-                 VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)"
-            );
+            if ($abierto) {
+                $pedidoId = (int) $abierto['id'];
 
-            foreach ($precios as $item) {
+                // Si ya estaba aceptado, vuelve a "pendiente": hay cosas
+                // nuevas que cocina todavía no vio, y la mesa tiene que
+                // ponerse en amarillo otra vez para que no se pierdan.
+                $stmt = $this->conexion->prepare(
+                    "UPDATE pedidos
+                     SET estado = 'pendiente', fecha_actualizacion = NOW()
+                     WHERE id = :id"
+                );
+                $stmt->execute([':id' => $pedidoId]);
+
+                $stmt = $this->conexion->prepare(
+                    "INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
+                     VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)
+                     ON DUPLICATE KEY UPDATE
+                        cantidad = cantidad + VALUES(cantidad),
+                        subtotal = subtotal + VALUES(subtotal)"
+                );
+
+                foreach ($precios as $item) {
+                    $stmt->execute([
+                        ':pedido_id'    => $pedidoId,
+                        ':producto_id'  => $item['id'],
+                        ':cantidad'     => $item['cantidad'],
+                        ':precio'       => $item['precio'],
+                        ':subtotal'     => $item['precio'] * $item['cantidad']
+                    ]);
+                }
+
+                $sumado = true;
+
+                /**
+                 * Se deja rastro de qué se sumó.
+                 *
+                 * Como no se crea un pedido nuevo, cocina no vería nada nuevo
+                 * y podría no notar que le agregaron productos a esa comanda.
+                 * Esta nota es lo que le permite avisarle exactamente qué
+                 * apareció.
+                 */
+                $stmt = $this->conexion->prepare(
+                    "INSERT INTO pedido_novedades (pedido_id, producto_id, texto, cantidad, usuario_id)
+                     VALUES (:pedido_id, :producto_id, :texto, :cantidad, :usuario_id)"
+                );
+
+                foreach ($precios as $item) {
+                    $stmt->execute([
+                        ':pedido_id'   => $pedidoId,
+                        ':producto_id' => $item['id'],
+                        ':texto'       => $item['cantidad'] . 'x ' . $item['nombre'],
+                        ':cantidad'    => $item['cantidad'],
+                        ':usuario_id'  => $usuarioId,
+                    ]);
+                }
+
+            } else {
+                $stmt = $this->conexion->prepare(
+                    "INSERT INTO pedidos (mesa_id, usuario_id, estado, total)
+                     VALUES (:mesa_id, :usuario_id, 'pendiente', :total)"
+                );
                 $stmt->execute([
-                    ':pedido_id'    => $pedidoId,
-                    ':producto_id'  => $item['id'],
-                    ':cantidad'     => $item['cantidad'],
-                    ':precio'       => $item['precio'],
-                    ':subtotal'     => $item['precio'] * $item['cantidad']
+                    ':mesa_id'    => $mesaId,
+                    ':usuario_id' => $usuarioId,
+                    ':total'      => $total
                 ]);
+
+                $pedidoId = (int) $this->conexion->lastInsertId();
+
+                $stmt = $this->conexion->prepare(
+                    "INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
+                     VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)"
+                );
+
+                foreach ($precios as $item) {
+                    $stmt->execute([
+                        ':pedido_id'    => $pedidoId,
+                        ':producto_id'  => $item['id'],
+                        ':cantidad'     => $item['cantidad'],
+                        ':precio'       => $item['precio'],
+                        ':subtotal'     => $item['precio'] * $item['cantidad']
+                    ]);
+                }
             }
+
+            // El total se recalcula siempre desde las líneas del pedido, para
+            // que al sumar productos no se descuadre.
+            $this->recalcularTotal($pedidoId);
 
             // El stock baja al tomar el pedido: lo que está en cocina ya no
             // está en el almacén. Si no alcanza, se cae toda la operación.
@@ -674,13 +827,44 @@ class Pedido
 
             $this->conexion->commit();
 
-            return ['success' => true, 'id' => $pedidoId, 'message' => 'Pedido enviado a cocina.'];
+            $resumenAgregado = [];
+
+            foreach ($precios as $item) {
+                $resumenAgregado[] = $item['cantidad'] . 'x ' . $item['nombre'];
+            }
+
+            return [
+                'success'  => true,
+                'id'       => $pedidoId,
+                'sumado'   => $sumado,
+                'agregado' => $sumado ? $resumenAgregado : [],
+                'message'  => $sumado
+                    ? 'Agregado al pedido P-' . str_pad((string) $pedidoId, 4, '0', STR_PAD_LEFT)
+                      . ': ' . implode(', ', $resumenAgregado)
+                    : 'Pedido enviado a cocina.',
+            ];
 
         } catch (PDOException $e) {
             $this->conexion->rollBack();
 
             return ['success' => false, 'message' => 'No se pudo guardar el pedido: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Recalcula el total de un pedido a partir de sus líneas.
+     *
+     * Se usa después de sumar productos, porque el total guardado no se
+     * entera solo y un total viejo cobraría de menos.
+     */
+    private function recalcularTotal(int $pedidoId): void
+    {
+        $stmt = $this->conexion->prepare(
+            "UPDATE pedidos
+             SET total = (SELECT COALESCE(SUM(subtotal), 0) FROM detalle_pedidos WHERE pedido_id = :id)
+             WHERE id = :id"
+        );
+        $stmt->execute([':id' => $pedidoId]);
     }
 
     /**

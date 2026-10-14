@@ -34,8 +34,13 @@ class Mesa
             // El estado se calcula una sola vez y se reutiliza, para no
             // repetir la consulta de pedidos ni la corrección del enum
             $mesa['estado_visual'] = $this->estadoVisual($mesa);
-            $mesa['tiempo']        = $this->tiempoOcupacion($mesa);
-            $mesa['detalle']       = $this->detalle($mesa);
+
+            // Estado para cocina (por los pedidos). Solo lo usa quien trabaja
+            // en cocina; el resto sigue viendo el de ocupación.
+            $mesa['estado_cocina'] = $this->estadoCocina($mesa);
+
+            $mesa['tiempo']  = $this->tiempoOcupacion($mesa);
+            $mesa['detalle'] = $this->detalle($mesa);
         }
 
         return $mesas;
@@ -87,7 +92,34 @@ class Mesa
     }
 
     /**
-     * Traduce el estado de la base al que muestra la interfaz.
+     * Pedidos sin cobrar de una mesa, con su estado.
+     *
+     * Es la misma regla de ocupación que usa el cobro (la mesa se libera
+     * cuando todo está pagado), y sirve para pintar la tarjeta: el estado
+     * que se ve sale de aquí, no del enum.
+     */
+    private function pedidosActivos(int $mesaId): array
+    {
+        $stmt = $this->conexion->prepare(
+            "SELECT p.id, p.estado
+             FROM pedidos p
+             LEFT JOIN ventas v
+                    ON v.pedido_id = p.id AND v.estado = 'pagada'
+             WHERE p.mesa_id = :mesa
+               AND v.id IS NULL
+               AND p.estado <> 'anulado'
+             ORDER BY p.fecha_creacion"
+        );
+        $stmt->execute([':mesa' => $mesaId]);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Estado clásico de la mesa: libre / ocupada / reservada.
+     *
+     * Es lo que siguen viendo el administrador y el mesero. La cocina usa en
+     * su lugar estadoCocina(), que va por los estados de los pedidos.
      *
      * Los pedidos son la fuente de verdad, no el enum. El enum se guarda
      * 'ocupada' al tomar un pedido, pero puede quedarse desfasado si el
@@ -116,6 +148,40 @@ class Mesa
         }
 
         return $estado;
+    }
+
+    /**
+     * Estado de la mesa para quien trabaja en cocina.
+     *
+     * En la cocina no importa si la mesa está ocupada, sino qué hay que
+     * cocinar, así que el estado sale de los pedidos sin cobrar y gana el
+     * más urgente:
+     *
+     *   sin pedidos          -> libre
+     *   algo por aceptar     -> pendiente  (amarillo)
+     *   se está preparando   -> preparando (rojo)
+     *   todo listo           -> listo     (verde)
+     *   servido y sin cobrar  -> servido   (gris)
+     *
+     * Un pedido pendiente gana sobre uno ya servido porque es lo que hay que
+     * atender ahora, aunque la mesa lleve rato ocupada.
+     */
+    private function estadoCocina(array $mesa): string
+    {
+        $pedidos = $this->pedidosActivos((int) $mesa['id']);
+
+        if (!$pedidos) {
+            return 'libre';
+        }
+
+        $estados = array_column($pedidos, 'estado');
+
+        return match (true) {
+            in_array('pendiente', $estados, true)  => 'pendiente',
+            in_array('preparando', $estados, true) => 'preparando',
+            in_array('preparado', $estados, true)  => 'listo',
+            default                                 => 'servido',
+        };
     }
 
     /**

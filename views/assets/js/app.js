@@ -165,11 +165,11 @@
                 });
             };
 
-            $('.js-nuevo').on('click', function () {
+            $(document).on('click', '.js-nuevo', function () {
                 abrirFormulario($(this).data('recurso'), $(this).data('campos'), null);
             });
 
-            $('.js-editar').on('click', function () {
+            $(document).on('click', '.js-editar', function () {
                 var $boton = $(this);
                 abrirFormulario($boton.data('recurso'), $boton.data('campos'), $boton.data('fila'));
             });
@@ -226,7 +226,7 @@
                 });
             });
 
-            $('.js-borrar').on('click', function () {
+            $(document).on('click', '.js-borrar', function () {
 
                 var $boton = $(this);
 
@@ -298,10 +298,51 @@
             }
         });
 
+        /**
+         * En tablet el menú es una capa encima del contenido.
+         *
+         * Por eso se cierra solo al tocar al costado: el mismo gesto que en
+         * cualquier aplicación de móvil, y evita tener que volver a tocar las
+         * rayas de arriba (que en ese momento quedan tapadas por el propio
+         * menú).
+         *
+         * Se escucha en fase de captura para que el toque no llegue antes al
+         * botón o a la fila que hay debajo, y se descartan tres casos:
+         *
+         *   - el propio botón de las rayas, que abre y cierra
+         *   - lo que está dentro del menú, que ya se cierra por su cuenta
+         *   - los modales, que flotan por encima del velo y se manejan solos
+         *
+         * Se usa addEventListener y no $(document).on(...) porque jQuery
+         * toma un tercer argumento booleano como datos del evento, no como
+         * fase de captura: el manejador se quedaba registrado sin función y
+         * el menú no cerraba nunca.
+         */
+        document.addEventListener('click', function (e) {
+
+            if (window.innerWidth > MOVIL || !estaAbierto()) {
+                return;
+            }
+
+            var objetivo = e.target;
+
+            if (!objetivo || !objetivo.closest) {
+                return;
+            }
+
+            if (objetivo.closest('[data-widget="pushmenu"]')
+                || objetivo.closest('.main-sidebar')
+                || objetivo.closest('.modal')) {
+                return;
+            }
+
+            aplicarMenu(false);
+        }, true);
+
         // Tecla Escape cierra el menú
         $(document).on('keydown', function (e) {
-            if (e.key === 'Escape' && !estaAbierto()) {
-                aplicarMenu(true);
+            if (e.key === 'Escape' && estaAbierto() && window.innerWidth <= MOVIL) {
+                aplicarMenu(false);
             }
         });
 
@@ -358,6 +399,10 @@
             });
         };
 
+        // Se expone fuera del cierre para que los scripts que van dentro de las
+        // vistas (el aviso de pedido nuevo de cocina) puedan consultarla.
+        window.apiGet = apiGet;
+
         var mensajeDe = function (xhr, porDefecto) {
 
             try {
@@ -366,6 +411,540 @@
                 return porDefecto;
             }
         };
+
+        // -------------------------------------------------
+        /**
+         * Suena cuando entra un pedido que el cocinero todavia no habia visto.
+         *
+         * Es la campana de un restaurante: dos golpes, "din" agudo y "dong"
+         * grave. Se sintetiza con Web Audio en vez de un archivo mp3: no hay
+         * que cargar nada, funciona sin conexion y pesa cero.
+         *
+         * Una campana de verdad no es una sola nota: es un fundamental con
+         * varios parciales que se van apagando a ritmos distintos. Por eso
+         * suenan metalicos y no como un pitido, y por eso mismo el segundo
+         * golpe suena mas grave y dura mas.
+         *
+         * Los navegadores no dejan sonar nada hasta que la persona toca algo,
+         * asi que ademas del sonido se avisa en pantalla.
+         */
+        var Alarma = (function () {
+
+            var contexto = null;
+            var primerToque = false;
+
+            /** Crea el AudioContext la primera vez (los navegadores lo exigen). */
+            var despertar = function () {
+
+                if (primerToque) {
+                    return;
+                }
+
+                primerToque = true;
+
+                var Contexto = window.AudioContext || window.webkitAudioContext;
+
+                if (Contexto) {
+                    try { contexto = new Contexto(); } catch (e) { contexto = null; }
+                }
+            };
+
+            /**
+             * Un golpe de campana.
+             *
+             * Cada parcial es una frecuencia propia con su propio decaimiento:
+             * los agudos se apagan antes que los graves, que es justo lo que
+             * hace que una campana suene a campana y no a beep.
+             */
+            var golpe = function (base, inicio, fuerza) {
+
+                // Proporciones reales de una campana de restaurant
+                var parciales = [
+                    { razon: 1.00, nivel: 1.00, decaimiento: 1.00 },  // fundamental
+                    { razon: 2.00, nivel: 0.55, decaimiento: 0.62 },  // octava
+                    { razon: 2.76, nivel: 0.38, decaimiento: 0.45 },  // quinta maior
+                    { razon: 4.07, nivel: 0.20, decaimiento: 0.30 },  // dos octavas
+                    { razon: 5.43, nivel: 0.12, decaimiento: 0.20 },  // partial agudo
+                    { razon: 0.50, nivel: 0.30, decaimiento: 1.35 }   // subgrave, da cuerpo
+                ];
+
+                parciales.forEach(function (p) {
+
+                    var oscilador = contexto.createOscillator();
+                    var volumen = contexto.createGain();
+
+                    oscilador.type = 'sine';
+                    oscilador.frequency.value = base * p.razon;
+
+                    var pico = fuerza * p.nivel;
+                    var vida = 1.9 * p.decaimiento;
+
+                    // Ataque curtido y caida exponencial: el timbre de metal
+                    volumen.gain.setValueAtTime(0.0001, inicio);
+                    volumen.gain.exponentialRampToValueAtTime(pico, inicio + 0.006);
+                    volumen.gain.exponentialRampToValueAtTime(0.0001, inicio + vida);
+
+                    oscilador.connect(volumen);
+                    volumen.connect(contexto.destination);
+
+                    oscilador.start(inicio);
+                    oscilador.stop(inicio + vida + 0.05);
+                });
+            };
+
+            return {
+                despertar: despertar,
+
+                /** Un toque de campana de restaurante. */
+                tocar: function () {
+
+                    despertar();
+
+                    if (!contexto) {
+                        return false;
+                    }
+
+                    if (contexto.state === 'suspended') {
+                        contexto.resume();
+                    }
+
+                    // Un solo golpe. Suena a campana por sus parciales y por
+                    // la cola larga, no por repetirlo: al sonar dos veces se
+                    // confundia con dos pedidos distintos.
+                    golpe(1174, contexto.currentTime, 0.28);
+
+                    return true;
+                }
+            };
+        })();
+
+        // La alarma la dispara el script que va dentro de la vista de mesas
+        window.Alarma = Alarma;
+
+        // -------------------------------------------------
+        // Tiempo real: toda la pantalla se sola
+        // -------------------------------------------------
+        /**
+         * Consulta cada pocos segundos si algo cambió en el sistema y, si
+         * cambió, actualiza la página sin que nadie tenga que recargar.
+         *
+         * No se refresca si hay un modal abierto o si alguien está escribiendo
+         * en un campo: en ese caso se avisa con una barrita y se actualiza
+         * apenas quede libre, para no borrar lo que la persona estaba
+         * escribiendo ni dejarla a medias de un cobro.
+         */
+        var TiempoReal = (function () {
+
+            var CADA_CUANTO_MS = 5000;
+            var firma = '';
+            var pendiente = false;
+            var aviso = null;
+            var arrancado = false;
+
+            /** ¿Se puede tocar la pantalla sin riesgo? */
+            var seguro = function () {
+
+                if (document.querySelector('.modal.show')) {
+                    return false;
+                }
+
+                // Un campo enfocado significa que alguien está escribiendo
+                if (document.activeElement) {
+
+                    var activo = document.activeElement;
+
+                    if (activo.tagName === 'INPUT'
+                        || activo.tagName === 'TEXTAREA'
+                        || activo.tagName === 'SELECT') {
+                        return false;
+                    }
+                }
+
+                return true;
+            };
+
+            var mostrarBarra = function () {
+
+                if (aviso) {
+                    return;
+                }
+
+                aviso = document.createElement('div');
+                aviso.className = 'lg-flash lg-flash--pulso';
+                aviso.setAttribute('role', 'status');
+                aviso.innerHTML = '<i class="fa fa-refresh"></i>'
+                    + '<span>Hay informaci&oacute;n nueva. Actualizando...</span>';
+
+                document.body.appendChild(aviso);
+            };
+
+            var quitarBarra = function () {
+
+                if (aviso) {
+                    aviso.remove();
+                    aviso = null;
+                }
+            };
+
+            /**
+             * Actualiza SOLO el contenido de la pantalla, sin recargar.
+             *
+             * Se vuelve a pedir la página al servidor y se cambia el interior
+             * del recuadro de contenido por el nuevo. Así el menú, el usuario y
+             * la posición dentro de una lista se quedan donde están.
+             *
+             * Los modales viven fuera de ese recuadro (se mudan al body al
+             * cargar) y los botones usan eventos delegados sobre document, así
+             * que todo sigue funcionando tras el cambio.
+             */
+            var refrescarContenido = function (alTerminar) {
+
+                /**
+                 * Con un modal abierto o un campo enfocado no se toca nada.
+                 *
+                 * Cambiar el contenido por debajo dejaria a medias lo que la
+                 * persona esta haciendo, y ademas se perderia un modal
+                 * abierto: al meter el HTML nuevo se borra el que estaba en
+                 * pantalla. Se espera un poco y se reintenta cuando quede libre.
+                 */
+                if (!seguro()) {
+                    window.setTimeout(function () {
+                        refrescarContenido(alTerminar);
+                    }, 1500);
+                    return;
+                }
+
+                var $contenido = $('#lg-contenido');
+
+                if (!$contenido.length) {
+                    window.location.replace(window.location.href);
+                    return;
+                }
+
+                var url = window.location.href;
+
+                $.ajax({ url: url, dataType: 'html' })
+                .done(function (html) {
+
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var nuevo = doc.getElementById('lg-contenido');
+
+                    // Si la respuesta no trae el recuadro, no se toca nada
+                    if (!nuevo) {
+                        window.location.replace(url);
+                        return;
+                    }
+
+                    // Los <script> del contenido no se ejecutan al asignar
+                    // innerHTML, y está bien: el sondeo que ya corre sigue con
+                    // su estado y no se duplica.
+                    $contenido.html(nuevo.innerHTML);
+
+                    /**
+                     * Los modales hay que mudarlos otra vez al body.
+                     *
+                     * Al cargar la pagina se mudan para que sus capas queden
+                     * por encima del menu. Si no se hiciera tras el refresco,
+                     * cada cambio dejaria un modal nuevo atrapado dentro del
+                     * contenido y el de verdad se quedaria abierto con el
+                     * "Cargando pedidos..." congelado: dos elementos con el
+                     * mismo id, y el primero que se encuentra gana.
+                     */
+                    $('body > .modal').remove();
+                    $contenido.find('.modal').appendTo(document.body);
+
+                    if (typeof alTerminar === 'function') {
+                        alTerminar();
+                    }
+                });
+            };
+
+            window.refrescarContenido = refrescarContenido;
+
+            /**
+             * Refresca el contenido y da por visto lo que habia pendiente.
+             *
+             * @param string|null nuevaFirma  la firma del servidor, que se
+             *        guarda aqui y no antes: si se guardara antes de refrescar
+             *        de verdad, un cambio detectado con un modal abierto se
+             *        daria por visto sin llegar a verse nunca.
+             */
+            var actualizar = function (nuevaFirma) {
+
+                quitarBarra();
+                pendiente = false;
+
+                if (nuevaFirma) {
+                    firma = nuevaFirma;
+                }
+
+                refrescarContenido();
+            };
+
+            /** Cuando queda libre, se actualiza lo que quedó pendiente. */
+            var intentarActualizar = function () {
+
+                if (!pendiente || !seguro()) {
+                    return;
+                }
+
+                // Un peldaño de margen: si el usuario sigue escribiendo, se
+                // vuelve a intentar en el siguiente ciclo.
+                window.setTimeout(function () {
+
+                    if (seguro()) {
+                        actualizar();
+                    }
+
+                }, 600);
+            };
+
+            var consultar = function () {
+
+                apiGet('api/pulso', { firma: firma })
+                .done(function (r) {
+
+                    // Primera vuelta: solo se guarda la firma de referencia
+                    if (!firma) {
+                        firma = r.firma;
+                        return;
+                    }
+
+                    /**
+                     * Nada cambio desde la ultima vuelta.
+                     *
+                     * Pero si venia algo pendiente, se reintenta aqui y no
+                     * solo al abrir o cerrar un modal: si el cambio se detecto
+                     * con un modal abierto, esa senal ya habia pasado y la
+                     * pantalla se quedaba congelada para siempre.
+                     */
+                    if (!pendiente && !r.cambia) {
+                        firma = r.firma;
+                        return;
+                    }
+
+                    pendiente = true;
+
+                    /**
+                     * La firma SOLO se mueve cuando la pantalla se refresca
+                     * de verdad.
+                     *
+                     * Si se guardara antes, un cambio detectado con un modal
+                     * abierto se daria por visto sin llegar a mostrarse, y la
+                     * tabla se quedaria con el dato viejo para siempre.
+                     */
+                    if (seguro()) {
+                        actualizar(r.firma);
+                    } else {
+                        mostrarBarra();
+                    }
+                });
+            };
+
+            return {
+
+                arrancar: function () {
+
+                    if (arrancado || !apiGet) {
+                        return;
+                    }
+
+                    arrancado = true;
+
+
+                    window.setInterval(consultar, CADA_CUANTO_MS);
+
+                    // Si el modal se cierra o el campo pierde el foco, se
+                    // actualiza lo que quedó pendiente.
+                    $(document).on('shown.bs.modal hidden.bs.modal', function () {
+                        window.setTimeout(intentarActualizar, 800);
+                    });
+
+                    $(document).on('focusout', function () {
+                        window.setTimeout(intentarActualizar, 1200);
+                    });
+
+                    // La pestaña que vuelve al frente puede tener datos viejos
+                    $(window).on('focus', function () {
+                        consultar();
+                    });
+                }
+            };
+        })();
+
+        window.TiempoReal = TiempoReal;
+
+        // El primer clic en cualquier parte "despierta" el audio del navegador
+        $(document).on('click', function () { Alarma.despertar(); });
+
+        /**
+         * El tiempo real arranca aquí y no al final del archivo a propósito:
+         * más abajo hay un return temprano que corta todo lo que sigue para
+         * quien no puede registrar pedidos (el usuario de cocina), y ese rol
+         * necesita las actualizaciones tanto como los demás.
+         */
+        TiempoReal.arrancar();
+
+        /**
+         * Clic en una tarjeta de mesa.
+         *
+         * Va aquí y no junto al modal de pedido a propósito: más abajo hay un
+         * return temprano que corta este archivo entero para quien no puede
+         * registrar pedidos (el usuario de cocina), y si el binding viviera
+         * después nunca se engancharía.
+         *
+         * Se delega en document para no depender de cuándo se pintó la rejilla.
+         */
+        $(document).on('click', '.lg-mesa-main', function () {
+
+            var $card = $(this);
+
+            // Cocina no registra pedidos: quiere ver los de esa mesa y
+            // avanzar su estado.
+            if ($card.data('ver-pedidos')) {
+                window.abrirPedidosDeLaMesa($card.data('mesa-id'), $card.data('mesa'));
+                return;
+            }
+
+            if (window.abrirModalPedido) {
+                window.abrirModalPedido({
+                    mesaId: $card.data('mesa-id'),
+                    mesa: $card.data('mesa'),
+                    capacidad: $card.data('capacidad')
+                });
+            }
+        });
+
+        // -------------------------------------------------
+        // Detalle de los pedidos de una mesa (usuario de cocina)
+        // -------------------------------------------------
+        var $modalMesa = $('#modalMesaPedidos');
+
+        if ($modalMesa.length) {
+
+            /**
+             * Los cuatro pasos por los que pasa un pedido en cocina.
+             *
+             * El índice es el estado; el último ya está servido y no lleva
+             * botón, porque ya no hay nada que hacer en cocina.
+             */
+            var PASOS = [
+                { clave: 'pendiente',  nombre: 'Recibido', accion: 'preparando', texto: 'Aceptar',        icono: 'fa fa-play' },
+                { clave: 'preparando', nombre: 'En cocina', accion: 'preparado',  texto: 'Marcar listo',  icono: 'fa fa-check' },
+                { clave: 'preparado',  nombre: 'Listo',     accion: 'entregado',  texto: 'Servir',        icono: 'fa fa-cutlery' },
+                { clave: 'entregado',  nombre: 'Servido',   accion: '',           texto: '',              icono: '' }
+            ];
+
+            var indiceDelEstado = function (estado) {
+                for (var i = 0; i < PASOS.length; i++) {
+                    if (PASOS[i].clave === estado) { return i; }
+                }
+                return 0;
+            };
+
+            /** Las rayitas de progreso del pie de la comanda. */
+            var pintarPasos = function (estado) {
+                var actual = indiceDelEstado(estado);
+
+                return PASOS.map(function (paso, i) {
+                    var clase = i < actual ? ' is-hecho' : (i === actual ? ' is-actual' : '');
+                    return '<span class="lg-comanda-paso' + clase + '">'
+                        + '<span class="lg-comanda-punto"></span>' + paso.nombre
+                        + '</span>';
+                }).join('');
+            };
+
+            window.pintarPedidosMesa = function (mesaId) {
+
+                var $lista = $('#mesaPedidosLista');
+
+                $lista.html('<div class="lg-empty"><i class="fa fa-spinner fa-spin"></i>'
+                    + '<p class="mb-0">Cargando pedidos...</p></div>');
+
+                apiGet('api/pedido/listar', { mesa_id: mesaId })
+                .done(function (r) {
+
+                    var pedidos = r.pedidos || [];
+
+                    if (!pedidos.length) {
+                        $('#mesaPedidosResumen').text('');
+                        $lista.html('<div class="lg-empty"><i class="fa fa-check-circle-o"></i>'
+                            + '<p class="mb-0">Esta mesa no tiene pedidos sin cobrar.</p></div>');
+                        return;
+                    }
+
+                    var porServir = pedidos.filter(function (p) {
+                        return p.estado !== 'entregado';
+                    }).length;
+
+                    $('#mesaPedidosResumen').text(
+                        pedidos.length + ' comanda(s) · ' + porServir + ' por preparar · ' + soles(
+                            pedidos.reduce(function (suma, p) { return suma + p.total; }, 0)
+                        )
+                    );
+
+                    // Orden de llegada: la primera comanda va arriba
+                    var html = '';
+
+                    pedidos.forEach(function (p) {
+
+                        var paso = PASOS[indiceDelEstado(p.estado)];
+                        var unidades = (p.items || []).reduce(function (s, i) {
+                            return s + (parseInt(i.cantidad, 10) || 0);
+                        }, 0);
+
+                        html +=
+                            '<div class="lg-comanda lg-comanda--' + p.estado + '">' +
+                                '<div class="lg-comanda-cuerpo">' +
+
+                                    '<div class="lg-comanda-cabeza">' +
+                                        '<span class="lg-comanda-codigo">P-' + String(p.id).padStart(4, '0')
+                                            + '<small>' + unidades + ' producto(s)</small></span>' +
+                                        '<span class="lg-comanda-total">' + soles(p.total) + '</span>' +
+                                    '</div>' +
+
+                                    '<ul class="lg-comanda-items">' +
+                                        (p.items || []).map(function (i) {
+                                            return '<li class="lg-comanda-item">'
+                                                + '<span class="lg-comanda-cantidad">' + i.cantidad + '</span>'
+                                                + '<span class="lg-comanda-nombre">' + i.nombre + '</span>'
+                                            + '</li>';
+                                        }).join('') +
+                                    '</ul>' +
+
+                                    '<div class="lg-comanda-pie">' +
+                                        '<div class="lg-comanda-pasos">' + pintarPasos(p.estado) + '</div>' +
+                                        (paso.accion
+                                            ? '<button type="button" class="lg-btn lg-btn--primary lg-btn--sm lg-cocina-avanzar"'
+                                                + ' data-id="' + p.id + '" data-estado="' + paso.accion + '">'
+                                                + '<i class="' + paso.icono + '"></i> ' + paso.texto + '</button>'
+                                            : '<span class="lg-muted" style="font-size:.8rem;">'
+                                                + '<i class="fa fa-check"></i> Servido, esperando que lo cobren</span>') +
+                                    '</div>' +
+
+                                '</div>' +
+                            '</div>';
+                    });
+
+                    $lista.html(html);
+                })
+                .fail(function () {
+                    $lista.html('<div class="lg-empty"><i class="fa fa-exclamation-circle"></i>'
+                        + '<p class="mb-0">No se pudieron cargar los pedidos de la mesa.</p></div>');
+                });
+            };
+
+            window.abrirPedidosDeLaMesa = function (mesaId, mesa) {
+
+                $modalMesa.data('mesa-id', mesaId);
+                $('#mesaPedidosTitulo').text(mesa || 'Mesa');
+                $('#mesaPedidosResumen').text('Cargando...');
+
+                $modalMesa.modal('show');
+
+                window.pintarPedidosMesa(mesaId);
+            };
+        }
 
         /**
          * Formatea un monto. Vive aquí y no dentro de un bloque suelto porque
@@ -378,9 +957,10 @@
         // -------------------------------------------------
         // Cambio de estado de un pedido
         // -------------------------------------------------
-        // El estado de un pedido SOLO se cambia desde las tarjetas del panel de
-        // cocina. La tabla de "Ver pedidos" es de consulta.
-        $('.lg-cocina-avanzar').on('click', function () {
+        // El estado de un pedido SOLO se cambia desde las tarjetas de cocina
+        // (panel general o detalle de mesa). La tabla de "Ver pedidos" es
+        // de consulta.
+        $(document).on('click', '.lg-cocina-avanzar', function () {
 
             var $boton = $(this);
             var original = $boton.html();
@@ -392,6 +972,13 @@
                 estado: $boton.data('estado')
             })
             .done(function () {
+
+                // Si el detalle está abierto se repinta en el sitio; si no,
+                // se recarga la cuadrícula para que la mesa cambie de estado.
+                if ($('#mesaPedidosLista').length && $('#modalMesaPedidos').hasClass('show')) {
+                    window.pintarPedidosMesa($('#modalMesaPedidos').data('mesa-id'));
+                }
+
                 window.location.reload();
             })
             .fail(function (xhr) {
@@ -539,7 +1126,7 @@
                 });
             });
 
-            $('.js-abrir-cobro').on('click', function () {
+            $(document).on('click', '.js-abrir-cobro', function () {
 
                 var $boton = $(this);
 
@@ -562,7 +1149,7 @@
         // -------------------------------------------------
         // Eliminar un pedido
         // -------------------------------------------------
-        $('.js-eliminar-pedido').on('click', function () {
+        $(document).on('click', '.js-eliminar-pedido', function () {
 
             var $boton = $(this);
 
@@ -605,7 +1192,7 @@
                 $('#stockEtiqueta').text(texto);
             };
 
-            $('.js-ajustar-stock').on('click', function () {
+            $(document).on('click', '.js-ajustar-stock', function () {
 
                 var $boton = $(this);
 
@@ -873,7 +1460,7 @@
                 $('#compraAnular').toggle(!datos.anulada);
             };
 
-            $('.js-ver-compra').on('click', function () {
+            $(document).on('click', '.js-ver-compra', function () {
 
                 var id = $(this).data('id');
 
@@ -897,7 +1484,7 @@
                 });
             });
 
-            $('.js-anular-compra').on('click', function () {
+            $(document).on('click', '.js-anular-compra', function () {
                 compraActual = { id: $(this).data('id'), anulada: false };
                 $(this).closest('tr').find('.js-ver-compra').trigger('click');
             });
@@ -927,7 +1514,7 @@
                 });
             });
         }
-        $('.js-asistencia').on('click', function () {
+        $(document).on('click', '.js-asistencia', function () {
 
             var $boton = $(this);
             var textoOriginal = $boton.html();
@@ -978,7 +1565,7 @@
 
             var reservaActual = { id: 0 };
 
-            $('.js-reservar-mesa').on('click', function () {
+            $(document).on('click', '.js-reservar-mesa', function () {
 
                 reservaActual.id = $(this).data('id');
 
@@ -1021,7 +1608,7 @@
             });
         }
 
-        $('.js-liberar-mesa').on('click', function () {
+        $(document).on('click', '.js-liberar-mesa', function () {
 
             var $boton = $(this);
 
@@ -1037,7 +1624,7 @@
             });
         });
 
-        $('.js-eliminar-mesa').on('click', function () {
+        $(document).on('click', '.js-eliminar-mesa', function () {
 
             var $boton = $(this);
             var mesa = $boton.data('mesa');
@@ -1062,7 +1649,7 @@
 
         if ($mesaModal.length) {
 
-            $('.js-agregar-mesa').on('click', function () {
+            $(document).on('click', '.js-agregar-mesa', function () {
                 $('#mesaAviso').hide();
                 $('#mesaCapacidad').val(4);
                 $mesaModal.modal('show');
@@ -1223,8 +1810,15 @@
             $modal.modal('show');
         };
 
+        // El clic en la tarjeta de mesa (que se engancha antes del return
+        // temprano) llega aquí por nombre global.
+        window.abrirModalPedido = abrirModal;
+
         /**
          * Muestra los pedidos que ya tiene la mesa.
+         *
+         * El servidor ya devuelve solo los de hoy: los de días anteriores no
+         * se listan, porque llenaban el modal y tapaban el catálogo.
          */
         var cargarPedidosDeLaMesa = function () {
 
@@ -1247,7 +1841,7 @@
 
                 if (!r.pedidos || !r.pedidos.length) {
                     $('#pedidoExistentesResumen').text('');
-                    $lista.html('<p class="lg-muted mb-0">Esta mesa a&uacute;n no tiene pedidos.</p>');
+                    $lista.html('<p class="lg-muted mb-0">Esta mesa a&uacute;n no tiene pedidos hoy.</p>');
                     return;
                 }
 
@@ -1302,17 +1896,8 @@
             $(this).attr('aria-expanded', abierto ? 'true' : 'false');
         });
 
-        // Abre el modal desde las tarjetas de mesa
-        $('.lg-mesa-main').on('click', function () {
-
-            var $card = $(this);
-
-            abrirModal({
-                mesaId: $card.data('mesa-id'),
-                mesa: $card.data('mesa'),
-                capacidad: $card.data('capacidad')
-            });
-        });
+        // El clic en las tarjetas de mesa se engancha arriba del todo, antes
+        // del return temprano, para que también funcione sin este modal.
 
         // Abre el modal desde los botones de mesa
         $('[data-abrir-pedido]').on('click', function () {

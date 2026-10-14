@@ -14,18 +14,35 @@ if (!in_array($recurso, ['productos', 'categorias', 'movimientos'], true)) {
     $recurso = 'productos';
 }
 
+/**
+ * Movimientos es el historial de entradas y salidas de stock: lo necesita
+ * quien puede ajustar el inventario. El que solo consulta (mesero, cocina)
+ * ve Productos y Categorías, y si pide esa pestaña por URL cae en Productos.
+ */
+$veMovimientos = esPermitido('inventario_editar');
+
+if ($recurso === 'movimientos' && !$veMovimientos) {
+    $recurso = 'productos';
+}
+
 $paginaActual = $recurso === 'movimientos' ? 'inventario/movimientos' : 'inventario';
 $icono = 'fa fa-cube';
 $titulo = 'Inventario';
-$subtitulo = 'Productos, stock y movimientos del almacén';
+$subtitulo = $veMovimientos
+    ? 'Productos, stock y movimientos del almacén'
+    : 'Productos y stock del almacén';
 
-$movimientos = $inventarioModel->movimientos();
+// El historial solo se consulta si se va a mostrar
+$movimientos = $veMovimientos ? $inventarioModel->movimientos() : [];
+
+// Paginación del historial de movimientos
+$pagMovimientos = paginar($movimientos, 25);
 
 /**
  * Pestañas del módulo, compartidas por el CRUD genérico y la vista de
  * movimientos para que no se dupliquen.
  */
-$pestanasInventario = static function (string $actual) use ($movimientos): void {
+$pestanasInventario = static function (string $actual) use ($movimientos, $veMovimientos): void {
     ?>
     <div class="lg-segmentos mb-3">
         <a href="<?= url('inventario') ?>" class="lg-segmento<?= $actual === 'productos' ? ' is-activo' : '' ?>">
@@ -34,10 +51,12 @@ $pestanasInventario = static function (string $actual) use ($movimientos): void 
         <a href="<?= url('inventario') ?>&tab=categorias" class="lg-segmento<?= $actual === 'categorias' ? ' is-activo' : '' ?>">
             <i class="fa fa-tags"></i> Categorías
         </a>
-        <a href="<?= url('inventario/movimientos') ?>" class="lg-segmento<?= $actual === 'movimientos' ? ' is-activo' : '' ?>">
-            <i class="fa fa-exchange"></i> Movimientos
-            <span class="lg-segmento-badge"><?= count($movimientos) ?></span>
-        </a>
+        <?php if ($veMovimientos): ?>
+            <a href="<?= url('inventario/movimientos') ?>" class="lg-segmento<?= $actual === 'movimientos' ? ' is-activo' : '' ?>">
+                <i class="fa fa-exchange"></i> Movimientos
+                <span class="lg-segmento-badge"><?= count($movimientos) ?></span>
+            </a>
+        <?php endif; ?>
     </div>
     <?php
 };
@@ -55,9 +74,13 @@ if ($recurso !== 'movimientos'):
          'titulo' => 'Productos',   'icono' => 'fa fa-cube'],
         ['clave' => 'categorias',  'recurso' => 'categorias', 'pagina' => 'inventario&tab=categorias',
          'titulo' => 'Categorías',  'icono' => 'fa fa-tags'],
-        ['clave' => 'movimientos', 'recurso' => $recursoCrud, 'pagina' => 'inventario/movimientos',
-         'titulo' => 'Movimientos', 'icono' => 'fa fa-exchange']
     ];
+
+    if ($veMovimientos) {
+        $recursosExtra[] = ['clave' => 'movimientos', 'recurso' => $recursoCrud,
+                            'pagina' => 'inventario/movimientos',
+                            'titulo' => 'Movimientos', 'icono' => 'fa fa-exchange'];
+    }
 
     $recurso = $recursoCrud;
 
@@ -104,7 +127,7 @@ endif;
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($movimientos as $m): ?>
+                        <?php foreach ($pagMovimientos['filas'] as $m): ?>
                             <?php
                             $esEntrada = $m['tipo'] === 'entrada';
                             $esAjuste  = $m['tipo'] === 'ajuste';
@@ -129,6 +152,9 @@ endif;
                     </tbody>
                 </table>
             </div>
+
+            <?php barraPaginacion($pagMovimientos,
+                'Movimientos ' . $pagMovimientos['desde'] . '-' . $pagMovimientos['hasta'] . ' de ' . $pagMovimientos['total']); ?>
         <?php endif; ?>
     </div>
 

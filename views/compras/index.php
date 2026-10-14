@@ -19,6 +19,9 @@ if (!in_array($pestana, ['registrar', 'historial', 'proveedores'], true)) {
 }
 
 $compras    = $compraModel->listar();
+
+// Paginación del historial de compras
+$pagCompras = paginar($compras, 15);
 $proveedores = (new Gestion())->listar('proveedores');
 $productos  = $productoModel->listar();
 
@@ -243,7 +246,7 @@ encabezadoPagina(
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($compras as $c): ?>
+                        <?php foreach ($pagCompras['filas'] as $c): ?>
                             <?php $anulada = $c['estado'] === 'anulada'; ?>
                             <tr<?= $anulada ? ' style="opacity:0.55;"' : '' ?>>
                                 <td style="font-weight:600;">C-<?= str_pad((string) $c['id'], 4, '0', STR_PAD_LEFT) ?></td>
@@ -286,6 +289,9 @@ encabezadoPagina(
                     </tbody>
                 </table>
             </div>
+
+            <?php barraPaginacion($pagCompras,
+                'Compras ' . $pagCompras['desde'] . '-' . $pagCompras['hasta'] . ' de ' . $pagCompras['total']); ?>
         <?php endif; ?>
     </div>
 

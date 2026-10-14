@@ -53,10 +53,12 @@ function rutas(): array
             'permiso' => 'inventario'
         ],
 
+        // El historial de movimientos es para quien ajusta el stock, no solo
+        // para quien lo consulta.
         'inventario/movimientos' => [
             'vista'   => 'inventario/movimientos',
             'titulo'  => 'Movimientos de inventario',
-            'permiso' => 'inventario'
+            'permiso' => 'inventario_editar'
         ],
 
         'compras' => [
@@ -119,6 +121,18 @@ function rutas(): array
             'api'     => true,
             'soloGet' => true,
             'permiso' => 'pedidos_ver'
+        ],
+
+        /**
+         * Latido del sistema.
+         *
+         * Lo consulta TODAS las pantallas para saber si algo cambió en la
+         * base y refrescarse solas, sin que nadie tenga que actualizar.
+         */
+        'api/pulso' => [
+            'accion'  => 'pulso',
+            'api'     => true,
+            'soloGet' => true
         ],
         'api/pedido/actualizar' => [
             'accion'  => 'pedido_actualizar',

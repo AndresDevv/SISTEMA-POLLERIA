@@ -6,11 +6,11 @@
  */
 
 /**
- * Estados posibles de una mesa.
+ * Estados que se pintan en la tarjeta de una mesa.
  *
  * Son los tres del enum de la tabla mesas: 'libre', 'ocupada', 'reservada'.
- * "Pagada" y "Por pagar" se quitaron porque no eran estados de mesa, sino
- * de cobro, y solo confundían la vista del salón.
+ * Los ve el administrador y el mesero. El usuario de cocina usa en su lugar
+ * estadosMesaCocina(), que van por los pedidos de esa mesa.
  */
 function estadosMesa(): array
 {
@@ -18,6 +18,24 @@ function estadosMesa(): array
         'libre'     => ['etiqueta' => 'Libre',     'icono' => 'fa fa-check',    'color' => '#10B981'],
         'ocupada'   => ['etiqueta' => 'Ocupada',   'icono' => 'fa fa-times',    'color' => '#EF4444'],
         'reservada' => ['etiqueta' => 'Reservada', 'icono' => 'fa fa-calendar', 'color' => '#F59E0B']
+    ];
+}
+
+/**
+ * Estados de la tarjeta para quien trabaja en cocina.
+ *
+ * Solo los usa el usuario de Cocina. En la cocina no importa si la mesa está
+ * ocupada, sino qué hay que cocinar, así que el estado sale de los pedidos
+ * pendientes de esa mesa en vez del enum de ocupación.
+ */
+function estadosMesaCocina(): array
+{
+    return [
+        'libre'      => ['etiqueta' => 'Sin pedidos',      'icono' => 'fa fa-check',   'color' => '#10B981'],
+        'pendiente'  => ['etiqueta' => 'Pedido pendiente', 'icono' => 'fa fa-bell',    'color' => '#F59E0B'],
+        'preparando' => ['etiqueta' => 'En cocina',        'icono' => 'fa fa-fire',    'color' => '#EF4444'],
+        'listo'      => ['etiqueta' => 'Listo',            'icono' => 'fa fa-check',   'color' => '#10B981'],
+        'servido'    => ['etiqueta' => 'Servido',          'icono' => 'fa fa-cutlery', 'color' => '#64748B'],
     ];
 }
 

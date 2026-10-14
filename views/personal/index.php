@@ -22,6 +22,10 @@ $trabajadores = $personalModel->trabajadores();
 $asistencias  = $personalModel->asistenciasHoy();
 $pagos        = $personalModel->pagos();
 
+// Paginación de las dos listas con tabla
+$pagTrabajadores = paginar($trabajadores, 20);
+$pagPagos        = paginar($pagos, 20);
+
 /**
  * Pestañas del módulo. Las comparte el CRUD genérico y las vistas propias.
  */
@@ -103,7 +107,7 @@ encabezadoPagina(
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($trabajadores as $col): ?>
+                        <?php foreach ($pagTrabajadores['filas'] as $col): ?>
                             <?php
                             $asistencia = null;
                             foreach ($asistencias as $a) {
@@ -148,6 +152,8 @@ encabezadoPagina(
                     </tbody>
                 </table>
             </div>
+
+            <?php barraPaginacion($pagTrabajadores); ?>
         <?php endif; ?>
     </div>
 
@@ -224,7 +230,7 @@ encabezadoPagina(
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($pagos as $p): ?>
+                        <?php foreach ($pagPagos['filas'] as $p): ?>
                             <tr>
                                 <td style="font-weight:600;"><?= htmlspecialchars($p['empleado']) ?></td>
                                 <td class="text-muted"><?= htmlspecialchars($p['cargo'] ?? '-') ?></td>
@@ -237,6 +243,9 @@ encabezadoPagina(
                     </tbody>
                 </table>
             </div>
+
+            <?php barraPaginacion($pagPagos,
+                'Pagos ' . $pagPagos['desde'] . '-' . $pagPagos['hasta'] . ' de ' . $pagPagos['total']); ?>
         <?php endif; ?>
     </div>
 

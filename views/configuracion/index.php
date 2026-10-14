@@ -92,6 +92,9 @@ foreach ($db->query("SELECT rol_id, permiso_id FROM rol_permiso")->fetchAll() as
 $grupos = permisosAgrupados($permisos);
 
 $totalPermisos = count($permisos);
+
+// Paginación de la tabla de roles
+$pagRoles = paginar($roles, 20);
 /**
  * El administrador puede ser cualquier rol con el permiso "configuracion".
  * Si lo tiene, ve todos los menús sin importar la lista.
@@ -214,7 +217,7 @@ $esAdmin = static function (array $ids) use ($permisoConfig): bool {
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($roles as $rol): ?>
+                <?php foreach ($pagRoles['filas'] as $rol): ?>
                     <?php
                     $rolId   = (int) $rol['id'];
                     $ids     = $porRol[$rolId] ?? [];
@@ -290,9 +293,11 @@ $esAdmin = static function (array $ids) use ($permisoConfig): bool {
         </table>
     </div>
 
+    <?php barraPaginacion($pagRoles); ?>
+
     <p class="lg-muted mt-3 mb-0" style="font-size:.82rem;">
         <i class="fa fa-info-circle"></i>
-        Los permisos se marcan al crear el rol. Para cambiar qué ve uno que ya
+        Los permisos se marcan al crear el rol. Para cambiar qu&eacute; ve uno que ya
         existe, crea otro rol con los permisos que necesitas.
     </p>
 </div>

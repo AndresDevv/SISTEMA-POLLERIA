@@ -33,6 +33,19 @@ class Inventario
             return ['success' => false, 'message' => 'La cantidad no puede ser negativa.'];
         }
 
+        /**
+         * Un ajuste deja el stock en el valor indicado, así que un 0 aquí no
+         * significa "nada": significa vaciar el producto. Con una petición mal
+         * formada pasaba de verdad y dejaba el stock a cero sin que nadie lo
+         * hubiera pedido, así que se rechaza.
+         */
+        if ($tipo === 'ajuste' && $cantidad === 0) {
+            return [
+                'success' => false,
+                'message' => 'El ajuste debe indicar cuantas unidades quedan en stock.'
+            ];
+        }
+
         $usuarioId = (int) ($_SESSION['usuario_id'] ?? 0);
 
         try {

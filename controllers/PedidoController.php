@@ -216,26 +216,31 @@ class PedidoController
      * Devuelve los pedidos de una mesa, para mostrarlos en el modal.
      */
     /**
-     * Huella de los pedidos activos.
+     * Huella de los pedidos activos y novedades recientes.
      *
-     * El mesero no tiene un botón de refrescar, así que compara este resumen
-     * con el que tenía al cargar la página. Si cocina cambió un estado, la
-     * huella cambia y la pantalla se recarga sola.
+     * Nadie tiene un botón de refrescar, así que aquí se compara lo que ve la
+     * pantalla con lo que hay ahora. Además de la huella devuelve las
+     * novedades desde un id: así cocina sabe no solo que algo cambió, sino
+     * QUÉ se le agregó a cada pedido.
      */
-public function resumen(): void
+    public function resumen(): void
     {
+        $desde = (int) ($_GET['desde'] ?? 0);
         $stmt = $this->db->query(
-            "SELECT id, estado, total
-             FROM pedidos
-             WHERE estado IN ('pendiente','preparando','preparado')
-             ORDER BY id"
+            "SELECT p.id, p.estado, p.total, p.fecha_actualizacion, m.numero AS mesa
+             FROM pedidos p
+             INNER JOIN mesas m ON m.id = p.mesa_id
+             WHERE p.estado IN ('pendiente','preparando','preparado')
+             ORDER BY p.id"
         );
 
         $pedidos = array_map(static function (array $fila): array {
             return [
                 'id'     => (int) $fila['id'],
                 'estado' => $fila['estado'],
-                'total'  => (float) $fila['total']
+                'total'  => (float) $fila['total'],
+                'alta'   => $fila['fecha_actualizacion'],
+                'mesa'   => (int) $fila['mesa']
             ];
         }, $stmt->fetchAll());
 
@@ -246,7 +251,23 @@ public function resumen(): void
         $this->responder([
             'success' => true,
             'huella'  => md5(json_encode([$pedidos, (int) $stmt->fetchColumn()])),
-            'total'   => count($pedidos)
+            'total'   => count($pedidos),
+
+            // Ids y momento de cambio de los que aún no aceptó nadie.
+            // La cocina los usa para enterarse de lo que acaba de llegar:
+            // un id nuevo es un pedido nuevo, y una fecha nueva significa
+            // que leAgregaron productos a un pedido que ya conocían.
+            'pendientes' => array_values(array_map(
+                static fn (array $p): array => [
+                    'id'   => $p['id'],
+                    'alta' => $p['alta'],
+                    'mesa' => $p['mesa'],
+                ],
+                array_filter($pedidos, static fn (array $p): bool => $p['estado'] === 'pendiente')
+            )),
+
+            // Qué se le agregó a un pedido que ya estaba en cocina
+            'novedades' => $this->pedidoModel->novedades($desde),
         ]);
     }
 

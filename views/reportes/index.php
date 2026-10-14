@@ -90,6 +90,9 @@ $dias = array_unique(array_merge(
 
 rsort($dias);
 
+// Paginación de la tabla por día (las otras dos se calculan más abajo)
+$pagDias = paginar(array_values($dias), 15);
+
 /** Ventas por método de pago */
 $stmt = $db->prepare(
     "SELECT m.nombre AS metodo, COALESCE(SUM(pg.monto), 0) AS total
@@ -130,6 +133,15 @@ $stmt = $db->prepare(
 );
 $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $porMesa = $stmt->fetchAll();
+
+/**
+ * Paginación de las dos tablas de ranking.
+ *
+ * Traen LIMIT 10 en SQL como tope del ranking; la paginación solo entra si
+ * ese tope se sube, para que ningún ranking crezca sin límite en pantalla.
+ */
+$pagProductos = paginar($topProductos, 15);
+$pagMesas     = paginar($porMesa, 15);
 
 $totalPeriodo = array_sum(array_column($porDia, 'total'));
 $totalGastos  = array_sum($gastosPorDia);
@@ -280,7 +292,7 @@ encabezadoPagina(
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($dias as $dia):
+                        <?php foreach ($pagDias['filas'] as $dia):
                             $diaVentas = 0.0;
                             $diaTickets = 0;
 
@@ -320,6 +332,9 @@ encabezadoPagina(
                     </tfoot>
                 </table>
             </div>
+
+            <?php barraPaginacion($pagDias,
+                'Días ' . $pagDias['desde'] . '-' . $pagDias['hasta'] . ' de ' . $pagDias['total']); ?>
         <?php endif; ?>
     </div>
 
@@ -359,7 +374,7 @@ encabezadoPagina(
                     <tr><th>Producto</th><th>Unidades</th><th style="text-align:right;">Total</th></tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($topProductos as $fila): ?>
+                    <?php foreach ($pagProductos['filas'] as $fila): ?>
                         <tr>
                             <td><?= htmlspecialchars($fila['nombre']) ?></td>
                             <td class="num"><?= number_format((float) $fila['unidades'], 0) ?></td>
@@ -368,6 +383,9 @@ encabezadoPagina(
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <?php barraPaginacion($pagProductos,
+                'Productos ' . $pagProductos['desde'] . '-' . $pagProductos['hasta'] . ' de ' . $pagProductos['total']); ?>
         <?php endif; ?>
     </div>
 
@@ -386,7 +404,7 @@ encabezadoPagina(
                     <tr><th>Mesa</th><th>Ventas</th><th style="text-align:right;">Total</th></tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($porMesa as $fila): ?>
+                    <?php foreach ($pagMesas['filas'] as $fila): ?>
                         <tr>
                             <td>Mesa <?= (int) $fila['numero'] ?></td>
                             <td class="num"><?= (int) $fila['ventas'] ?></td>
@@ -395,6 +413,9 @@ encabezadoPagina(
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <?php barraPaginacion($pagMesas,
+                'Mesas ' . $pagMesas['desde'] . '-' . $pagMesas['hasta'] . ' de ' . $pagMesas['total']); ?>
         <?php endif; ?>
     </div>
 
