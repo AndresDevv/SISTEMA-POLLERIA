@@ -1,22 +1,22 @@
 <?php
 
-require_once __DIR__ . '/../models/Compra.php';
 require_once __DIR__ . '/../models/Inventario.php';
+require_once __DIR__ . '/../models/MenuDelDia.php';
 require_once __DIR__ . '/../models/Personal.php';
 
 /**
- * API de los módulos operativos: compras, inventario y personal.
+ * API de los módulos operativos: menú del día, inventario y personal.
  */
 class OperacionController
 {
-    private Compra $compraModel;
     private Inventario $inventarioModel;
+    private MenuDelDia $menuModel;
     private Personal $personalModel;
 
     public function __construct()
     {
-        $this->compraModel     = new Compra();
         $this->inventarioModel = new Inventario();
+        $this->menuModel       = new MenuDelDia(conexionDB());
         $this->personalModel   = new Personal();
     }
 
@@ -36,57 +36,85 @@ class OperacionController
     }
 
     /**
-     * Registra una compra con sus productos.
+     * Catálogo de productos para pintar el modal de pedidos al día.
+     *
+     * Existe porque el motor de tiempo real no repinta la pantalla cuando hay
+     * un modal abierto: hacerlo borraría el pedido que el mesero está
+     * armando. Pero dentro del modal sí hay una zona que puede cambiar sin
+     * tocar nada de eso, y es el catálogo de productos: si el pollo se acaba
+     * y alguien lo marca como agotado en el Menú del día, el mesero tiene que
+     * verlo al instante, no tres segundos después de cerrar el modal.
+     *
+     * Se devuelve el HTML ya pintado y no una lista de datos a la que el
+     * navegador le ponga las etiquetas: así el catálogo se ve exactamente
+     * igual se pinte al abrir el modal o se repinte en vivo, sin tener el
+     * mismo marcado escrito en PHP y en JavaScript.
+     *
+     * Va con una firma para no pintar nada si no cambió: el servidor manda
+     * la firma antes que el HTML y el navegador solo repinta cuando es
+     * distinta de la última que recibió.
      */
-    public function compraRegistrar(): void
+    public function menuCatalogo(): void
     {
-        $datos = $this->cuerpo();
+        $menu    = new MenuDelDia(conexionDB());
+        $productos = [];
 
-        $resultado = $this->compraModel->registrar(
-            (int) ($datos['proveedor_id'] ?? 0),
-            $datos['items'] ?? []
-        );
-
-        $this->responder($resultado, $resultado['success'] ? 201 : 422);
-    }
-
-    /**
-     * Detalle de una compra: encabezado, ítems y si sigue contabilizada
-     * en los gastos del día.
- */
-public function compraDetalle(): void
-    {
-        $id = (int) ($_GET['id'] ?? 0);
-
-        if ($id <= 0) {
-            $this->responder(['success' => false, 'message' => 'Compra no indicada.'], 422);
+        foreach ($menu->carta() as $grupo) {
+            foreach ($grupo['productos'] as $plato) {
+                $productos[] = [
+                    'nombre'    => $plato['nombre'],
+                    'categoria' => $grupo['categoria'],
+                    'precio'    => $plato['precio'],
+                    'stock'     => $plato['stock'],
+                    'minimo'    => $plato['minimo'] ?? 0,
+                    'agotado'   => $plato['agotado'] ? 1 : 0,
+                    'id'        => $plato['id'],
+                ];
+            }
         }
 
-        $compra = $this->compraModel->conDetalle($id);
-
-        if (!$compra) {
-            $this->responder(['success' => false, 'message' => 'La compra no existe.'], 404);
-        }
+        // La firma se arma con lo que se ve, no con toda la fila: si solo
+        // cambiara un campo que no se muestra, no hace falta repintar.
+        $firma = md5((string) json_encode(array_map(
+            static function (array $p): array {
+                return [$p['id'], $p['stock'], $p['agotado']];
+            },
+            $productos
+        )));
 
         $this->responder([
-            'success' => true,
-            'compra'  => $compra,
-            'anulada' => $compra['estado'] === 'anulada'
+            'success'    => true,
+            'firma'      => $firma,
+            'agregados'  => array_sum(array_column($productos, 'agotado')),
+            'html'       => $this->htmlCatalogo($productos),
         ]);
     }
 
     /**
-     * Anula una compra: revierte el stock y el gasto del día.
+     * Pinta el catálogo con el partial que usa también el modal.
      */
-    public function compraAnular(): void
+    private function htmlCatalogo(array $productosModal): string
     {
-        $id = (int) ($this->cuerpo()['id'] ?? 0);
+        ob_start();
+        require APP_ROOT . '/views/partials/catalogo_productos.php';
 
-        if ($id <= 0) {
-            $this->responder(['success' => false, 'message' => 'Compra no indicada.'], 422);
-        }
+        return (string) ob_get_clean();
+    }
 
-        $resultado = $this->compraModel->anular($id);
+    /**
+     * Marca un plato como agotado, o vuelve a ofrecerlo.
+     *
+     * Solo mueve la marca, no el stock: el inventario lleva la cuenta real
+     * de lo que queda y esta marca es para avisar que ya no se está dando.
+     */
+    public function menuAgotado(): void
+    {
+        $datos = $this->cuerpo();
+
+        $resultado = $this->menuModel->marcarAgotado(
+            (int) ($datos['id'] ?? 0),
+            !empty($datos['agotado'])
+        );
 
         $this->responder($resultado, $resultado['success'] ? 200 : 422);
     }

@@ -40,9 +40,13 @@ function menuSistema(): array
             'pagina' => 'inventario'
         ],
         [
-            'titulo' => 'Compras',
-            'icono'  => 'fa fa-shopping-cart',
-            'pagina' => 'compras'
+            'titulo' => 'Menú del día',
+            'icono'  => 'fa fa-book',
+            'pagina' => 'menu_del_dia',
+
+            // El permiso no se llama como la página: sin esto el menú
+            // buscaría "menu_del_dia" y no encontraría nada.
+            'permiso' => 'menu_dia'
         ],
         [
             'titulo' => 'Finanzas',
@@ -91,6 +95,13 @@ function esPermitido(string $pagina): bool
 
 /**
  * Indica si un item del menú es visible para el usuario en sesión.
+ *
+ * El permiso sale de la clave 'permiso' si el item la trae, y si no, del
+ * nombre de la página. Casi todos los items coinciden (la página y su
+ * permiso se llaman igual), pero en el Menú del día no: la página es
+ * "menu_del_dia" y el permiso "menu_dia". Sin la clave explícita, el menú
+ * se buscaría con el nombre de la página, no encontraría el permiso y el
+ * item no le aparecería a nadie.
  */
 function menuVisible(array $item): bool
 {
@@ -102,7 +113,7 @@ function menuVisible(array $item): bool
         }
     }
 
-    return esPermitido($item['pagina']);
+    return esPermitido($item['permiso'] ?? $item['pagina']);
 }
 
 /**

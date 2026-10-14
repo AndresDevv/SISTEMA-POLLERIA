@@ -233,6 +233,7 @@ foreach ($productos as $producto) {
         'precio'    => (float) $producto['precio'],
         'stock'     => (int) $producto['stock'],
         'minimo'    => (int) $producto['stock_minimo'],
+        'agotado'   => (int) ($producto['agotado'] ?? 0),
         'id'        => (int) $producto['id']
     ];
 }

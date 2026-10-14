@@ -83,41 +83,7 @@ $categoriasModal = array_values(array_unique(array_column($productosModal, 'cate
                             <?php else: ?>
 
                                 <div id="modalCatalogo" class="modal-catalogo">
-                                    <?php foreach ($productosModal as $p): ?>
-                                        <?php
-                                        $nombreModal    = $p['nombre'] ?? 'Producto';
-                                        $categoriaModal = $p['categoria'] ?? '';
-                                        $precioModal    = (float) ($p['precio'] ?? 0);
-                                        $stockModal     = (int) ($p['stock'] ?? 0);
-                                        $minimoModal    = (int) ($p['minimo'] ?? 0);
-                                        $agotado        = $stockModal <= 0;
-                                        $nivelModal     = nivelStock($stockModal);
-                                        $claseModal     = claseStock($stockModal);
-                                        ?>
-
-                                        <button type="button"
-                                                class="modal-producto <?= $claseModal ?><?= $agotado ? ' is-agotado' : '' ?>"
-                                                data-nombre="<?= htmlspecialchars(strtolower($nombreModal)) ?>"
-                                                data-categoria="<?= htmlspecialchars($categoriaModal) ?>"
-                                                data-precio="<?= $precioModal ?>"
-                                                data-producto-id="<?= (int) ($p['id'] ?? 0) ?>"
-                                                data-producto="<?= htmlspecialchars($nombreModal) ?>"
-                                                data-stock="<?= (int) $stockModal ?>"
-                                                <?= $agotado ? 'disabled' : '' ?>>
-
-                                            <span class="modal-producto-nombre">
-                                                <?= htmlspecialchars($nombreModal) ?>
-                                            </span>
-
-                                            <span class="modal-producto-precio <?= $claseModal ?>">
-                                                <?= soles($precioModal) ?>
-                                                &middot; <?= $agotado
-                                                    ? 'Agotado'
-                                                    : htmlspecialchars(estadosStock()[$nivelModal]['etiqueta']) ?>
-                                            </span>
-                                        </button>
-
-                                    <?php endforeach; ?>
+                                    <?php require APP_ROOT . '/views/partials/catalogo_productos.php'; ?>
                                 </div>
 
                             <?php endif; ?>

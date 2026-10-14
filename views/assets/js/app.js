@@ -402,6 +402,7 @@
         // Se expone fuera del cierre para que los scripts que van dentro de las
         // vistas (el aviso de pedido nuevo de cocina) puedan consultarla.
         window.apiGet = apiGet;
+    window.api = api;
 
         var mensajeDe = function (xhr, porDefecto) {
 
@@ -411,6 +412,8 @@
                 return porDefecto;
             }
         };
+
+        window.mensajeDe = mensajeDe;
 
         // -------------------------------------------------
         /**
@@ -515,6 +518,66 @@
 
                     return true;
                 }
+            };
+        })();
+
+        // La alarma la dispara el script que va dentro de la vista de mesas
+        window.Alarma = Alarma;
+
+        // -------------------------------------------------
+        // Avisosemergentes
+        // -------------------------------------------------
+        /**
+         * Cartel flotante con un mensaje.
+         *
+         * Se usa para confirmar o explicar un cambio puntual, cuando el
+         * refresco automático se encarga del resto y no hay un botón que
+         * quede pulsado que ya lo diga.
+         *
+         * Vive fuera del recuadro de contenido, así que sobrevive al
+         * refresco de los datos y no lo borra el que viene después.
+         */
+        window.Alerta = (function () {
+
+            var DURACION_MS = 3200;
+
+            /**
+             * @param {string} texto  mensaje a mostrar
+             * @param {string} tipo   'ok', 'error' o 'alerta'
+             */
+            var mostrar = function (texto, tipo) {
+
+                if (!texto) {
+                    return;
+                }
+
+                var iconos = {
+                    ok: 'fa-check-circle',
+                    error: 'fa-times-circle',
+                    alerta: 'fa-bell'
+                };
+
+                var cartel = document.createElement('div');
+                cartel.className = 'lg-flash lg-flash--' + (tipo || 'ok');
+                cartel.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+
+                cartel.innerHTML = '<i class="fa ' + (iconos[tipo] || iconos.ok) + '"></i>'
+                    + '<div>' + texto + '</div>';
+
+                document.body.appendChild(cartel);
+
+                window.setTimeout(function () {
+                    $(cartel).fadeOut(300, function () {
+                        cartel.remove();
+                    });
+                }, DURACION_MS);
+            };
+
+            return {
+                ok: function (texto) { mostrar(texto, 'ok'); },
+                error: function (texto) { mostrar(texto, 'error'); },
+                info: function (texto) { mostrar(texto, 'ok'); },
+                mostrar: mostrar
             };
         })();
 
@@ -661,6 +724,102 @@
 
             window.refrescarContenido = refrescarContenido;
 
+            // -------------------------------------------------
+            // Catálogo del modal de pedidos, al día con el modal abierto
+            // -------------------------------------------------
+            /**
+             * Mantiene al día la lista de platos del modal de pedidos
+             * mientras está abierto.
+             *
+             * Por qué hace falta esto aparte del refresco normal: con un
+             * modal abierto la pantalla no se repinta, porque se perdería el
+             * pedido que el mesero está armando. Pero dentro del modal hay
+             * una zona que SÍ puede cambiar sin tocar nada de eso, y es el
+             * catálogo: si el pollo se acaba y alguien lo marca como agotado
+             * en el Menú del día, el mesero tiene que verlo en el acto, no
+             * tres segundos después de cerrar y volver a abrir.
+             *
+             * Solo se repinta la lista de productos. El pedido en curso, la
+             * lista de lo ya agregado y los totales no se tocan, así que no
+             * hay forma de que se pierda lo que se estaba escribiendo.
+             *
+             * El HTML lo pinta el servidor con el mismo partial que usa al
+             * abrir el modal, y va con una firma: si no cambió, no se repinta
+             * nada y no se nota.
+             */
+            var catalogoVivo = (function () {
+
+                var CADA_CUANTO_CATALOGO_MS = 6000;
+                var firmaUltima = '';
+
+                /** El catálogo, pero solo si su modal está a la vista. */
+                var catalogoVisible = function () {
+                    var modal = document.querySelector('.modal.show');
+
+                    return modal ? modal.querySelector('#modalCatalogo') : null;
+                };
+
+                /**
+                 * Revisa el catálogo del modal y lo repinta si cambió.
+                 *
+                 * @return {boolean} true si había un modal abierto y se
+                 *         acaba de mirar su catálogo. Lo usa el motor de
+                 *         tiempo real para saber si tiene sentido seguir
+                 *         anunciando un refresco de pantalla.
+                 */
+                var consultar = function () {
+                    var catalogo = catalogoVisible();
+
+                    // El modal está cerrado: no hay nada que mirar y se
+                    // olvida la firma, para que al abrirlo de nuevo se
+                    // compare contra la de ahora y no contra la vieja.
+                    if (!catalogo) {
+                        firmaUltima = '';
+                        return false;
+                    }
+
+                    apiGet('api/menu/catalogo')
+                    .done(function (r) {
+
+                        if (!r || !r.success || !r.html) {
+                            return;
+                        }
+
+                        if (r.firma === firmaUltima) {
+                            return;
+                        }
+
+                        firmaUltima = r.firma;
+
+                        // Se vuelve a buscar el catálogo: entre la consulta y
+                        // este momento el mesero pudo cerrar el modal.
+                        var destino = catalogoVisible();
+
+                        if (!destino) {
+                            return;
+                        }
+
+                        var dondeEstaba = $('.modal.show .lg-modal-pane--catalogo .lg-modal-pane-scroll').scrollTop() || 0;
+
+                        destino.innerHTML = r.html;
+
+                        // Se devuelve el scroll donde estaba: repintar el
+                        // catálogo lo sube de golpe al principio y, con
+                        // veinte platos, el mesero perdería el sitio.
+                        var scrolls = $('.modal.show .lg-modal-pane--catalogo .lg-modal-pane-scroll');
+                        scrolls.scrollTop(dondeEstaba);
+
+                        Alerta.info('El menú se actualizó.');
+                    });
+
+                    return true;
+                };
+
+                return {
+                    consultar: consultar
+                };
+            })();
+
             /**
              * Refresca el contenido y da por visto lo que habia pendiente.
              *
@@ -736,7 +895,28 @@
                     if (seguro()) {
                         actualizar(r.firma);
                     } else {
-                        mostrarBarra();
+                        /**
+                         * Hay un modal abierto, así que la pantalla no se
+                         * toca. Pero el catálogo del modal de pedidos sí
+                         * puede repintarse sin perder lo que se está
+                         * armando, y por eso se le pregunta aparte.
+                         */
+                        var catLogoActualizado = catalogoVivo.consultar();
+
+                        /**
+                         * El cartel de "actualizando" solo tiene sentido si
+                         * de verdad va a venir un refresco de la pantalla.
+                         * Con el modal abierto no lo hay, y dejarlo puesto
+                         * prometía una actualización que el usuario no iba
+                         * a ver nunca: el catálogo sí cambia, el resto no.
+                         *
+                         * Lo que queda pendiente se actualiza al cerrar el
+                         * modal, que es donde el propio motor ya está
+                         * escuchando.
+                         */
+                        if (!catLogoActualizado) {
+                            mostrarBarra();
+                        }
                     }
                 });
             };
@@ -753,6 +933,18 @@
 
 
                     window.setInterval(consultar, CADA_CUANTO_MS);
+
+                    /**
+                     * El catálogo del modal se mira por su cuenta.
+                     *
+                     * El refresco normal se detiene en cuanto hay un modal
+                     * abierto, así que si solo se comprobara dentro de él,
+                     * un cambio que llegue con el modal abierto no volvería
+                     * a mirarse hasta que se cerrara. Con este intervalo
+                     * propio pasa lo contrario: se repinta el catálogo en
+                     * caliente aunque la pantalla entera siga congelada.
+                     */
+                    window.setInterval(catalogoVivo.consultar, 6000);
 
                     // Si el modal se cierra o el campo pierde el foco, se
                     // actualiza lo que quedó pendiente.

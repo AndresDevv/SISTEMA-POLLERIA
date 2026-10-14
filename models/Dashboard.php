@@ -30,7 +30,7 @@ class Dashboard
             'ganancia'       => $ingresos - $egresos,
             'pedidos_hoy'    => self::conteo($db, 'pedidos', 'DATE(fecha_creacion) = :f', $fecha),
             'mesas_total'    => self::conteo($db, 'mesas', '1 = 1'),
-            'mesas_ocupadas' => self::mesasOcupadas($db, $fecha),
+            'mesas_ocupadas' => self::mesasOcupadas($db),
             'stock_bajo'     => (new Producto())->stockBajo(),
             'personal'       => self::conteo($db, 'empleados', 'estado = 1')
         ];
@@ -85,16 +85,30 @@ class Dashboard
     }
 
     /**
-     * Mesas que tuvieron pedidos activos ese día.
+     * Mesas ocupadas ahora mismo.
+     *
+     * Cuenta las mesas con pedidos SIN COBRAR, que es la misma regla que usa
+     * la pantalla Mesas y Pedidos y la que usa el cobro para liberar la mesa.
+     *
+     * Antes contaba cualquier mesa que hubiera tenido un pedido hoy, y eso
+     * incluía las que ya estaban pagadas: el tablero decía "9 de 16 ocupadas"
+     * con todas las mesas libres en la pantalla de mesas.
+     *
+     * Lo que marca el final de una mesa es el COBRO, no el estado del pedido:
+     * un plato que ya se sirvio sigue sin pagarse y la mesa sigue ocupada.
      */
-    private static function mesasOcupadas(PDO $db, string $fecha): int
+    private static function mesasOcupadas(PDO $db): int
     {
         $stmt = $db->prepare(
-            "SELECT COUNT(DISTINCT mesa_id)
-             FROM pedidos
-             WHERE DATE(fecha_creacion) = :f"
+            "SELECT COUNT(DISTINCT p.mesa_id)
+             FROM pedidos p
+             LEFT JOIN ventas v
+                    ON v.pedido_id = p.id AND v.estado = 'pagada'
+             WHERE v.id IS NULL
+               AND p.estado <> 'anulado'
+               AND p.mesa_id IS NOT NULL"
         );
-        $stmt->execute([':f' => $fecha]);
+        $stmt->execute();
 
         return (int) $stmt->fetchColumn();
     }

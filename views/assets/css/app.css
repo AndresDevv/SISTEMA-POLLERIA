@@ -33,7 +33,7 @@
     --lg-texto-suave: #A6A6A6;
 
     /* Layout */
-    --lg-sidebar: 280px;
+    --lg-sidebar: 250px;
     --lg-header: 64px;
     --lg-radio: 10px;
     --lg-sombra: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -66,6 +66,17 @@ body {
     width: var(--lg-sidebar);
     background-color: var(--lg-amarillo);
     box-shadow: none;
+
+    /* AdminLTE deja 50 px de hueco arriba para que el navbar, que en su
+       diseño va fijo encima de todo, no tape el logo del menú.
+
+       Aquí el navbar no pasa por encima del menú lateral: arranca a la
+       derecha de la barra, así que ese hueco no lo tapa nada y solo empuja
+       el logo hacia abajo, dejando una franja amarilla vacía encima de él.
+
+       Se deja en 10 px, que es el aire justo para que el logo no quede
+       pegado al borde superior como un recorte. */
+    padding-top: 10px !important;
 }
 
 .main-sidebar .sidebar {
@@ -73,103 +84,6 @@ body {
     padding-top: 8px;
 }
 
-/* ---------------------------------------------------------
-   Panel de cocina: un pedido por tarjeta con sus productos
-
-   Rejilla propia en vez de .lg-grid-2 porque en tablet hay que
-   mantener DOS columnas: con una sola, una carta con cinco platos
-   queda alta y obliga a deslizar demasiado.
-   --------------------------------------------------------- */
-.lg-grid-cocina {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-}
-
-.lg-cocina-pedido {
-    border: 1px solid var(--lg-borde);
-    border-radius: 12px;
-    padding: 16px;
-    background-color: var(--lg-blanco);
-    border-left-width: 4px;
-    /* Si una mesa pidió más platos que otra, ambas cartas miden igual */
-    display: flex;
-    flex-direction: column;
-    align-content: start;
-}
-
-/* El color del borde repite el estado del pedido */
-.lg-cocina-pedido--pendiente  { border-left-color: var(--lg-pendiente-texto); }
-.lg-cocina-pedido--preparando { border-left-color: var(--lg-rojo); }
-.lg-cocina-pedido--preparado  { border-left-color: #2E9E4B; }
-
-.lg-cocina-cabeza {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--lg-borde);
-}
-
-.lg-cocina-items {
-    list-style: none;
-    margin: 0;
-    padding: 12px 0 0;
-}
-
-.lg-cocina-items li {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    padding: 7px 0;
-    border-bottom: 1px dashed var(--lg-borde);
-    font-size: 1rem;
-}
-
-.lg-cocina-items li:last-child {
-    border-bottom: 0;
-}
-
-.lg-cocina-cantidad {
-    flex-shrink: 0;
-    min-width: 34px;
-    font-weight: 700;
-    color: var(--lg-rojo);
-    font-size: 1.05rem;
-}
-
-.lg-cocina-nombre {
-    font-weight: 600;
-    color: #111;
-}
-
-/* En tablet caben dos columnas comfortable */
-@media (max-width: 991px) {
-    .lg-cocina-items li {
-        font-size: 0.95rem;
-    }
-}
-
-@media (max-width: 575px) {
-    /* Una sola columna solo en teléfono */
-    .lg-grid-cocina {
-        grid-template-columns: 1fr;
-    }
-
-    .lg-cocina-pedido {
-        padding: 14px;
-    }
-
-    .lg-cocina-items li {
-        font-size: 1.05rem;
-        padding: 9px 0;
-    }
-
-    .lg-cocina-cantidad {
-        min-width: 30px;
-    }
-}
 
 /* ---------------------------------------------------------
    Saludo del usuario, arriba del menú
@@ -224,11 +138,42 @@ body {
 .brand-link {
     background-color: var(--lg-amarillo);
     border-bottom: 0;
-    height: 62px;
+    height: 92px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
+}
+
+/**
+ * El logo del local en la barra del menú.
+ *
+ * El archivo es un dibujo negro con fondo transparente sobre la barra
+ * amarilla, así que se lee sin más. La barra se mide para el logo y no al
+ * revés: el archivo es de proporción ancha (casi 2:1) y a 62 px de alto
+ * quedaba de un tamaño ridículo.
+ *
+ * El alto útil es casi toda la barra a propósito: con el logo más pequeño
+ * quedaban 6 px de aire arriba y abajo, y al ser el dibujo más ancho que
+ * alto, el hueco de arriba se nota más que el de abajo y parece que el logo
+ * está caído.
+ *
+ * El ancho se limita a la barra con `max-width: 100%` para que en tablet,
+ * donde el menú se angosta, la imagen baje de tamaño en vez de salirse.
+ *
+ * El margen de abajo es lo que lo sube: al ser mucho más ancho que alto,
+ * centrado a la redonda deja más aire arriba que abajo. Con la barra de
+ * 92 px y el logo de 84 px no queda espacio libre que repartir, así que el
+ * margen se lleva el aire de abajo y el dibujo queda pegado arriba, que es
+ * como se ve en un rótulo colgado.
+ */
+.lg-marca-logo {
+    display: block;
+    max-width: 100%;
+    max-height: 84px;
+    width: auto;
+    height: auto;
+    margin-bottom: 8px;
 }
 
 .brand-text {
@@ -470,6 +415,92 @@ body {
 .lg-card-subtitle > i {
     margin-right: 4px;
     opacity: 0.7;
+}
+
+/* ---------------------------------------------------------
+   Menú del día
+
+   La carta se lee de un vistazo: una fila por plato, con el
+   nombre grande a la izquierda y el botón de "agotado" a la
+   derecha. Todo lo que cambia según el estado va en una sola
+   línea de metadatos para que la vista se compare en vertical
+   y se sepa de un vistazo qué falta.
+   --------------------------------------------------------- */
+.lg-menu {
+    display: flex;
+    flex-direction: column;
+}
+
+.lg-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--lg-borde);
+}
+
+.lg-menu-item:last-child {
+    border-bottom: 0;
+}
+
+/* Lo que no se puede pedir se ve más apagado, sin llegar a desaparecer:
+   el mesero tiene que poder leer el nombre igual para saber qué se
+   terminó. Entra aquí tanto lo que se marcó como agotado como lo que se
+   quedó sin stock: para el que atiende la mesa es lo mismo. */
+.lg-menu-item--fuera .lg-menu-nombre,
+.lg-menu-item--fuera .lg-menu-descripcion {
+    opacity: 0.55;
+}
+
+.lg-menu-datos {
+    min-width: 0;
+}
+
+.lg-menu-nombre {
+    display: block;
+    font-size: 1.02rem;
+    line-height: 1.3;
+}
+
+.lg-menu-descripcion {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--lg-texto-suave);
+    margin-top: 2px;
+}
+
+.lg-menu-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 7px;
+}
+
+.lg-menu-precio {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.lg-menu-stock {
+    font-size: 0.78rem;
+    color: var(--lg-texto-suave);
+}
+
+/* En tablet el botón va debajo del texto en vez de al costado: en
+   dos columnas la fila se queda sin ancho para las dos cosas. */
+@media (max-width: 991px) {
+    .lg-menu-item {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 2px;
+    }
+
+    .lg-menu-item .lg-btn {
+        width: 100%;
+    }
 }
 
 .lg-card-head {
@@ -1092,10 +1123,48 @@ body {
     color: var(--lg-rojo);
 }
 
-/* Producto sin stock: se sigue viendo, pero en gris y sin poder pulsarse.
+/* ---------------------------------------------------------
+   Producto agotado y producto sin stock
+
+   Son dos cosas distintas y se avisan distinto:
+
+   - Agotado: alguien del servicio lo marcó en el Menú del día
+     porque se terminó. Se ve en rojo, es notorio y no se puede
+     pulsar.
+   - Sin stock: el inventario llegó a cero. No está marcado como
+     agotado, así que no se anuncia en rojo: solo se ve atenuado
+     y sin poder pulsarse, que es lo de siempre.
+   --------------------------------------------------------- */
+
+/* Agotado: rojo, claro y a la vista. */
+.modal-producto.is-agotado {
+    opacity: 1;
+    cursor: not-allowed;
+    background-color: var(--lg-rojo-estado-fondo);
+    border-left: 4px solid var(--lg-rojo) !important;
+}
+
+.modal-producto.is-agotado:hover {
+    background-color: var(--lg-rojo-estado-fondo);
+    border-color: var(--lg-rojo);
+    transform: none;
+}
+
+.modal-producto.is-agotado .modal-producto-nombre {
+    color: var(--lg-rojo);
+    font-weight: 700;
+    text-decoration: line-through;
+}
+
+.modal-producto.is-agotado .modal-producto-precio {
+    color: var(--lg-rojo);
+    opacity: 0.75;
+}
+
+/* Sin stock: se sigue viendo, pero en gris y sin poder pulsarse.
    Se atenúa un poco más que un botón deshabilitado normal para que resalte
    que no es un fallo de la pantalla sino que no hay. */
-.modal-producto.is-agotado {
+.modal-producto.is-sin-stock {
     opacity: 0.45;
     cursor: not-allowed;
     background-color: #F1F5F9;
@@ -1103,14 +1172,14 @@ body {
     filter: grayscale(1);
 }
 
-.modal-producto.is-agotado:hover {
+.modal-producto.is-sin-stock:hover {
     background-color: #F1F5F9;
     border-color: var(--lg-borde);
     transform: none;
 }
 
-.modal-producto.is-agotado .modal-producto-nombre,
-.modal-producto.is-agotado .modal-producto-precio {
+.modal-producto.is-sin-stock .modal-producto-nombre,
+.modal-producto.is-sin-stock .modal-producto-precio {
     color: #94A3B8 !important;
 }
 
@@ -2146,7 +2215,7 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
 @media (max-width: 1199px) {
 
     /* Menu mas angosto para dejarle sitio al contenido */
-    :root { --lg-sidebar: 240px; }
+    :root { --lg-sidebar: 215px; }
 
     .lg-mesas { grid-template-columns: repeat(3, 1fr); }
     .lg-grid-3 { grid-template-columns: repeat(2, 1fr); }
@@ -2154,7 +2223,7 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
 }
 
 @media (max-width: 991px) {
-    :root { --lg-sidebar: 260px; }
+    :root { --lg-sidebar: 240px; }
 
     /* En tablet el sidebar se desliza, no empuja: el contenido ocupa todo
        el ancho y el menu se superpone con el velo oscuro. */
@@ -2195,10 +2264,6 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
     .lg-grid-3 { grid-template-columns: 1fr; gap: 16px; }
 
     .lg-mesas { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-
-    /* En tablet las comandas de cocina van a una columna: con dos quedan
-       demasiado estrechas para leer los productos con el dedo. */
-    .lg-grid-cocina { grid-template-columns: 1fr; }
 
     .lg-page-head h1 { font-size: 1.55rem; }
     .lg-page-head .lg-page-icon { width: 42px; height: 42px; }

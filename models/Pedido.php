@@ -85,65 +85,6 @@ class Pedido
     }
 
     /**
-     * Pedidos activos con el detalle de sus productos.
-     *
-     * Es lo que necesita la cocina: no solo saber que la Mesa 3 pidió algo,
-     * sino qué platos tiene que preparar.
-     *
-     * El orden es estrictamente por llegada (el más antiguo primero) y NUNCA
-     * se reordena al cambiar el estado: una tarjeta se queda en su lugar hasta
-     * que se cobra la mesa. Si se ordenara por estado, al marcar "preparando"
-     * el pedido se movería y la cocina perdería de vista qué mesa llegó antes.
-     */
-    public function paraCocina(): array
-    {
-        $pedidos = $this->listar('activos');
-
-        if (!$pedidos) {
-            return [];
-        }
-
-        // Un solo SELECT con todos los pedidos, en vez de uno por pedido
-        $ids = array_column($pedidos, 'id');
-        $marcadores = implode(',', array_fill(0, count($ids), '?'));
-
-        $stmt = $this->conexion->prepare(
-            "SELECT d.pedido_id, d.cantidad, pr.nombre
-             FROM detalle_pedidos d
-             INNER JOIN productos pr ON pr.id = d.producto_id
-             WHERE d.pedido_id IN ($marcadores)
-             ORDER BY d.id"
-        );
-        $stmt->execute($ids);
-
-        $porPedido = [];
-
-        foreach ($stmt->fetchAll() as $fila) {
-            $porPedido[(int) $fila['pedido_id']][] = [
-                'nombre'   => $fila['nombre'],
-                'cantidad' => (float) $fila['cantidad']
-            ];
-        }
-
-        foreach ($pedidos as &$pedido) {
-            $pedido['detalle'] = $porPedido[(int) $pedido['id']] ?? [];
-        }
-        unset($pedido);
-
-        // Orden de llegada: primero el que entró antes. El id desempata
-        // cuando dos pedidos tienen la misma marca de tiempo.
-        usort($pedidos, static function (array $a, array $b): int {
-            $comparacion = strcmp((string) $a['fecha_creacion'], (string) $b['fecha_creacion']);
-
-            return $comparacion !== 0
-                ? $comparacion
-                : ((int) $a['id'] <=> (int) $b['id']);
-        });
-
-        return $pedidos;
-    }
-
-    /**
      * Detalle de un pedido con sus productos.
      */
     public function conDetalle(int $id): ?array

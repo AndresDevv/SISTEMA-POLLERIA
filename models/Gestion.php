@@ -60,22 +60,6 @@ class Gestion
                 'listado' => '*'
             ],
 
-            'proveedores' => [
-                'tabla'  => 'proveedores',
-                'titulo' => 'Proveedor',
-                'tituloPlural' => 'Proveedores',
-                'modulo' => 'compras',
-                'orden'  => 'nombre',
-                'campos' => [
-                    'nombre'      => ['tipo' => 'texto', 'etiqueta' => 'Nombre', 'requerido' => true],
-                    'documento'   => ['tipo' => 'texto', 'etiqueta' => 'RUC / Documento'],
-                    'telefono'    => ['tipo' => 'texto', 'etiqueta' => 'Teléfono'],
-                    'direccion'   => ['tipo' => 'texto', 'etiqueta' => 'Dirección'],
-                    'estado'      => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]
-                ],
-                'listado' => '*'
-            ],
-
             'empleados' => [
                 'tabla'  => 'empleados',
                 'titulo' => 'Trabajador',
@@ -236,7 +220,6 @@ class Gestion
         return [
             'productos'             => ['ver' => 'inventario',    'editar' => 'inventario_editar'],
             'categorias'            => ['ver' => 'inventario',    'editar' => 'inventario_editar'],
-            'proveedores'           => ['ver' => 'compras',       'editar' => 'compras'],
             'empleados'             => ['ver' => 'personal',      'editar' => 'personal'],
             'usuarios'              => ['ver' => 'configuracion', 'editar' => 'configuracion'],
             'servicios'             => ['ver' => 'servicios',     'editar' => 'servicios'],

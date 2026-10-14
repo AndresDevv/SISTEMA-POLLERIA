@@ -80,4 +80,4 @@
                  recargar la pagina entera: el menu, el usuario y la posicion
                  dentro de una lista se quedan donde estan. -->
             <div class="container-fluid p-0" id="lg-contenido">
-            <!-- El id permite refrescar solo esta zona cuando algo cambia, sin
+

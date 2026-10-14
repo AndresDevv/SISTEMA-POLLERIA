@@ -103,9 +103,15 @@ function barraPaginacion(array $meta, string $resumen = ''): void
         return '<a href="' . htmlspecialchars($enlace($destino)) . '" class="' . $clase . '">' . $texto . '</a>';
     };
 
-    // Ventana de páginas alrededor de la actual, para no generar 40 botones
-    $desde = max(1, $pagina - 2);
-    $hasta = min($totalPag, $pagina + 2);
+    /**
+     * Ventana de páginas alrededor de la actual, para no generar 40 botones.
+     *
+     * Se excluyen la primera y la última porque se sacan aparte, siempre, una
+     * vez cada una. Si la ventana las incluyera también, se verían repetidas
+     * ("< 1 1 2 2 >" al cambiar de página) y el contador de páginas mentiría.
+     */
+    $desde = max(2, $pagina - 2);
+    $hasta = min($totalPag - 1, $pagina + 2);
     ?>
     <div class="lg-paginacion">
         <span class="lg-muted lg-paginacion-resumen">

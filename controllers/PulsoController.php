@@ -66,14 +66,14 @@ class PulsoController
                     (SELECT COALESCE(MAX(fecha_actualizacion), '0') FROM pedidos) AS pedidos_alta,
                     (SELECT COUNT(*) FROM ventas WHERE estado = 'pagada')        AS ventas,
                     (SELECT COALESCE(MAX(fecha), '0') FROM ventas)               AS ventas_alta,
-                    (SELECT COUNT(*) FROM compras)                              AS compras,
-                    (SELECT COALESCE(MAX(fecha), '0') FROM compras)             AS compras_alta,
                     (SELECT COUNT(*) FROM gastos)                               AS gastos,
                     (SELECT COALESCE(MAX(fecha), '0') FROM gastos)              AS gastos_alta,
                     (SELECT COUNT(*) FROM movimientos_inventario)               AS movimientos,
                     (SELECT COALESCE(MAX(fecha), '0') FROM movimientos_inventario) AS movimientos_alta,
                     (SELECT COUNT(*) FROM mesas WHERE estado <> 'libre')       AS mesas,
                     (SELECT COUNT(*) FROM productos)                            AS productos,
+                    (SELECT COALESCE(SUM(agotado), 0) FROM productos)           AS productos_agotados,
+                    (SELECT COALESCE(MAX(fecha_actualizacion), '0') FROM productos) AS productos_alta,
                     (SELECT COUNT(*) FROM pedido_novedades)                     AS novedades";
 
         $fila = $this->db->query($sql)->fetch();

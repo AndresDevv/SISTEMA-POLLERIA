@@ -114,6 +114,13 @@ $resumen  = $porCategoriaPedidos;
 
         <?php else: ?>
 
+            <?php
+            /* 10 ventas por página: en un día tranquilo cabe en una sola
+               página y, cuando se acumulan, la tarjeta no crece sin fin y
+               el "Caja" de al lado no se va hasta abajo. */
+            $pagVentas = paginar($ventasHoy, 10);
+            ?>
+
             <div class="table-responsive">
                 <table class="lg-table lg-table--compact">
                     <thead>
@@ -126,10 +133,13 @@ $resumen  = $porCategoriaPedidos;
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($ventasHoy as $i => $venta): ?>
+                        <?php foreach ($pagVentas['filas'] as $i => $venta): ?>
                             <tr>
                                 <td style="font-weight:600;">
-                                    <?= str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT) ?>
+                                    <?php /* El numero sigue contando desde donde
+                                            quedo la pagina anterior, para que no
+                                            se repita al cambiar de pagina. */ ?>
+                                    <?= str_pad((string) ($pagVentas['desde'] + $i), 3, '0', STR_PAD_LEFT) ?>
                                 </td>
                                 <td class="text-muted"><?= date('H:i', strtotime($venta['fecha'])) ?></td>
                                 <td class="text-muted">Mesa <?= (int) $venta['mesa_numero'] ?></td>
@@ -144,6 +154,8 @@ $resumen  = $porCategoriaPedidos;
                     </tbody>
                 </table>
             </div>
+
+            <?php barraPaginacion($pagVentas); ?>
 
         <?php endif; ?>
 

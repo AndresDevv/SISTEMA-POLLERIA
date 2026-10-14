@@ -61,11 +61,11 @@ function rutas(): array
             'permiso' => 'inventario_editar'
         ],
 
-        'compras' => [
-            'vista'   => 'compras/index',
-            'titulo'  => 'Compras',
-            'permiso' => 'compras'
-        ],
+            'menu_del_dia' => [
+                'vista'   => 'menu_del_dia/index',
+                'titulo'  => 'Menú del día',
+                'permiso' => 'menu_dia'
+            ],
 
         'finanzas' => [
             'vista'   => 'finanzas/index',
@@ -205,21 +205,17 @@ function rutas(): array
             'permiso' => 'inventario_editar'
         ],
 
-        'api/compra/registrar' => [
-            'accion'  => 'compra_registrar',
+        'api/menu/agotado' => [
+            'accion'  => 'menu_agotado',
             'api'     => true,
-            'permiso' => 'compras'
+            'permiso' => 'menu_dia_editar'
         ],
-        'api/compra/anular' => [
-            'accion'  => 'compra_anular',
-            'api'     => true,
-            'permiso' => 'compras'
-        ],
-        'api/compra/detalle' => [
-            'accion'  => 'compra_detalle',
+
+        'api/menu/catalogo' => [
+            'accion'  => 'menu_catalogo',
             'api'     => true,
             'soloGet' => true,
-            'permiso' => 'compras'
+            'permiso' => 'pedidos_crear'
         ],
 
         'api/personal/asistencia' => [

@@ -1,25 +1,33 @@
 <?php
 
 /**
- * ConfiguraciÃ³n general de la aplicaciÃ³n.
+ * Configuración general de la aplicación.
  */
 
-// RaÃ­z fÃ­sica del proyecto
+// Raíz física del proyecto
 define('APP_ROOT', dirname(__DIR__));
 
-// RaÃ­z web del proyecto (ej: /POLLERIA)
+// Raíz web del proyecto (ej: /POLLERIA)
 $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
 define('BASE_URL', rtrim($scriptDir, '/') . '/');
 
-// Datos de la aplicaciÃ³n
-define('APP_NOMBRE', 'LOS GOMEZ');
-define('APP_SIGLA', 'LOS GOMEZ');
+// Datos de la aplicación
+define('APP_NOMBRE', "Makako's");
 
-// VersiÃ³n de los assets (rompe la cachÃ© del navegador al cambiarla)
-define('APP_VERSION', '6.4.1');
+/**
+ * El logo va como imagen en el menú lateral, no como texto.
+ *
+ * Este valor queda solo para el <title> de la pestaña del navegador y para
+ * textos donde una imagen no serve (correos, exportaciones).
+ */
+define('APP_SIGLA', "Makako's");
+
+// Versión de los assets (rompe la caché del navegador al cambiarla)
+define('APP_VERSION', '6.7.3');
 
 // Rutas de assets
 define('ASSETS_URL', BASE_URL . 'views/assets/');
+define('IMAGENES_URL', BASE_URL . 'assets/img/');
 define('ADMINLTE_URL', BASE_URL . 'views/dist/');
 define('BOWER_URL', BASE_URL . 'views/bower_components/');
 define('ADMINLTE_SKIN', 'skin-black-light');

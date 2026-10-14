@@ -9,8 +9,18 @@ $saludo    = primerNombreDelUsuario();
 
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
 
-    <a href="<?= url(primeraPaginaPermitida()) ?>" class="brand-link">
-        <span class="brand-text"><?= htmlspecialchars(APP_SIGLA) ?></span>
+    <?php /*
+        El logo va directo sobre la barra amarilla de la marca.
+
+        El archivo es un dibujo negro con fondo transparente y la barra es
+        amarilla clara, así que se lee sin necesidad de un panel blanco de
+        por medio. Va con alt porque si la imagen no llegara a cargar, al
+        menos quede el nombre del local.
+    */ ?>
+    <a href="<?= url(primeraPaginaPermitida()) ?>" class="brand-link lg-marca">
+        <img src="<?= IMAGENES_URL ?>logo.png"
+             alt="<?= htmlspecialchars(APP_NOMBRE) ?>"
+             class="lg-marca-logo">
     </a>
 
     <div class="sidebar">

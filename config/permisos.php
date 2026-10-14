@@ -102,10 +102,26 @@ function gruposDePermisos(): array
             ],
         ],
 
+        'Menú del día' => [
+            'icono'  => 'fa fa-book',
+            'titulo' => 'Menú del día',
+            'nota'   => 'La carta de hoy y qué queda de cada plato.',
+            'items'  => [
+                'menu_dia' => [
+                    'nombre' => 'Ver el menú del día',
+                    'ayuda'  => 'Los platos y bebidas de la carta con su stock.',
+                ],
+                'menu_dia_editar' => [
+                    'nombre' => 'Marcar platos como agotados',
+                    'ayuda'  => 'Poner un plato en "agotado" cuando ya se terminó.',
+                ],
+            ],
+        ],
+
         'Inventario' => [
             'icono'  => 'fa fa-cube',
-            'titulo' => 'Inventario y Compras',
-            'nota'   => ' Productos, stock y proveedores.',
+            'titulo' => 'Inventario',
+            'nota'   => 'Productos, existencias y ajustes de stock.',
             'items'  => [
                 'inventario' => [
                     'nombre' => 'Ver productos y stock',
@@ -114,10 +130,6 @@ function gruposDePermisos(): array
                 'inventario_editar' => [
                     'nombre' => 'Crear productos y ajustar stock',
                     'ayuda'  => 'Agregar productos y hacer ingresos o salidas de stock.',
-                ],
-                'compras' => [
-                    'nombre' => 'Registrar compras',
-                    'ayuda'  => 'Anotar compras a proveedores. Cuenta como gasto del día.',
                 ],
             ],
         ],
