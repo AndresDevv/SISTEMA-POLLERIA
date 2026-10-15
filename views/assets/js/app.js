@@ -174,7 +174,7 @@
                 abrirFormulario($boton.data('recurso'), $boton.data('campos'), $boton.data('fila'));
             });
 
-            $('#formGuardar').on('click', function () {
+            $(document).on('click', '#formGuardar', function () {
 
                 var datos = { recurso: formulario.recurso };
 
@@ -341,7 +341,7 @@
         // -------------------------------------------------
         // Búsqueda rápida del catálogo (vista Pedidos)
         // -------------------------------------------------
-        $('#filtroCatalogoPedidos').on('input', function () {
+        $(document).on('input', '#filtroCatalogoPedidos', function () {
 
             var texto = $(this).val().toLowerCase().trim();
 
@@ -358,7 +358,8 @@
         // -------------------------------------------------
         // Segmentos (Ver mesas / Ver pedidos / Ver ventas)
         // -------------------------------------------------
-        $('.lg-segmento').on('click', function () {
+        // Delegado: los segmentos tambien se repueven al refrescar la pantalla
+        $(document).on('click', '.lg-segmento', function () {
             $('.lg-segmento').removeClass('is-activo');
             $(this).addClass('is-activo');
         });
@@ -992,9 +993,19 @@
         // -------------------------------------------------
         // Detalle de los pedidos de una mesa (usuario de cocina)
         // -------------------------------------------------
-        var $modalMesa = $('#modalMesaPedidos');
+        /* El modal se busca cada vez que se usa, en vez de guardarlo en una
+           variable al cargar la pagina.
 
-        if ($modalMesa.length) {
+           El motor de tiempo real, cada 5 segundos, cambia el HTML del
+           contenido y vuelve a poner los modales en el body. El modal viejo
+           se borra y entra uno nuevo: una referencia guardada se queda
+           apuntando a un elemento que ya no esta en la pagina, y al abrirlo
+           no aparece nada. Por eso se vuelve a buscar cada vez. */
+        var modalMesa = function () {
+            return $('#modalMesaPedidos');
+        };
+
+        if (modalMesa().length) {
 
             /**
              * Los cuatro pasos por los que pasa un pedido en cocina.
@@ -1110,11 +1121,11 @@
 
             window.abrirPedidosDeLaMesa = function (mesaId, mesa) {
 
-                $modalMesa.data('mesa-id', mesaId);
+        modalMesa().data('mesa-id', mesaId);
                 $('#mesaPedidosTitulo').text(mesa || 'Mesa');
                 $('#mesaPedidosResumen').text('Cargando...');
 
-                $modalMesa.modal('show');
+                modalMesa().modal('show');
 
                 window.pintarPedidosMesa(mesaId);
             };
@@ -1122,7 +1133,7 @@
 
         /**
          * Formatea un monto. Vive aquí y no dentro de un bloque suelto porque
-         * lo usan el modal de pedidos, el de compras y el de stock.
+         * lo usan el modal de pedidos, el de cobro y el de stock.
          */
         var soles = function (monto) {
             return 'S/ ' + Number(monto || 0).toFixed(2);
@@ -1164,9 +1175,14 @@
         // -------------------------------------------------
         // Modal de cobro (permite pago partido)
         // -------------------------------------------------
-        var $cobro = $('#modalCobro');
+        /* Se busca cada vez que se usa. El motor de tiempo real repone los
+           modales cada 5 segundos y una referencia guardada apuntaria al
+           elemento viejo, que ya no esta en la pagina. */
+        var modalCobro = function () {
+            return $('#modalCobro');
+        };
 
-        if ($cobro.length) {
+        if (modalCobro().length) {
 
             var cobro = { id: 0, total: 0, lineas: [] };
 
@@ -1254,7 +1270,7 @@
                 $aviso.show();
             };
 
-            $('#cobroAgregarLinea').on('click', function () {
+            $(document).on('click', '#cobroAgregarLinea', function () {
 
                 var suma = 0;
 
@@ -1270,7 +1286,7 @@
                 pintarCobro();
             });
 
-            $('#cobroConfirmar').on('click', function () {
+            $(document).on('click', '#cobroConfirmar', function () {
 
                 var suma = 0;
 
@@ -1316,7 +1332,7 @@
                 $('#cobroAviso').hide();
 
                 pintarCobro();
-                $cobro.modal('show');
+                modalCobro().modal('show');
             });
         }
 
@@ -1350,9 +1366,14 @@
         // -------------------------------------------------
         // Ajuste de stock
         // -------------------------------------------------
-        var $stockModal = $('#modalStock');
+        /* Se busca cada vez que se usa. El motor de tiempo real repone los
+           modales cada 5 segundos y una referencia guardada apuntaria al
+           elemento viejo, que ya no esta en la pagina. */
+        var stockModal = function () {
+            return $('#modalStock');
+        };
 
-        if ($stockModal.length) {
+        if (stockModal().length) {
 
             var stock = { id: 0 };
 
@@ -1380,12 +1401,12 @@
                 $('#stockAviso').hide();
 
                 ajustarEtiqueta();
-                $stockModal.modal('show');
+        stockModal().modal('show');
             });
 
-            $('#stockTipo').on('change', ajustarEtiqueta);
+            $(document).on('change', '#stockTipo', ajustarEtiqueta);
 
-            $('#stockGuardar').on('click', function () {
+            $(document).on('click', '#stockGuardar', function () {
 
                 var $boton = $(this);
                 var textoOriginal = $boton.html();
@@ -1409,285 +1430,6 @@
             });
         }
 
-        // -------------------------------------------------
-        // Registrar compra
-        // -------------------------------------------------
-        var compra = { items: [] };
-
-        var pintarCompra = function () {
-
-            var $filas = $('#compraItems');
-            var total = 0;
-
-            $filas.empty();
-
-            if (!compra.items.length) {
-                $filas.append(
-                    '<tr><td colspan="5" class="text-center text-muted py-3">Todav&iacute;a no agregaste productos.</td></tr>'
-                );
-            }
-
-            compra.items.forEach(function (item, indice) {
-
-                var subtotal = item.precio * item.cantidad;
-                total += subtotal;
-
-                var $fila = $('<tr></tr>');
-
-                $fila.append('<td style="font-weight:600;">' + item.nombre + '</td>');
-
-                // La cantidad son unidades enteras; el precio sí lleva céntimos
-                var $cantidad = $('<input type="number" class="lg-input" step="1" min="1" style="min-height:38px;">').val(item.cantidad);
-                $cantidad.on('input', function () {
-                    compra.items[indice].cantidad = parseInt($(this).val(), 10) || 0;
-                    pintarCompra();
-                });
-
-                var $precio = $('<input type="number" class="lg-input" step="0.01" min="0" style="min-height:38px;">').val(item.precio);
-                $precio.on('input', function () {
-                    compra.items[indice].precio = parseFloat($(this).val()) || 0;
-                    pintarCompra();
-                });
-
-                $fila.append($('<td></td>').append($cantidad));
-                $fila.append($('<td></td>').append($precio));
-                $fila.append('<td class="num" style="text-align:right;font-weight:600;">' + soles(subtotal) + '</td>');
-                $fila.append(
-                    $('<td></td>').append(
-                        $('<button type="button" class="lg-btn lg-btn--sm lg-btn--ghost"><i class="fa fa-times"></i></button>')
-                            .on('click', function () {
-                                compra.items.splice(indice, 1);
-                                pintarCompra();
-                            })
-                    )
-                );
-
-                $filas.append($fila);
-            });
-
-            $('#compraTotal').text(soles(total));
-        };
-
-        $('#compraCatalogo .modal-producto').on('click', function () {
-
-            var $boton = $(this);
-            var id = parseInt($boton.data('id'), 10);
-            var nombre = $boton.attr('data-nombre-texto');
-            var existente = null;
-
-            compra.items.forEach(function (item) {
-                if (item.id === id) { existente = item; }
-            });
-
-            if (existente) {
-                existente.cantidad += 1;
-            } else {
-                // Se precarga con el precio de venta: el administrador lo ajusta
-                // al precio real de compra, pero nunca queda en cero sin querer.
-                compra.items.push({
-                    id: id,
-                    nombre: nombre,
-                    cantidad: 1,
-                    precio: parseFloat($boton.data('precio')) || 0
-                });
-            }
-
-            pintarCompra();
-        });
-
-        /**
- * Filtra el catálogo por categoría y por texto a la vez.
- */
-        var filtrarCatalogo = function () {
-
-            var categoria = $('#compraFiltros .is-activo').data('categoria') || '';
-            var texto = $('#compraBuscar').val().toLowerCase().trim();
-            var visibles = 0;
-
-            $('#compraCatalogo .modal-producto').each(function () {
-
-                var $b = $(this);
-                var coincideCategoria = categoria === ''
-                    || String($b.data('categoria')) === categoria;
-                var coincideTexto = texto === ''
-                    || String($b.data('nombre')).indexOf(texto) !== -1;
-
-                var mostrar = coincideCategoria && coincideTexto;
-
-                $b.toggle(mostrar);
-
-                if (mostrar) {
-                    visibles++;
-                }
-            });
-
-            $('#compraSinResultados').toggle(visibles === 0);
-        };
-
-        $('#compraBuscar').on('input', filtrarCatalogo);
-
-        $('#compraFiltros').on('click', '.js-filtro-categoria', function () {
-
-            var $chip = $(this);
-
-            $('#compraFiltros .js-filtro-categoria').removeClass('is-activo');
-            $chip.addClass('is-activo');
-
-            filtrarCatalogo();
-        });
-
-        $('#compraGuardar').on('click', function () {
-
-            if (!compra.items.length) {
-                $('#compraAvisoTexto').text('Agrega al menos un producto.');
-                $('#compraAviso').show();
-                return;
-            }
-
-            var $boton = $(this);
-            var textoOriginal = $boton.html();
-
-            $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
-            $('#compraAviso').hide();
-
-            api('api/compra/registrar', {
-                proveedor_id: parseInt($('#compraProveedor').val(), 10) || 0,
-                items: compra.items.map(function (i) {
-                    return { id: i.id, cantidad: i.cantidad, precio: i.precio };
-                })
-            })
-            .done(function () {
-                window.location.href = APP_URL + '?page=compras&tab=historial';
-            })
-            .fail(function (xhr) {
-                $('#compraAvisoTexto').text(mensajeDe(xhr, 'No se pudo registrar la compra.'));
-                $('#compraAviso').show();
-                $boton.prop('disabled', false).html(textoOriginal);
-            });
-        });
-
-        // -------------------------------------------------
-        // Historial de compras: ver detalle y anular
-        // -------------------------------------------------
-        var $modalCompra = $('#modalCompra');
-
-        if ($modalCompra.length) {
-
-            var compraActual = { id: 0, anulada: false };
-
-            var pintarDetalle = function (datos) {
-
-                var c = datos.compra;
-
-                $('#compraDetalleTitulo').text(
-                    'Compra C-' + ('0000' + c.id).slice(-4)
-                );
-
-                var cuerpo = '<div class="lg-rows mb-3">'
-                    + '<div class="lg-row"><span class="lg-row-label">Proveedor</span>'
-                    + '<span class="lg-row-value">' + (c.proveedor || 'Sin proveedor') + '</span></div>'
-                    + '<div class="lg-row"><span class="lg-row-label">Registró</span>'
-                    + '<span class="lg-row-value">' + (c.usuario || '-') + '</span></div>'
-                    + '<div class="lg-row"><span class="lg-row-label">Fecha</span>'
-                    + '<span class="lg-row-value">' + c.fecha + '</span></div>'
-                    + '<div class="lg-row"><span class="lg-row-label">Estado</span>'
-                    + '<span class="lg-row-value">'
-                    + (datos.anulada
-                        ? '<span class="lg-pill lg-pill--pizarra">Anulada</span>'
-                        : '<span class="lg-pill lg-pill--verde">Registrada</span>')
-                    + '</span></div>'
-                    + '</div>';
-
-                if (datos.anulada) {
-                    cuerpo += '<div class="lg-info mb-3"><i class="fa fa-info-circle"></i>'
-                        + '<span>Esta compra está anulada: el stock ya se revirtió y '
-                        + 'no cuenta en los gastos del día.</span></div>';
-                }
-
-                var filas = (c.items || []).map(function (item) {
-                    return '<tr>'
-                        + '<td>' + item.nombre + '</td>'
-                        + '<td class="num" style="text-align:right;">' + item.cantidad + '</td>'
-                        + '<td class="num" style="text-align:right;">' + soles(item.precio_unitario) + '</td>'
-                        + '<td class="num" style="text-align:right;font-weight:600;">'
-                        + soles(item.subtotal) + '</td>'
-                        + '</tr>';
-                }).join('');
-
-                cuerpo += '<div class="table-responsive"><table class="lg-table">'
-                    + '<thead><tr><th>Producto</th>'
-                    + '<th style="text-align:right;">Cantidad</th>'
-                    + '<th style="text-align:right;">Precio unit.</th>'
-                    + '<th style="text-align:right;">Subtotal</th></tr></thead>'
-                    + '<tbody>' + filas + '</tbody>'
-                    + '<tfoot><tr><th colspan="3">'
-                    + (c.items || []).length + ' producto(s) · '
-                    + (c.items || []).reduce(function (suma, i) {
-                        return suma + parseInt(i.cantidad, 10);
-                    }, 0)
-                    + ' unidad(es)</th>'
-                    + '<th style="text-align:right;">' + soles(c.total) + '</th></tr></tfoot>'
-                    + '</table></div>';
-
-                $('#compraDetalleCuerpo').html(cuerpo);
-
-                $('#compraAnular').toggle(!datos.anulada);
-            };
-
-            $(document).on('click', '.js-ver-compra', function () {
-
-                var id = $(this).data('id');
-
-                compraActual = { id: id, anulada: false };
-
-                $('#compraDetalleCuerpo').html(
-                    '<div class="text-center py-4"><i class="fa fa-spinner fa-spin fa-2x" style="opacity:0.4;"></i></div>'
-                );
-
-                $modalCompra.modal('show');
-
-                apiGet('api/compra/detalle', { id: id })
-                .done(function (r) {
-                    compraActual.anulada = r.anulada;
-                    pintarDetalle(r);
-                })
-                .fail(function (xhr) {
-                    $('#compraDetalleCuerpo').html(
-                        '<p class="mb-0">' + mensajeDe(xhr, 'No se pudo cargar la compra.') + '</p>'
-                    );
-                });
-            });
-
-            $(document).on('click', '.js-anular-compra', function () {
-                compraActual = { id: $(this).data('id'), anulada: false };
-                $(this).closest('tr').find('.js-ver-compra').trigger('click');
-            });
-
-            $('#compraAnular').on('click', function () {
-
-                if (!confirm(
-                    'Se anulará la compra y se devolverá el stock al almacén.\n'
-                    + 'También se quitará del gasto del día.\n\n¿Continuar?'
-                )) {
-                    return;
-                }
-
-                var $boton = $(this);
-                var textoOriginal = $boton.html();
-
-                $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Anulando...');
-
-                api('api/compra/anular', { id: compraActual.id })
-                .done(function () {
-                    $modalCompra.modal('hide');
-                    window.location.reload();
-                })
-                .fail(function (xhr) {
-                    alert(mensajeDe(xhr, 'No se pudo anular la compra.'));
-                    $boton.prop('disabled', false).html(textoOriginal);
-                });
-            });
-        }
         $(document).on('click', '.js-asistencia', function () {
 
             var $boton = $(this);
@@ -1708,7 +1450,7 @@
             });
         });
 
-        $('#pagoGuardar').on('click', function () {
+        $(document).on('click', '#pagoGuardar', function () {
 
             var $boton = $(this);
             var textoOriginal = $boton.html();
@@ -1733,9 +1475,14 @@
         // -------------------------------------------------
         // Mesas: reservar, liberar, agregar y eliminar
         // -------------------------------------------------
-        var $modalReserva = $('#modalReserva');
+        /* Se busca cada vez que se usa. El motor de tiempo real repone los
+           modales cada 5 segundos y una referencia guardada apuntaria al
+           elemento viejo, que ya no esta en la pagina. */
+        var modalReserva = function () {
+            return $('#modalReserva');
+        };
 
-        if ($modalReserva.length) {
+        if (modalReserva().length) {
 
             var reservaActual = { id: 0 };
 
@@ -1750,14 +1497,14 @@
                 );
                 $('#reservaAviso').hide();
 
-                $modalReserva.modal('show');
+        modalReserva().modal('show');
 
                 setTimeout(function () {
                     $('#reservaNombre').trigger('focus');
                 }, 300);
             });
 
-            $('#reservaGuardar').on('click', function () {
+            $(document).on('click', '#reservaGuardar', function () {
 
                 var $boton = $(this);
                 var textoOriginal = $boton.html();
@@ -1771,7 +1518,7 @@
                     hora: $('#reservaHora').val()
                 })
                 .done(function () {
-                    $modalReserva.modal('hide');
+        modalReserva().modal('hide');
                     window.location.reload();
                 })
                 .fail(function (xhr) {
@@ -1829,7 +1576,7 @@
                 $mesaModal.modal('show');
             });
 
-            $('#mesaGuardar').on('click', function () {
+            $(document).on('click', '#mesaGuardar', function () {
 
                 var $boton = $(this);
                 var textoOriginal = $boton.html();
@@ -1851,9 +1598,14 @@
         // -------------------------------------------------
         // Modal de pedido
         // -------------------------------------------------
-        var $modal = $('#modalPedido');
+        /* Se busca cada vez que se usa. El motor de tiempo real repone los
+           modales cada 5 segundos y una referencia guardada apuntaria al
+           elemento viejo, que ya no esta en la pagina. */
+        var modalPedido = function () {
+            return $('#modalPedido');
+        };
 
-        if (!$modal.length) {
+        if (!modalPedido().length) {
             return;
         }
 
@@ -1981,7 +1733,7 @@
             ocultarAviso();
             pintarPedido();
             cargarPedidosDeLaMesa();
-            $modal.modal('show');
+        modalPedido().modal('show');
         };
 
         // El clic en la tarjeta de mesa (que se engancha antes del return
@@ -2062,7 +1814,7 @@
         };
 
         // Plegable de pedidos ya registrados
-        $('#pedidoExistentesToggle').on('click', function () {
+        $(document).on('click', '#pedidoExistentesToggle', function () {
 
             var $wrap = $('#pedidoExistentesWrap');
             var abierto = $wrap.toggleClass('is-abierto').hasClass('is-abierto');
@@ -2085,8 +1837,14 @@
             });
         });
 
-        // Agrega un producto al pedido
-        $('.modal-producto').on('click', function () {
+        /* Agrega un producto al pedido.
+
+           Se escucha sobre document y no sobre cada botón, porque el catálogo
+           se repinta: al abrir el modal, al cambiar lo que haya en la cocina y
+           cada vez que el motor de tiempo real repone la pantalla. Un manejador
+           enganchado a los botones se queda en los viejos y los nuevos no
+           hacen nada al tocarlos. Con document siempre están todos. */
+        $(document).on('click', '.modal-producto', function () {
 
             var $boton = $(this);
             var nombre = $boton.data('producto');
@@ -2145,16 +1903,18 @@
             });
         };
 
-        $('#modalBuscar, #modalCategoria').on('input change', filtrarCatalogo);
+        // Delegado, por lo mismo que el catalogo: estos campos se pierden
+        // cuando el motor de tiempo real repone la pantalla.
+        $(document).on('input change', '#modalBuscar, #modalCategoria', filtrarCatalogo);
 
         // Descarta el pedido en curso
-        $('#pedidoLimpiar').on('click', function () {
+        $(document).on('click', '#pedidoLimpiar', function () {
             pedido.items = [];
             pintarPedido();
         });
 
         // Envía el pedido a la cocina
-        $('#pedidoEnviarCocina').on('click', function () {
+        $(document).on('click', '#pedidoEnviarCocina', function () {
 
             if (!pedido.items.length) {
                 mostrarAviso('Agrega al menos un producto antes de enviar el pedido.');
@@ -2189,9 +1949,16 @@
             });
         });
 
-        $modal.on('hidden.bs.modal', function () {
-            pedido.items = [];
-            pintarPedido();
+        /* Se engancha cada vez que se abre el modal, y no una sola vez al
+           cargar la pagina: al reponerlo el motor de tiempo real, el
+           manejador que se habia quedado enganchado al elemento viejo deja
+           de escuchar, y el pedido en curso se limpiaba solo una vez. */
+        modalPedido().one('shown.bs.modal', function () {
+
+            modalPedido().on('hidden.bs.modal', function () {
+                pedido.items = [];
+                pintarPedido();
+            });
         });
 
     });
