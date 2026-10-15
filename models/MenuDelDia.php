@@ -3,23 +3,19 @@
 /**
  * Menú del día.
  *
- * Es la carta que se ofrece hoy: los platos y las bebidas con lo que
- * queda de cada uno y si están disponibles o agotados.
+ * La carta que se ofrece hoy: los platos y las bebidas con lo que queda
+ * de cada uno y si están disponibles o agotados.
  *
- * Sale de la tabla de productos, la misma que maneja Inventario: no hay
- * una carta aparte que se pueda desincronizar del stock real. Lo único
- * que se añade aquí es la marca de "agotado".
+ * Sale de la tabla de productos, la misma que maneja Inventario. No hay
+ * una carta aparte que se pueda desincronizar del stock real; lo único que
+ * se añade aquí es la marca de "agotado".
  *
- * Por qué agotado va aparte del stock
- * -----------------------------------
- * Un plato puede quedarse sin existencias por la cocina (se acabó el
- * pollo, se apagó la freidora) aunque el inventario todavía tenga
- * unidades contadas. Marcarlo aparte permite decirle al mesero que ya
- * no se pide, sin tener que mentir sobre las existencias.
+ * Esa marca va aparte del stock a propósito: un plato puede acabarse en la
+ * cocina aunque el inventario todavía tenga unidades contadas. Marcarla
+ * aparte le dice al mesero que ya no se pide, sin mentir sobre las
+ * existencias.
  *
- * El que realmente no se puede pedir es el que está agotado O tiene
- * stock 0, y esa es la misma regla que aplica el pedido: un producto
- * con stock 0 no entra a la comanda.
+ * Lo que no se puede pedir es lo que está agotado o lo que tiene stock 0.
  */
 class MenuDelDia
 {

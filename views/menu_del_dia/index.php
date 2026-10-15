@@ -219,23 +219,17 @@ foreach ($carta as $grupo) {
             })
             .done(function (r) {
 
-                /**
-                 * Se refresca en el acto, sin esperar al sondeo.
-                 *
-                 * El motor de tiempo real compara la base cada 5 segundos, así
-                 * que si se le deja el cambio se tardarían hasta 5 s en verse:
-                 * el botón volvía a su estado viejo y la tarjeta seguía igual,
-                 * y parecía que el clic no había hecho nada hasta que alguien
-                 * recargaba a mano.
-                 *
-                 * Aquí el cambio lo hizo esta misma pantalla, así que no
-                 * hay nada que esperar: se pide la página al servidor y se
-                 * repinta con lo que él responda. Así manda el servidor y no
-                 * un pintado a mano que podría quedar desincronizado.
-                 *
-                 * Los otros equipos sí se enteran por el sondeo, que para eso
-                 * está.
-                 */
+                /* Se refresca en el acto, sin esperar al sondeo.
+
+                   El sondeo compara la base cada 5 segundos, así que si se
+                   le deja el cambio se tardarían hasta 5 s en verse y parecía
+                   que el clic no había hecho nada. Aquí el cambio lo hizo
+                   esta misma pantalla, así que se pide la página al servidor
+                   y se repinta con lo que él responda: manda el servidor y no
+                   un pintado a mano que podría quedar desincronizado.
+
+                   Los otros equipos se enteran por el sondeo, que para eso
+                   está. */
                 if (window.refrescarContenido) {
                     window.refrescarContenido();
                 }

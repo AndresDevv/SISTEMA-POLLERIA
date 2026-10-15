@@ -298,26 +298,18 @@
             }
         });
 
-        /**
-         * En tablet el menú es una capa encima del contenido.
-         *
-         * Por eso se cierra solo al tocar al costado: el mismo gesto que en
-         * cualquier aplicación de móvil, y evita tener que volver a tocar las
-         * rayas de arriba (que en ese momento quedan tapadas por el propio
-         * menú).
-         *
-         * Se escucha en fase de captura para que el toque no llegue antes al
-         * botón o a la fila que hay debajo, y se descartan tres casos:
-         *
-         *   - el propio botón de las rayas, que abre y cierra
-         *   - lo que está dentro del menú, que ya se cierra por su cuenta
-         *   - los modales, que flotan por encima del velo y se manejan solos
-         *
-         * Se usa addEventListener y no $(document).on(...) porque jQuery
-         * toma un tercer argumento booleano como datos del evento, no como
-         * fase de captura: el manejador se quedaba registrado sin función y
-         * el menú no cerraba nunca.
-         */
+        /* En tablet el menú es una capa encima del contenido, así que se
+           cierra al tocar al costado, como en cualquier aplicación de móvil.
+           Eso evita tener que volver a tocar las rayas de arriba, que con el
+           menú abierto quedan tapadas.
+
+           Se escucha en fase de captura para que el toque no llegue antes al
+           botón o a la fila que hay debajo, y se descartan el propio botón de
+           las rayas, lo que está dentro del menú y los modales.
+
+           Se usa addEventListener y no jQuery porque jQuery toma un tercer
+           argumento booleano como datos del evento, no como fase de captura:
+           el manejador se quedaba sin función y el menú no cerraba. */
         document.addEventListener('click', function (e) {
 
             if (window.innerWidth > MOVIL || !estaAbierto()) {
@@ -399,10 +391,10 @@
             });
         };
 
-        // Se expone fuera del cierre para que los scripts que van dentro de las
-        // vistas (el aviso de pedido nuevo de cocina) puedan consultarla.
+        // Se exponen fuera del cierre para que los scripts que van dentro de
+        // las vistas puedan usarlas sin tener que incluirlas otra vez.
+        window.api = api;
         window.apiGet = apiGet;
-    window.api = api;
 
         var mensajeDe = function (xhr, porDefecto) {
 
@@ -727,26 +719,16 @@
             // -------------------------------------------------
             // Catálogo del modal de pedidos, al día con el modal abierto
             // -------------------------------------------------
-            /**
-             * Mantiene al día la lista de platos del modal de pedidos
-             * mientras está abierto.
-             *
-             * Por qué hace falta esto aparte del refresco normal: con un
-             * modal abierto la pantalla no se repinta, porque se perdería el
-             * pedido que el mesero está armando. Pero dentro del modal hay
-             * una zona que SÍ puede cambiar sin tocar nada de eso, y es el
-             * catálogo: si el pollo se acaba y alguien lo marca como agotado
-             * en el Menú del día, el mesero tiene que verlo en el acto, no
-             * tres segundos después de cerrar y volver a abrir.
-             *
-             * Solo se repinta la lista de productos. El pedido en curso, la
-             * lista de lo ya agregado y los totales no se tocan, así que no
-             * hay forma de que se pierda lo que se estaba escribiendo.
-             *
-             * El HTML lo pinta el servidor con el mismo partial que usa al
-             * abrir el modal, y va con una firma: si no cambió, no se repinta
-             * nada y no se nota.
-             */
+            /* Con un modal abierto la pantalla no se repinta, porque se
+               perdería el pedido que se está armando. Pero el catálogo de
+               platos sí puede cambiar sin tocar nada de eso, así que se
+               repinta por su cuenta.
+
+               Solo se cambia la lista de productos: el pedido en curso, lo ya
+               agregado y los totales quedan como están. El HTML lo pinta el
+               servidor con el mismo partial que usa al abrir el modal, y va
+               con una firma, así que si no cambió no se repinta nada y no se
+               nota. Al repintar se devuelve el scroll donde estaba. */
             var catalogoVivo = (function () {
 
                 var CADA_CUANTO_CATALOGO_MS = 6000;

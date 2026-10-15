@@ -145,28 +145,13 @@ body {
     padding: 0;
 }
 
-/**
- * El logo del local en la barra del menú.
- *
- * El archivo es un dibujo negro con fondo transparente sobre la barra
- * amarilla, así que se lee sin más. La barra se mide para el logo y no al
- * revés: el archivo es de proporción ancha (casi 2:1) y a 62 px de alto
- * quedaba de un tamaño ridículo.
- *
- * El alto útil es casi toda la barra a propósito: con el logo más pequeño
- * quedaban 6 px de aire arriba y abajo, y al ser el dibujo más ancho que
- * alto, el hueco de arriba se nota más que el de abajo y parece que el logo
- * está caído.
- *
- * El ancho se limita a la barra con `max-width: 100%` para que en tablet,
- * donde el menú se angosta, la imagen baje de tamaño en vez de salirse.
- *
- * El margen de abajo es lo que lo sube: al ser mucho más ancho que alto,
- * centrado a la redonda deja más aire arriba que abajo. Con la barra de
- * 92 px y el logo de 84 px no queda espacio libre que repartir, así que el
- * margen se lleva el aire de abajo y el dibujo queda pegado arriba, que es
- * como se ve en un rótulo colgado.
- */
+/* El logo del local, en la barra amarilla del menú.
+
+   El dibujo es negro con fondo transparente, así que se lee directo sobre
+   el amarillo. El margen de abajo lo sube un poco: al ser más ancho que
+   alto, centrado a la redonda deja más aire arriba que abajo y el logo
+   parece caído. El ancho se limita a la barra para que en tablet, donde el
+   menú se angosta, la imagen baje de tamaño en vez de salirse. */
 .lg-marca-logo {
     display: block;
     max-width: 100%;

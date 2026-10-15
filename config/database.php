@@ -2,6 +2,20 @@
 
 /**
  * Conexión a la base de datos.
+ *
+ * Estos son los datos de una instalación normal de XAMPP: MySQL en el
+ * mismo equipo, usuario root y sin clave.
+ *
+ * Si al llevarlo a otra maquina el MySQL de esa maquina tiene usuario
+ * o clave distintos, no hay que tocar este archivo. Se crea en la raíz
+ * del proyecto un database.local.php con los datos correctos y el
+ * sistema usa esos en vez de estos:
+ *
+ *     <?php
+ *     return ['servidor' => 'localhost', 'base' => 'polleria',
+ *             'usuario' => 'root', 'clave' => 'miclave'];
+ *
+ * Ese archivo no se comparte con el proyecto, para no filtrar la clave.
  */
 
 function conexionDB(): PDO
@@ -12,10 +26,25 @@ function conexionDB(): PDO
         return $conexion;
     }
 
-    $servidor = "localhost";
-    $baseDatos = "polleria";
-    $usuarioDB = "root";
-    $claveDB = "";
+    // Valores por defecto: los de una instalación normal de XAMPP.
+    $servidor = 'localhost';
+    $baseDatos = 'polleria';
+    $usuarioDB = 'root';
+    $claveDB   = '';
+
+    // Si existe database.local.php, manda lo que diga ese archivo.
+    $propio = APP_ROOT . '/database.local.php';
+
+    if (is_file($propio)) {
+        $datos = require $propio;
+
+        if (is_array($datos)) {
+            $servidor = (string) ($datos['servidor'] ?? $servidor);
+            $baseDatos = (string) ($datos['base'] ?? $baseDatos);
+            $usuarioDB = (string) ($datos['usuario'] ?? $usuarioDB);
+            $claveDB   = (string) ($datos['clave'] ?? '');
+        }
+    }
 
     try {
 

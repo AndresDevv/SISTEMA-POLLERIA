@@ -38,21 +38,17 @@ class OperacionController
     /**
      * Catálogo de productos para pintar el modal de pedidos al día.
      *
-     * Existe porque el motor de tiempo real no repinta la pantalla cuando hay
-     * un modal abierto: hacerlo borraría el pedido que el mesero está
-     * armando. Pero dentro del modal sí hay una zona que puede cambiar sin
-     * tocar nada de eso, y es el catálogo de productos: si el pollo se acaba
-     * y alguien lo marca como agotado en el Menú del día, el mesero tiene que
-     * verlo al instante, no tres segundos después de cerrar el modal.
+     * Con un modal abierto la pantalla no se repinta, porque se perdería el
+     * pedido que el mesero está armando. Pero el catálogo de platos sí
+     * puede cambiar sin tocar eso, y entonces el mesero tiene que verlo al
+     * instante.
      *
-     * Se devuelve el HTML ya pintado y no una lista de datos a la que el
-     * navegador le ponga las etiquetas: así el catálogo se ve exactamente
-     * igual se pinte al abrir el modal o se repinte en vivo, sin tener el
-     * mismo marcado escrito en PHP y en JavaScript.
+     * Se devuelve el HTML ya pintado, y no datos, para que el catálogo se ve
+     * igual se abra el modal o se repinte en vivo sin repetir el marcado en
+     * PHP y en JavaScript.
      *
-     * Va con una firma para no pintar nada si no cambió: el servidor manda
-     * la firma antes que el HTML y el navegador solo repinta cuando es
-     * distinta de la última que recibió.
+     * Va con una firma: si no cambió, el navegador no repinta nada y no se
+     * nota.
      */
     public function menuCatalogo(): void
     {

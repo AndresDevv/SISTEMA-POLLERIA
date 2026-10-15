@@ -1,0 +1,9 @@
+# Datos de conexion de esta maquina en concreto.
+#
+# database.local.php guarda el usuario y la clave del MySQL de donde se esta
+# usando el sistema. No se versiona a proposito: cada equipo tiene los suyos
+# y compartirlos seria filtrar la clave.
+#
+# Copiar database.EJEMPLO.local.php como database.local.php y cambiarlo.
+
+database.local.php
