@@ -1,3 +1,11 @@
+/* =========================================================
+   Pantalla de inicio de sesión
+
+   El diseño usa los mismos colores que el resto del sistema: el rojo de
+   la marca en los botones y los detalles, y el gris claro del fondo para
+   que la tarjeta se lea sin esfuerzo.
+   ========================================================= */
+
 * {
     margin: 0;
     padding: 0;
@@ -8,6 +16,7 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     background-color: #ffffff;
     min-height: 100vh;
+    color: #111111;
 }
 
 .login-container {
@@ -16,92 +25,118 @@ body {
     width: 100%;
 }
 
-/* PANEL IZQUIERDO */
-
+/* ---------------------------------------------------------
+   PANEL DE LA MARCA (izquierda)
+   --------------------------------------------------------- */
 .login-brand {
-    width: 34%;
+    width: 36%;
     min-height: 100vh;
-    background-color: #ed0000;
+    background-color: #DF0303;
+
+    /* El degradado le da profundidad al rojo plano, sin ensuciarlo. */
+    background-image: linear-gradient(160deg, #DF0303 0%, #A80000 100%);
 
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 40px 28px;
 }
 
+.brand-inner {
+    text-align: center;
+    max-width: 340px;
+}
+
+/* Cuadro del logo.
+
+   El logo es un dibujo negro con fondo transparente y este panel es rojo:
+   sin un fondo propio no se leeria nada. El ancho se limita al panel para
+   que en una pantalla angosta la imagen baje de tamaño en vez de salirse. */
 .logo-container {
-    color: #ffffff;
-    font-size: 42px;
-    font-weight: 400;
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 22px 28px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
 }
 
-/* PANEL DERECHO */
+.logo-image {
+    display: block;
+    max-width: 100%;
+    max-height: 128px;
+    width: auto;
+    height: auto;
+}
 
+/* ---------------------------------------------------------
+   PANEL DEL FORMULARIO (derecha)
+   --------------------------------------------------------- */
 .login-panel {
-    width: 66%;
+    width: 64%;
     min-height: 100vh;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    background-color: #ffffff;
+    /* Gris claro: la tarjeta blanca destaca sin gastar un borde de color. */
+    background-color: #F5F6F8;
 }
-
-/* TARJETA DE LOGIN */
 
 .login-card {
-    width: 480px;
-    min-height: 550px;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 24px;
 
-    padding: 35px 50px;
-
-    border: 2px solid #1689e8;
-    border-radius: 16px;
+    padding: 40px 44px 34px;
 
     background-color: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
 
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 10px 40px rgba(17, 17, 17, 0.10);
 
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    position: relative;
 }
 
-/* TITULO */
+/* Franja de la marca en el borde superior de la tarjeta. */
+.login-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background-color: #DF0303;
+}
 
 .login-card h1 {
     text-align: center;
-
-    font-size: 25px;
+    font-size: 24px;
+    font-weight: 700;
     color: #111111;
-
     margin-bottom: 8px;
 }
 
 .login-description {
     text-align: center;
-
-    font-size: 12px;
-    color: #c5c5c5;
-
-    margin-bottom: 48px;
+    font-size: 13px;
+    color: #8A8F98;
+    margin-bottom: 34px;
 }
 
-/* CAMPOS DE TEXTO */
-
+/* ---------------------------------------------------------
+   CAMPOS
+   --------------------------------------------------------- */
 .form-group {
-    margin-bottom: 40px;
+    margin-bottom: 22px;
 }
 
 .form-group label {
     display: block;
-
-    font-size: 14px;
-    font-weight: bold;
-
-    color: #111111;
-
-    margin-bottom: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3A3F47;
+    margin-bottom: 7px;
 }
 
 .input-container {
@@ -109,46 +144,49 @@ body {
     width: 100%;
 }
 
-
 .input-container input {
     width: 100%;
-    height: 38px;
+    height: 46px;
 
-    padding: 0 15px 0 43px;
+    padding: 0 15px 0 40px;
 
-    border: 1px solid #cccccc;
-    border-radius: 5px;
+    border: 1px solid #DFE2E6;
+    border-radius: 8px;
 
     outline: none;
 
-    font-size: 13px;
-
+    font-size: 14px;
     color: #333333;
 
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-container input:focus {
-    border-color: #1689e8;
+    border-color: #DF0303;
+    box-shadow: 0 0 0 3px rgba(223, 3, 3, 0.10);
 }
 
 .input-container input::placeholder {
-    color: #c5c5c5;
+    color: #B4B8BE;
 }
 
-/* BOTON */
-
+/* ---------------------------------------------------------
+   BOTON
+   --------------------------------------------------------- */
 .btn-login {
     width: 100%;
-    height: 38px;
+    height: 48px;
+
+    margin-top: 6px;
 
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
 
-    background-color: #ed0000;
+    background-color: #DF0303;
     color: #ffffff;
 
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 600;
 
     cursor: pointer;
 
@@ -157,32 +195,57 @@ body {
     justify-content: center;
     gap: 10px;
 
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
 .btn-login:hover {
-    background-color: #d90000;
+    background-color: #B80000;
 }
 
-.btn-icon {
-    font-size: 20px;
+.btn-login:active {
+    transform: translateY(1px);
 }
 
-/* FOOTER */
+.btn-login:disabled {
+    background-color: #E8A0A0;
+    cursor: default;
+}
 
 .login-footer {
     text-align: center;
-
-    margin-top: 22px;
-
+    margin-top: 26px;
     font-size: 12px;
-
-    color: #c5c5c5;
+    color: #A9AEB5;
 }
 
-/* PARA QUE SEA RESPONSIVO */
+/* ---------------------------------------------------------
+   MENSAJE DE ERROR
+   --------------------------------------------------------- */
+.login-error {
+    display: flex;
+    align-items: center;
+    gap: 9px;
 
-@media (max-width: 800px) {
+    margin-bottom: 22px;
+    padding: 12px 14px;
+
+    border: 1px solid #F5C2C2;
+    border-left: 4px solid #DF0303;
+    border-radius: 8px;
+
+    background-color: #FFF4F4;
+    color: #A80000;
+
+    font-size: 13px;
+}
+
+/* ---------------------------------------------------------
+   TABLET Y PANTALLA ANGOSTA
+
+   El equipo entra con tablet, así que los campos y el botón se hacen
+   más altos: se tocan con el dedo, no con el puntero de un ratón.
+   --------------------------------------------------------- */
+@media (max-width: 900px) {
 
     .login-container {
         flex-direction: column;
@@ -190,35 +253,46 @@ body {
 
     .login-brand {
         width: 100%;
-        min-height: 180px;
+        min-height: auto;
+        padding: 34px 24px;
     }
 
     .login-panel {
         width: 100%;
-        padding: 30px 20px;
+        padding: 34px 0;
+        flex: 1;
     }
 
     .login-card {
-        width: 100%;
-        max-width: 480px;
+        max-width: 460px;
+        padding: 34px 32px 30px;
     }
 
     .logo-container {
-        font-size: 32px;
+        padding: 16px 24px;
+    }
+
+    .logo-image {
+        max-height: 84px;
+    }
+
+    .input-container input {
+        height: 50px;
+    }
+
+    .btn-login {
+        height: 52px;
     }
 }
 
-.login-error {
-    width: 100%;
-    padding: 10px 12px;
-    margin-bottom: 20px;
+@media (max-width: 480px) {
 
-    border: 1px solid #ffb3b3;
-    border-radius: 5px;
+    .login-card {
+        margin: 0 16px;
+        padding: 28px 22px 24px;
+    }
 
-    background-color: #fff0f0;
-    color: #d00000;
-
-    font-size: 13px;
-    text-align: center;
+    .login-brand {
+        padding: 24px 16px;
+    }
 }
