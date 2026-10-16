@@ -10,9 +10,15 @@
         // -------------------------------------------------
         // CRUD genérico de los módulos administrativos
         // -------------------------------------------------
-        var $formModal = $('#modalFormulario');
+        /* Se busca cada vez que se usa. El motor de tiempo real repone los
+           modales cada 5 segundos y una referencia guardada apuntaria al
+           elemento viejo, que ya no esta en la pagina: el formulario se
+           llenaba pero no se abria. */
+        var formModal = function () {
+            return $('#modalFormulario');
+        };
 
-        if ($formModal.length) {
+        if (formModal().length) {
 
             var formulario = { recurso: '', id: 0, campos: {} };
             var opcionesRelacion = {};
@@ -50,6 +56,33 @@
                 });
             };
 
+            /**
+             * Deja un número como se escribe a mano.
+             *
+             * La base guarda 2.50, pero en el formulario se ve "2.5": los
+             * ceros de más solo estorban cuando se teclea.
+             */
+            var numeroEditable = function (valor) {
+                var n = parseFloat(valor);
+
+                if (isNaN(n)) {
+                    return '';
+                }
+
+                return String(n);
+            };
+
+            /**
+             * Convierte lo que se escribió en un número.
+             *
+             * Acepta coma o punto como separador decimal, porque el teclado de
+             * las tablets no siempre trae el punto a la vista.
+             */
+            var aNumero = function (texto) {
+                return parseFloat(String(texto === null || texto === undefined ? '' : texto)
+                    .replace(',', '.')) || 0;
+            };
+
             var pintarFormulario = function (valores) {
 
                 var $contenedor = $('#formCampos');
@@ -57,6 +90,18 @@
                 $contenedor.empty();
 
                 Object.keys(formulario.campos).forEach(function (campo) {
+
+                    /**
+                     * "_calculo" no es un campo del formulario.
+                     *
+                     * Viaja dentro del mismo objeto de campos, pero son las
+                     * instrucciones para armar el total. Si se dibujara,
+                     * aparecería un campo vacío sin etiqueta al final, por eso
+                     * se salta.
+                     */
+                    if (campo.charAt(0) === '_') {
+                        return;
+                    }
 
                     var regla = formulario.campos[campo];
                     var valor = valores ? valores[campo] : (regla.default !== undefined ? regla.default : '');
@@ -105,7 +150,27 @@
 
                     } else if (regla.tipo === 'decimal') {
 
-                        $controlo = $('<input type="number" step="0.01" min="0" class="lg-input">').val(valor);
+                        // Los decimales admiten coma o punto, porque en el
+                        // teclado de la tablet muchas veces se escribe "2,5".
+                        $controlo = $('<input type="text" inputmode="decimal" class="lg-input">')
+                            .val(valor === null || valor === undefined || valor === '' ? '' : numeroEditable(valor));
+
+                        $controlo.on('input', function () {
+                            this.value = this.value.replace(/[^0-9.,]/g, '');
+                        });
+
+                    } else if (regla.tipo === 'calculado') {
+
+                        /**
+                         * El total no se escribe: se arma solo.
+                         *
+                         * Se muestra como campo normal para que se lea de un
+                         * vistazo, pero no se puede editar a mano. El número
+                         * que se guarda lo calcula el servidor; este de aquí
+                         * solo evita teclearlo.
+                         */
+                        $controlo = $('<input type="text" class="lg-input" readonly style="background:#F7F7F8;font-weight:700;">')
+                            .val(valor ? soles(valor) : soles(0));
 
                     } else if (regla.tipo === 'digitos') {
 
@@ -148,6 +213,31 @@
 
                     $contenedor.append($grupo);
                 });
+
+                /**
+                 * El total se va solo con cantidad por precio.
+                 *
+                 * Se recalcula en el formulario para que quien compra vea
+                 * cuanto sale antes de guardar. Es solo una ayuda para leerlo
+                 * bien: el número que queda guardado lo calcula el servidor,
+                 * que es el que suma en Caja y en el Dashboard.
+                 */
+                var camposTotal = formulario.campos._calculo || null;
+
+                if (camposTotal) {
+                    var recalcular = function () {
+                        var cantidad = aNumero($('#formCampos [data-campo="' + camposTotal.cantidad + '"]').val());
+                        var precio = aNumero($('#formCampos [data-campo="' + camposTotal.precio + '"]').val());
+                        var $total = $('#formCampos [data-campo="' + camposTotal.campo + '"]');
+
+                        $total.val(soles(cantidad * precio));
+                    };
+
+                    $('#formCampos [data-campo="' + camposTotal.cantidad + '"],'
+                        + ' #formCampos [data-campo="' + camposTotal.precio + '"]').on('input', recalcular);
+
+                    recalcular();
+                }
             };
 
             var abrirFormulario = function (recurso, campos, fila) {
@@ -161,7 +251,7 @@
 
                 cargarRelaciones(campos, function () {
                     pintarFormulario(fila);
-                    $formModal.modal('show');
+                    formModal().modal('show');
                 });
             };
 
@@ -202,7 +292,28 @@
                 }
 
                 $('#formCampos [data-campo]').each(function () {
-                    datos[$(this).data('campo')] = $(this).val();
+                    var $c = $(this);
+                    var campo = String($c.data('campo'));
+
+                    if (campo.charAt(0) === '_') {
+                        return;
+                    }
+
+                    var valor = $c.val();
+
+                    /**
+                     * Los decimales van como número.
+                     *
+                     * Se limpian los separadores de miles y se cambia la coma
+                     * por punto, para que "1,50" llegue al servidor como 1.50 y
+                     * no como un texto que no se sabe interpretar.
+                     */
+                    if ($c.is('[inputmode="decimal"]')) {
+                        datos[campo] = aNumero(valor);
+                        return;
+                    }
+
+                    datos[campo] = valor;
                 });
 
                 if (formulario.id) {
@@ -217,7 +328,20 @@
 
                 api('api/gestion/' + (esEdicion ? 'actualizar' : 'crear'), datos)
                 .done(function () {
-                    window.location.reload();
+
+                    /**
+                     * Se repinta la pantalla en vez de recargarla.
+                     *
+                     * Si se recargara, las cifras de Caja y del Dashboard
+                     * tardarian en verse y habria que volver a entrar. Con el
+                     * refresco del motor de tiempo real, el total del dia queda
+                     * al dia en el momento en que se guarda la compra.
+                     */
+                    formModal().modal('hide');
+
+                    window.setTimeout(function () {
+                        window.refrescarContenido();
+                    }, 350);
                 })
                 .fail(function (xhr) {
                     $('#formAvisoTexto').text(mensajeDe(xhr, 'No se pudo guardar.'));
@@ -229,16 +353,31 @@
             $(document).on('click', '.js-borrar', function () {
 
                 var $boton = $(this);
+                var recurso = $boton.data('recurso');
 
-                if (!confirm('¿Eliminar este registro?')) {
+                /**
+                 * Las compras avisan antes de borrarse.
+                 *
+                 * Cada compra ya tiene un egreso entrado en el dia, asi que
+                 * quitarla cambia lo que el negocio gasto. El aviso lo dice de
+                 * forma explicita, y no como un "¿esta seguro?" generico del
+                 * que no se entiende la consecuencia.
+                 */
+                var mensaje = $boton.data('aviso') || '¿Eliminar este registro?';
+
+                if (!confirm(mensaje)) {
                     return;
                 }
 
                 $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
 
-                api('api/gestion/eliminar', { recurso: $boton.data('recurso'), id: $boton.data('id') })
+                api('api/gestion/eliminar', { recurso: recurso, id: $boton.data('id') })
                 .done(function () {
-                    window.location.reload();
+
+                    // Igual que al guardar: se repinta, no se recarga la pagina.
+                    window.setTimeout(function () {
+                        window.refrescarContenido();
+                    }, 350);
                 })
                 .fail(function (xhr) {
                     alert(mensajeDe(xhr, 'No se pudo eliminar.'));
@@ -652,8 +791,15 @@
              * Los modales viven fuera de ese recuadro (se mudan al body al
              * cargar) y los botones usan eventos delegados sobre document, así
              * que todo sigue funcionando tras el cambio.
+             *
+             * @param function|null alTerminar  se llama solo si la pantalla se
+             *        repintó de verdad, que es cuando el cambio puede darse por
+             *        visto.
+             * @param function|null alFallar    se llama si la petición no pudo
+             *        completarse, para que el cambio siga pendiente y se
+             *        reintente solo en el siguiente sondeo.
              */
-            var refrescarContenido = function (alTerminar) {
+            var refrescarContenido = function (alTerminar, alFallar) {
 
                 /**
                  * Con un modal abierto o un campo enfocado no se toca nada.
@@ -665,7 +811,7 @@
                  */
                 if (!seguro()) {
                     window.setTimeout(function () {
-                        refrescarContenido(alTerminar);
+                        refrescarContenido(alTerminar, alFallar);
                     }, 1500);
                     return;
                 }
@@ -711,6 +857,20 @@
 
                     if (typeof alTerminar === 'function') {
                         alTerminar();
+                    }
+                })
+                .fail(function () {
+
+                    /**
+                     * La pantalla no se pudo repintar.
+                     *
+                     * Se avisa para que el cambio siga marcado como pendiente y
+                     * se vuelva a intentar en el siguiente sondeo. Sin esto, el
+                     * fallo se comeria el cambio en silencio y la pantalla
+                     * quedaria desfasada hasta que alguien recargara a mano.
+                     */
+                    if (typeof alFallar === 'function') {
+                        alFallar();
                     }
                 });
             };
@@ -806,21 +966,37 @@
             /**
              * Refresca el contenido y da por visto lo que habia pendiente.
              *
+             * La firma se guarda SOLO cuando la pantalla se repinto de verdad,
+             * no antes. Si se guardara antes, y esa peticion fallara, el
+             * siguiente sondeo compararia contra una firma ya nueva, diria
+             * que no cambio nada y la pantalla se quedaria con el dato viejo
+             * para siempre: el unico arreglo seria recargar a mano. Con la
+             * firma donde toca, el cambio sigue pendiente y se reintenta solo
+             * en el siguiente sondeo.
+             *
              * @param string|null nuevaFirma  la firma del servidor, que se
-             *        guarda aqui y no antes: si se guardara antes de refrescar
-             *        de verdad, un cambio detectado con un modal abierto se
-             *        daria por visto sin llegar a verse nunca.
+             *        guarda aqui al terminar bien el refresco.
              */
             var actualizar = function (nuevaFirma) {
 
                 quitarBarra();
-                pendiente = false;
 
-                if (nuevaFirma) {
-                    firma = nuevaFirma;
-                }
+                refrescarContenido(function () {
 
-                refrescarContenido();
+                    pendiente = false;
+
+                    if (nuevaFirma) {
+                        firma = nuevaFirma;
+                    }
+                }, function () {
+
+                    /**
+                     * El refresco fallo. "pendiente" se queda en true a
+                     * proposito: el siguiente sondeo volvera a detectar el
+                     * cambio y lo reintentara solo.
+                     */
+                    mostrarBarra();
+                });
             };
 
             /** Cuando queda libre, se actualiza lo que quedó pendiente. */

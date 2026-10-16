@@ -54,8 +54,8 @@ class Dashboard
     }
 
     /**
-     * Egresos del día, sumando egresos y gastos.
-     * Las vistas también lo usan para mostrarlo en caja.
+     * Egresos del día, que son las compras de insumos registradas.
+     * Las vistas también lo usan para mostrarlo en Caja.
      */
     public static function egresosPublicos(string $fecha = ''): float
     {
@@ -63,25 +63,20 @@ class Dashboard
     }
 
     /**
-     * Egresos de un día, sumando egresos y gastos.
+     * Egresos de un día: la suma de las compras registradas.
+     *
+     * Las compras se guardan en la tabla egresos, asi que aqui ya no se suma
+     * la tabla gastos: esa duplicaba al mismo dato y hacia que el total del
+     * dia saliera counting dos veces lo mismo.
      */
     private static function egresosDe(PDO $db, string $fecha): float
     {
-        $total = 0.0;
+        $stmt = $db->prepare(
+            "SELECT COALESCE(SUM(monto), 0) FROM egresos WHERE DATE(fecha) = :f"
+        );
+        $stmt->execute([':f' => $fecha]);
 
-        foreach (['egresos', 'gastos'] as $tabla) {
-
-            try {
-                $stmt = $db->prepare("SELECT COALESCE(SUM(monto), 0) FROM $tabla WHERE DATE(fecha) = :f");
-                $stmt->execute([':f' => $fecha]);
-                $total += (float) $stmt->fetchColumn();
-
-            } catch (PDOException $e) {
-                // la tabla puede no existir; se ignora
-            }
-        }
-
-        return $total;
+        return (float) $stmt->fetchColumn();
     }
 
     /**

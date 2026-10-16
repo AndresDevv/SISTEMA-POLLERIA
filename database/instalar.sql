@@ -6,7 +6,7 @@
 --  Instala el sistema completo en una maquina vacia.
 --
 --  QUE HACE EN EL SISTEMA
---  Crea la base "polleria" con las 25 tablas del sistema y la
+--  Crea la base "polleria" con las 24 tablas del sistema y la
 --  deja lista para empezar a trabajar:
 --
 --    - 4 roles con sus permisos: administrador, mesero, cocina
@@ -64,7 +64,7 @@
 --  -------------------------------------------------------------
 --  COMO ESTA ORDENADO ESTE ARCHIVO
 --
---  Seccion 1  Las 25 tablas del sistema. Cada una lleva arriba
+--  Seccion 1  Las 24 tablas del sistema. Cada una lleva arriba
 --             una linea que explica para que sirve.
 --  Seccion 2  Los datos que dejan el sistema listo para usar.
 --  Seccion 3  Que menus y botones ve cada rol.
@@ -245,25 +245,6 @@ CREATE TABLE detalle_compras (
   KEY fk_detalle_compra_producto (producto_id),
   CONSTRAINT fk_detalle_compra FOREIGN KEY (compra_id) REFERENCES compras (id) ON DELETE CASCADE,
   CONSTRAINT fk_detalle_compra_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-
--- ---------------------------------------------------------
---  Tabla: gastos
---  Gastos del dia. Suman al total de egresos que ve el administrador.
--- ---------------------------------------------------------
-DROP TABLE IF EXISTS gastos;
-
-CREATE TABLE gastos (
-  id int(11) NOT NULL AUTO_INCREMENT,
-  usuario_id int(11) DEFAULT NULL,
-  categoria varchar(100) NOT NULL,
-  descripcion varchar(255) DEFAULT NULL,
-  monto decimal(10,2) NOT NULL,
-  fecha datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (id),
-  KEY fk_gasto_usuario (usuario_id),
-  CONSTRAINT fk_gasto_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -487,7 +468,8 @@ CREATE TABLE movimientos_inventario (
 
 -- ---------------------------------------------------------
 --  Tabla: egresos
---  Salidas de dinero del negocio.
+--  Compras de insumos del negocio: una fila por producto comprado.
+--  El monto es siempre cantidad por precio unitario.
 -- ---------------------------------------------------------
 DROP TABLE IF EXISTS egresos;
 
@@ -495,6 +477,9 @@ CREATE TABLE egresos (
   id int(11) NOT NULL AUTO_INCREMENT,
   usuario_id int(11) DEFAULT NULL,
   concepto varchar(150) NOT NULL,
+  cantidad decimal(10,2) DEFAULT NULL,
+  precio_unitario decimal(10,2) DEFAULT NULL,
+  unidad varchar(20) DEFAULT NULL,
   descripcion varchar(255) DEFAULT NULL,
   monto decimal(10,2) NOT NULL,
   fecha datetime NOT NULL DEFAULT current_timestamp(),
@@ -733,7 +718,7 @@ INSERT INTO permisos (id, nombre, descripcion) VALUES
   (12, 'menu_dia_editar', 'Marcar un plato como agotado cuando ya se terminó'),
   (13, 'inventario', 'Ver productos y stock'),
   (14, 'inventario_editar', 'Crear productos y ajustar stock'),
-  (15, 'finanzas', 'Ver ingresos, egresos y gastos'),
+  (15, 'finanzas', 'Ver ingresos y registrar compras de insumos'),
   (16, 'personal', 'Ver trabajadores, asistencia y pagos'),
   (17, 'servicios', 'Ver servicios básicos y vencimientos'),
   (18, 'reportes', 'Ver y exportar reportes'),

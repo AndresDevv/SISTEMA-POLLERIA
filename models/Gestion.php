@@ -119,20 +119,33 @@ class Gestion
                 'listado' => '*'
             ],
 
-            'egresos' => [
+            /**
+             * Compras de insumos: arroz, aceite, huevos y similares.
+             *
+             * No hay catálogo ni control de existencias a propósito. Cada
+             * registro es una compra suelta con su producto, su cantidad y su
+             * precio; si el insumo se acaba, se vuelve a registrar otro. El
+             * total se arma solo con cantidad por precio, para que el número
+             * que sale en la tabla sea siempre el mismo que ve el resto del
+             * sistema al sumar los egresos del día.
+             */
+            'compras' => [
                 'tabla'  => 'egresos',
-                'titulo' => 'Egreso',
-                'tituloPlural' => 'Egresos',
+                'titulo' => 'Compra',
+                'tituloPlural' => 'Compras',
                 'modulo' => 'finanzas',
-                'orden'  => 'e.fecha DESC',
+                'orden'  => 'e.fecha DESC, e.id DESC',
                 'campos' => [
-                    'concepto'    => ['tipo' => 'texto', 'etiqueta' => 'Concepto', 'requerido' => true],
-                    'descripcion' => ['tipo' => 'texto', 'etiqueta' => 'Descripción'],
-                    'monto'       => ['tipo' => 'decimal', 'etiqueta' => 'Monto', 'requerido' => true, 'default' => 0],
-                    'fecha'       => ['tipo' => 'fecha', 'etiqueta' => 'Fecha']
+                    'concepto'        => ['tipo' => 'texto', 'etiqueta' => 'Producto', 'requerido' => true],
+                    'cantidad'        => ['tipo' => 'decimal', 'etiqueta' => 'Cantidad', 'requerido' => true, 'default' => 1, 'decimales' => true],
+                    'unidad'          => ['tipo' => 'texto', 'etiqueta' => 'Unidad', 'requerido' => false],
+                    'precio_unitario' => ['tipo' => 'decimal', 'etiqueta' => 'Precio unitario', 'requerido' => true, 'default' => 0],
+                    'monto'           => ['tipo' => 'calculado', 'etiqueta' => 'Total'],
+                    'fecha'           => ['tipo' => 'fecha', 'etiqueta' => 'Fecha']
                 ],
-                'listado' => 'e.id, e.concepto, e.monto, e.fecha',
-                'fechaDefecto' => 'CURDATE()'
+                'listado' => 'e.id, e.concepto, e.cantidad, e.unidad, e.precio_unitario, e.monto, e.fecha',
+                'fechaDefecto' => 'CURDATE()',
+                'calculoTotal' => ['campo' => 'monto', 'cantidad' => 'cantidad', 'precio' => 'precio_unitario']
             ],
 
             'ingresos' => [
@@ -148,22 +161,6 @@ class Gestion
                     'fecha'       => ['tipo' => 'fecha', 'etiqueta' => 'Fecha']
                 ],
                 'listado' => 'i.id, i.concepto, i.monto, i.fecha',
-                'fechaDefecto' => 'CURDATE()'
-            ],
-
-            'gastos' => [
-                'tabla'  => 'gastos',
-                'titulo' => 'Gasto',
-                'tituloPlural' => 'Gastos',
-                'modulo' => 'finanzas',
-                'orden'  => 'g.fecha DESC',
-                'campos' => [
-                    'categoria'   => ['tipo' => 'texto', 'etiqueta' => 'Categoría', 'requerido' => true],
-                    'descripcion' => ['tipo' => 'texto', 'etiqueta' => 'Descripción'],
-                    'monto'       => ['tipo' => 'decimal', 'etiqueta' => 'Monto', 'requerido' => true, 'default' => 0],
-                    'fecha'       => ['tipo' => 'fecha', 'etiqueta' => 'Fecha']
-                ],
-                'listado' => 'g.id, g.categoria, g.descripcion, g.monto, g.fecha',
                 'fechaDefecto' => 'CURDATE()'
             ],
 
@@ -224,8 +221,7 @@ class Gestion
             'usuarios'              => ['ver' => 'configuracion', 'editar' => 'configuracion'],
             'servicios'             => ['ver' => 'servicios',     'editar' => 'servicios'],
             'ingresos'              => ['ver' => 'finanzas',      'editar' => 'finanzas'],
-            'egresos'               => ['ver' => 'finanzas',      'editar' => 'finanzas'],
-            'gastos'                => ['ver' => 'finanzas',      'editar' => 'finanzas'],
+            'compras'               => ['ver' => 'finanzas',      'editar' => 'finanzas'],
             'configuracion_negocio' => ['ver' => 'configuracion', 'editar' => 'configuracion']
         ];
     }
@@ -324,6 +320,40 @@ class Gestion
     }
 
     /**
+     * Rellena los campos que se calculan solos.
+     *
+     * El total de una compra es cantidad por precio unitario. Se calcula
+     * siempre en el servidor y no se confía en el número que manda el
+     * navegador: si el total fuera un campo editable, alguien podría
+     * guardarlo distinto del producto y las cifras de Caja y del Dashboard
+     * dejarían de cuadrar con la tabla.
+     *
+     * @param array $def    definición del recurso
+     * @param array $datos  datos que llegan del formulario
+     *
+     * @return array los datos de entrada con los calculados ya puestos
+     */
+    private function resolverCalculados(array $def, array $datos): array
+    {
+        if (($def['calculoTotal'] ?? '') === '') {
+            return $datos;
+        }
+
+        $regla = $def['calculoTotal'];
+
+        if (!isset($def['campos'][$regla['campo']])) {
+            return $datos;
+        }
+
+        $cantidad = (float) ($datos[$regla['cantidad']] ?? 0);
+        $precio   = (float) ($datos[$regla['precio']] ?? 0);
+
+        $datos[$regla['campo']] = round($cantidad * $precio, 2);
+
+        return $datos;
+    }
+
+    /**
      * Crea un registro.
      */
     public function crear(string $recurso, array $datos): array
@@ -333,6 +363,8 @@ class Gestion
         if (!$def) {
             return ['success' => false, 'message' => 'Recurso desconocido.'];
         }
+
+        $datos = $this->resolverCalculados($def, $datos);
 
         $campos = [];
         $valores = [];
@@ -360,10 +392,33 @@ class Gestion
             $valores[] = $valor;
         }
 
-        // Fecha por defecto
+        // Fecha por defecto.
+        // Solo si el recurso no la trae ya entre sus campos: si se declaro
+        // como campo, el bucle de arriba ya la guardo y meterla otra vez
+        // rompe el INSERT con "Column 'fecha' specified twice".
+        /**
+         * Fecha por defecto.
+         *
+         * El campo fecha puede venir declarado entre los campos del recurso y
+         * aun asi quedar en blanco en el formulario. Si ya esta en la lista,
+         * se rellona su valor en el sitio en vez de agregarla otra vez, que
+         * romperia el INSERT con "Column 'fecha' specified twice".
+         *
+         * El valor por defecto se resuelve aqui y no se manda a MySQL porque
+         * va como un parametro normal: si se enviara el texto "CURDATE()",
+         * la base lo guardaria tal cual y la fecha saldria en cero.
+         */
         if (!empty($def['fechaDefecto']) && empty($datos['fecha'])) {
-            $campos[] = 'fecha';
-            $valores[] = $def['fechaDefecto'];
+
+            $defecto = $this->fechaPorDefecto($def['fechaDefecto']);
+
+            if (in_array('fecha', $campos, true)) {
+                $valores[array_search('fecha', $campos, true)] = $defecto;
+
+            } else {
+                $campos[] = 'fecha';
+                $valores[] = $defecto;
+            }
         }
 
         // Usuario que registra, salvo que el recurso ya lo declare como campo
@@ -406,6 +461,8 @@ class Gestion
         if (!$def) {
             return ['success' => false, 'message' => 'Recurso desconocido.'];
         }
+
+        $datos = $this->resolverCalculados($def, $datos);
 
         $asignaciones = [];
         $valores = [];
@@ -498,7 +555,7 @@ class Gestion
 
         return match ($regla['tipo']) {
             'numero', 'relacion' => (int) $valor,
-            'decimal'            => (float) $valor,
+            'decimal', 'calculado' => (float) $valor,
             'check'              => (int) (bool) $valor,
             'enum'               => in_array($valor, $regla['opciones'] ?? [], true) ? $valor : ($regla['default'] ?? null),
             'fecha'              => preg_replace('/[^0-9\-]/', '', (string) $valor) ?: null,
@@ -562,11 +619,41 @@ class Gestion
     }
 
     /**
+     * Convierte la fecha por defecto de un recurso en una fecha de verdad.
+     *
+     * Los recursos la declaran como texto de MySQL ("CURDATE()") porque asi
+     * se lee mejor en la definición, pero como el INSERT manda los valores
+     * como parámetros sueltos, hay que traducirla aquí: si se mandara tal
+     * cual, la base guardaría el texto y la fecha quedaría en cero.
+     */
+    private function fechaPorDefecto(string $expresion): string
+    {
+        return trim(str_ireplace(
+            ['CURDATE()', 'CURRENT_DATE', 'NOW()'],
+            date('Y-m-d H:i:s'),
+            $expresion
+        ));
+    }
+
+    /**
      * Traduce errores de MySQL a algo legible.
      */
     private function errorLegible(PDOException $e): string
     {
         $codigo = $e->getCode();
+
+        /**
+         * 23000 agrupa varios fallos distintos de integridad.
+         *
+         * Casi todos son datos repetidos, pero no todos: una columna que se
+         * manda dos veces, o una que no existe, tambien caen aqui. Si el
+         * mensaje de MySQL no habla de una clave duplicada, se muestra el
+         * detalle, porque si no el error real queda escondido detras de un
+         * "ya existe" que no es cierto.
+         */
+        if ($codigo === '23000' && stripos($e->getMessage(), 'duplicate') === false) {
+            return 'Error al guardar: ' . $e->getMessage();
+        }
 
         return match ($codigo) {
             '23000' => 'Ya existe un registro con esos datos.',

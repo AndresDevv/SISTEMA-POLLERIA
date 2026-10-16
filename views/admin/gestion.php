@@ -98,7 +98,7 @@ foreach ($def['campos'] as $campo => $regla) {
         <?php if (Gestion::puede($recurso, 'editar')): ?>
             <button type="button" class="lg-btn lg-btn--primary js-nuevo"
                     data-recurso="<?= htmlspecialchars($recurso) ?>"
-                    data-campos="<?= htmlspecialchars(json_encode($def['campos'], JSON_UNESCAPED_UNICODE)) ?>">
+                    data-campos="<?= htmlspecialchars(json_encode($def['campos'] + (isset($def['calculoTotal']) ? ['_calculo' => $def['calculoTotal']] : []), JSON_UNESCAPED_UNICODE)) ?>">
                 <i class="fa fa-plus"></i> Nuevo
             </button>
         <?php endif; ?>
@@ -156,13 +156,14 @@ foreach ($def['campos'] as $campo => $regla) {
                                 <button type="button" class="lg-btn lg-btn--sm lg-btn--ghost js-editar"
                                         data-recurso="<?= htmlspecialchars($recurso) ?>"
                                         data-fila="<?= htmlspecialchars(json_encode($fila, JSON_UNESCAPED_UNICODE)) ?>"
-                                        data-campos="<?= htmlspecialchars(json_encode($def['campos'], JSON_UNESCAPED_UNICODE)) ?>">
+                                        data-campos="<?= htmlspecialchars(json_encode($def['campos'] + (isset($def['calculoTotal']) ? ['_calculo' => $def['calculoTotal']] : []), JSON_UNESCAPED_UNICODE)) ?>">
                                     <i class="fa fa-pencil"></i>
                                 </button>
 
                                 <button type="button" class="lg-btn lg-btn--sm lg-btn--ghost js-borrar"
                                         data-recurso="<?= htmlspecialchars($recurso) ?>"
-                                        data-id="<?= (int) ($fila['id'] ?? 0) ?>">
+                                        data-id="<?= (int) ($fila['id'] ?? 0) ?>"
+                                        data-aviso="<?= htmlspecialchars($avisoBorrado ?? '¿Eliminar este registro?') ?>">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             </td>
@@ -218,7 +219,7 @@ class GestionControllerHelper
             return htmlspecialchars(ucfirst((string) $valor));
         }
 
-        if (in_array($columna, ['precio', 'monto', 'total', 'subtotal'], true)) {
+        if (in_array($columna, ['precio', 'precio_unitario', 'monto', 'total', 'subtotal'], true)) {
             return '<span class="num">' . soles((float) $valor) . '</span>';
         }
 
@@ -231,7 +232,23 @@ class GestionControllerHelper
         }
 
         if (in_array($columna, ['stock_minimo', 'cantidad'], true)) {
-            return '<span class="num">' . unidades($valor) . '</span>';
+
+            /**
+             * Las cantidades pueden ser enteras o con decimales.
+             *
+             * El stock de platos es siempre entero, pero las compras de
+             * insumos no: 2.5 kilos de arroz o 1.5 litros de aceite son
+             * normales. Si se usara el formato de enteros, "2.50" se veria
+             * como "3" y el admin creeria que compro tres kilos. Se quitan
+             * los ceros de mas, pero el decimal se respeta.
+             */
+            $numero = (float) $valor;
+
+            $texto = fmod($numero, 1.0) === 0.0
+                ? number_format($numero, 0, '.', ',')
+                : rtrim(rtrim(number_format($numero, 2, '.', ','), '0'), '.');
+
+            return '<span class="num">' . $texto . '</span>';
         }
 
         if (str_contains($columna, 'fecha')) {

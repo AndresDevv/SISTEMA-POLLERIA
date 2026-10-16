@@ -56,33 +56,34 @@ $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $porDia = $stmt->fetchAll();
 
 /**
- * Gastos del período: egresos y gastos sumados por día.
+ * Compras del período, sumadas por día.
+ *
+ * Solo se lee la tabla egresos, que es donde se registran las compras de
+ * insumos. Antes se sumaba tambien la tabla gastos, que repetia el mismo
+ * dato y hacia que el reporte mostrara el doble de lo gastado.
+ *
  * Devuelve todos los días con movimiento para poder cruzarlos con las ventas.
  */
 $gastosPorDia = [];
 
-foreach (['egresos', 'gastos'] as $tabla) {
+try {
+    $stmt = $db->prepare(
+        "SELECT DATE(fecha) AS dia, COALESCE(SUM(monto), 0) AS total
+         FROM egresos
+         WHERE DATE(fecha) BETWEEN :desde AND :hasta
+         GROUP BY DATE(fecha)"
+    );
+    $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 
-    try {
-        $stmt = $db->prepare(
-            "SELECT DATE(fecha) AS dia, COALESCE(SUM(monto), 0) AS total
-             FROM $tabla
-             WHERE DATE(fecha) BETWEEN :desde AND :hasta
-             GROUP BY DATE(fecha)"
-        );
-        $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
-
-        foreach ($stmt->fetchAll() as $fila) {
-            $dia = $fila['dia'];
-            $gastosPorDia[$dia] = ($gastosPorDia[$dia] ?? 0) + (float) $fila['total'];
-        }
-
-    } catch (PDOException $e) {
-        // Si la tabla no existe, se sigue solo con las ventas
+    foreach ($stmt->fetchAll() as $fila) {
+        $gastosPorDia[$fila['dia']] = (float) $fila['total'];
     }
+
+} catch (PDOException $e) {
+    // Si la tabla no existe, se sigue solo con las ventas
 }
 
-/** Días del período con ventas o gastos, del más reciente al más antiguo */
+/** Días del período con ventas o compras, del más reciente al más antiguo */
 $dias = array_unique(array_merge(
     array_column($porDia, 'dia'),
     array_keys($gastosPorDia)
@@ -200,7 +201,7 @@ encabezadoPagina(
     </div>
 </form>
 
-<!-- Ventas, gastos y ganancias del período -->
+<!-- Ventas, compras y ganancias del período -->
 <div class="lg-grid-3 mb-3">
 
     <div class="lg-card">
@@ -216,7 +217,7 @@ encabezadoPagina(
     <div class="lg-card">
         <div class="d-flex align-items-center justify-content-between">
             <div>
-                <p class="lg-stat-label mb-1">Gastos del per&iacute;odo</p>
+                <p class="lg-stat-label mb-1">Compras del per&iacute;odo</p>
                 <div class="lg-stat-value is-red" style="font-size:1.6rem;"><?= soles($totalGastos) ?></div>
             </div>
             <span class="lg-card-icon"><i class="fa fa-money"></i></span>
@@ -271,11 +272,11 @@ encabezadoPagina(
 
 <div class="lg-grid-2">
 
-    <!-- Ventas, gastos y ganancias por día -->
+    <!-- Ventas, compras y ganancias por día -->
     <div class="lg-card">
         <div class="lg-card-head">
             <span class="lg-card-icon"><i class="fa fa-bar-chart"></i></span>
-            <h2 class="lg-card-title">Ventas, gastos y ganancias por d&iacute;a</h2>
+            <h2 class="lg-card-title">Ventas, compras y ganancias por d&iacute;a</h2>
         </div>
 
         <?php if (!$dias): ?>
@@ -287,7 +288,7 @@ encabezadoPagina(
                         <tr>
                             <th>D&iacute;a</th>
                             <th style="text-align:right;">Ventas</th>
-                            <th style="text-align:right;">Gastos</th>
+                            <th style="text-align:right;">Compras</th>
                             <th style="text-align:right;">Ganancia</th>
                         </tr>
                     </thead>

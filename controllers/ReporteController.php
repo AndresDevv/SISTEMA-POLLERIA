@@ -106,54 +106,65 @@ foreach ($ventas as $venta) {
     ]);
 }
 
-/** Resumen de gastos: egresos y gastos del mismo período */
+/**
+ * Compras del período.
+ *
+ * Solo se lee la tabla egresos, que es donde se guardan las compras de
+ * insumos. Antes se sumaban tambien los gastos, que duplicaban el mismo
+ * dato y hacia que el reporte mostrara de mas lo que el negocio gasto.
+ */
 $gastos = [];
 
-foreach (['egresos' => 'Egreso', 'gastos' => 'Gasto'] as $tabla => $etiqueta) {
+try {
+    $stmt = $db->prepare(
+        "SELECT fecha,
+                COALESCE(NULLIF(TRIM(CONCAT(COALESCE(cantidad, 0), ' ', COALESCE(unidad, ''))), '0 '), '') AS medida,
+                concepto,
+                precio_unitario,
+                cantidad,
+                monto
+         FROM egresos
+         WHERE DATE(fecha) BETWEEN :desde AND :hasta
+         ORDER BY fecha"
+    );
+    $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 
-    try {
-        $stmt = $db->prepare(
-            "SELECT fecha,
-                    COALESCE(" . ($tabla === 'gastos' ? 'descripcion' : 'concepto') . ", '-') AS concepto,
-                    monto
-             FROM $tabla
-             WHERE DATE(fecha) BETWEEN :desde AND :hasta
-             ORDER BY fecha"
-        );
-        $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
-
-        foreach ($stmt->fetchAll() as $fila) {
-            $gastos[] = [$etiqueta, $fila['concepto'], (float) $fila['monto'], $fila['fecha']];
-        }
-
-    } catch (PDOException $e) {
-        // Si la tabla no existe, el reporte sale solo con ventas
+    foreach ($stmt->fetchAll() as $fila) {
+        $gastos[] = [
+            $fila['medida'] !== ''
+                ? rtrim((string) $fila['concepto'] . ' x' . $fila['medida'])
+                : (string) $fila['concepto'],
+            (float) $fila['monto'],
+            $fila['fecha']
+        ];
     }
+
+} catch (PDOException $e) {
+    // Si la tabla no existe, el reporte sale solo con ventas
 }
 
 if ($gastos) {
 
     fputcsv($salida, []);
-    fputcsv($salida, ['GASTOS DEL PERIODO']);
-    fputcsv($salida, ['Tipo', 'Concepto', 'Monto', 'Fecha']);
+    fputcsv($salida, ['COMPRAS DEL PERIODO']);
+    fputcsv($salida, ['Compra', 'Monto', 'Fecha']);
 
     foreach ($gastos as $gasto) {
         fputcsv($salida, [
             $gasto[0],
-            $gasto[1],
-            number_format($gasto[2], 2),
-            date('d/m/Y', strtotime($gasto[3]))
+            number_format($gasto[1], 2),
+            date('d/m/Y', strtotime($gasto[2]))
         ]);
     }
 }
 
-/** Cierre: ventas, gastos y ganancia del período */
+/** Cierre: ventas, compras y ganancia del período */
 $totalVentas = array_sum(array_column($ventas, 'total'));
-$totalGastos = array_sum(array_column($gastos, 2));
+$totalGastos = array_sum(array_column($gastos, 1));
 
 fputcsv($salida, []);
 fputcsv($salida, ['RESUMEN']);
-fputcsv($salida, ['Ventas', 'Gastos', 'Ganancia']);
+fputcsv($salida, ['Ventas', 'Compras', 'Ganancia']);
 fputcsv($salida, [
     number_format($totalVentas, 2),
     number_format($totalGastos, 2),
