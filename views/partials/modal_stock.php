@@ -15,7 +15,7 @@ $metodos = [
         <div class="modal-content" style="border-radius:12px;border:0;overflow:hidden;">
 
             <div class="modal-header" style="border-bottom:1px solid #EFEFEF;">
-                <h5 class="modal-title" style="font-weight:700;">Ajustar stock</h5>
+                <h5 class="modal-title" style="font-weight:700;">Agregar o descontar stock</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -41,10 +41,7 @@ $metodos = [
                 </select>
 
                 <label class="lg-label" for="stockCantidad" id="stockEtiqueta">Cantidad a ingresar</label>
-                <input type="number" id="stockCantidad" class="lg-input mb-3" step="1" min="0" value="0">
-
-                <label class="lg-label" for="stockMotivo">Motivo</label>
-                <input type="text" id="stockMotivo" class="lg-input" placeholder="Opcional">
+                <input type="number" id="stockCantidad" class="lg-input" step="1" min="0" value="0">
 
             </div>
 

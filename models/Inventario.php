@@ -18,6 +18,17 @@ class Inventario
      * @param int    $cantidad  unidades a sumar (entrada), restar (salida)
      *                          o valor final (ajuste). Siempre entero.
      */
+    /**
+     * Anota un movimiento de stock a mano.
+     *
+     * El motivo ya no se escribe en la pantalla: se deduce del tipo de
+     * movimiento. Antes, si se dejaba vacio, todos los movimientos quedaban
+     * como "Ajuste manual", incluso los que eran una entrada o una salida, y
+     * eso hacia que el historial dijera una cosa distinta de la que paso.
+     *
+     * @param string $motivo  texto libre por si el llamador si lo necesita
+     *                        (por ejemplo, el cobro de un pedido)
+     */
     public function ajustar(int $productoId, string $tipo, float $cantidad, string $motivo = ''): array
     {
         $permitidos = ['entrada', 'salida', 'ajuste'];
@@ -95,7 +106,11 @@ class Inventario
                 ':cantidad'    => abs($nuevo - $anterior),
                 ':anterior'    => $anterior,
                 ':nuevo'       => $nuevo,
-                ':motivo'      => $motivo !== '' ? $motivo : 'Ajuste manual'
+                ':motivo'      => $motivo !== '' ? $motivo : match ($tipo) {
+                    'entrada' => 'Entrada de mercadería',
+                    'salida'  => 'Salida por merma o consumo',
+                    default   => 'Ajuste al stock real'
+                }
             ]);
 
             $this->conexion->commit();

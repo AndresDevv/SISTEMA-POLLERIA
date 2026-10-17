@@ -74,7 +74,9 @@ class PulsoController
                     (SELECT COUNT(*) FROM productos)                            AS productos,
                     (SELECT COALESCE(SUM(agotado), 0) FROM productos)           AS productos_agotados,
                     (SELECT COALESCE(MAX(fecha_actualizacion), '0') FROM productos) AS productos_alta,
-                    (SELECT COUNT(*) FROM pedido_novedades)                     AS novedades";
+                    (SELECT COUNT(*) FROM pedido_novedades)                     AS novedades,
+                    (SELECT COUNT(*) FROM asistencias)                        AS asistencias,
+                    (SELECT COALESCE(SUM(hora_salida IS NULL), 0) FROM asistencias WHERE fecha = CURDATE()) AS asistentes";
 
         $fila = $this->db->query($sql)->fetch();
 

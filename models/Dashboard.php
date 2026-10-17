@@ -32,8 +32,36 @@ class Dashboard
             'mesas_total'    => self::conteo($db, 'mesas', '1 = 1'),
             'mesas_ocupadas' => self::mesasOcupadas($db),
             'stock_bajo'     => (new Producto())->stockBajo(),
-            'personal'       => self::conteo($db, 'empleados', 'estado = 1')
+            'personal'       => self::conteo($db, 'empleados', 'estado = 1'),
+            'personal_presente' => self::personalPresente($db, $fecha)
         ];
+    }
+
+    /**
+     * Cuántos trabajadores están ahora mismo en el local.
+     *
+     * Cuenta a los que registraron entrada ese día y todavía no han
+     * registrado salida. Mientras no haya salida siguen dentro, así que el
+     * numero sube cuando alguien marca entrada y baja cuando marca salida.
+     *
+     * Antes este dato no existía y la tarjeta decía "5 / 5" siempre, porque
+     * comparaba el total de trabajadores consigo mismo. No dependía de nada
+     * que pase en el díía: marcaran entrada o no, el número no se movía.
+     */
+    private static function personalPresente(PDO $db, string $fecha): int
+    {
+        $stmt = $db->prepare(
+            "SELECT COUNT(*)
+             FROM asistencias a
+             INNER JOIN empleados e ON e.id = a.empleado_id
+             WHERE a.fecha = :f
+               AND a.hora_entrada IS NOT NULL
+               AND a.hora_salida IS NULL
+               AND e.estado = 1"
+        );
+        $stmt->execute([':f' => $fecha]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     private static function validar(string $fecha): string

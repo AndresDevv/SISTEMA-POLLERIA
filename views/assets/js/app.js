@@ -104,6 +104,21 @@
                     }
 
                     var regla = formulario.campos[campo];
+
+                    /**
+                     * "soloNuevo" no se muestra al editar.
+                     *
+                     * Sirve para el stock de los productos: se escribe al
+                     * crearlos, pero una vez existentes la unica forma de
+                     * moverlo es el boton Ajustar, que deja el movimiento en el
+                     * historial. Si el campo saliera al editar, el stock se
+                     * moveria en silencio y quedarian dos caminos para lo
+                     * mismo, uno con rastro y otro sin el.
+                     */
+                    if (regla.soloNuevo && formulario.id) {
+                        return;
+                    }
+
                     var valor = valores ? valores[campo] : (regla.default !== undefined ? regla.default : '');
 
                     var $grupo = $('<div class="mb-3"></div>');
@@ -1573,7 +1588,6 @@
                 $('#stockActual').text($boton.data('stock'));
                 $('#stockTipo').val('entrada');
                 $('#stockCantidad').val(0);
-                $('#stockMotivo').val('');
                 $('#stockAviso').hide();
 
                 ajustarEtiqueta();
@@ -1592,8 +1606,7 @@
                 api('api/inventario/ajustar', {
                     producto_id: stock.id,
                     tipo: $('#stockTipo').val(),
-                    cantidad: parseInt($('#stockCantidad').val(), 10) || 0,
-                    motivo: $('#stockMotivo').val()
+                    cantidad: parseInt($('#stockCantidad').val(), 10) || 0
                 })
                 .done(function () {
                     window.location.reload();

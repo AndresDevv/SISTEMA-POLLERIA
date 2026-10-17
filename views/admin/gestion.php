@@ -43,6 +43,18 @@ $etiquetasColumnas = [];
 
 foreach ($def['campos'] as $campo => $regla) {
     $etiquetasColumnas[$campo] = $regla['etiqueta'] ?? ucfirst(str_replace('_', ' ', $campo));
+
+    /**
+     * La columna del encabezado es el dato que hay ahora, no como se escribe.
+     *
+     * El stock se rotula "Stock inicial" porque asi se pide al crear un
+     * producto, pero en la tabla la columna muestra cuanto queda en el
+     * almacen. Si no se separaran las dos cosas, el encabezado enganyaria:
+     * "Stock inicial" invites a escribir ahi lo que hay, y ahi no se puede.
+     */
+    if (!empty($regla['soloNuevo'])) {
+        $etiquetasColumnas[$campo] = ucfirst(str_replace('_', ' ', $campo));
+    }
 }
 
 // 'relacion' es el nombre técnico del campo que alimenta una columna de
@@ -149,7 +161,7 @@ foreach ($def['campos'] as $campo => $regla) {
                                             data-id="<?= (int) ($fila['id'] ?? 0) ?>"
                                             data-producto="<?= htmlspecialchars($fila['nombre'] ?? '') ?>"
                                             data-stock="<?= (float) ($fila['stock'] ?? 0) ?>">
-                                        <i class="fa fa-plus-circle"></i> Ajustar
+                                        <i class="fa fa-plus-circle"></i> Agregar
                                     </button>
                                 <?php endif; ?>
 

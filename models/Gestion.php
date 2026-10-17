@@ -37,7 +37,17 @@ class Gestion
                     'nombre'        => ['tipo' => 'texto', 'etiqueta' => 'Nombre', 'requerido' => true],
                     'categoria_id'  => ['tipo' => 'relacion', 'etiqueta' => 'Categoría', 'tabla' => 'categorias', 'requerido' => true],
                     'precio'        => ['tipo' => 'decimal', 'etiqueta' => 'Precio', 'requerido' => true, 'default' => 0],
-                    'stock'         => ['tipo' => 'decimal', 'etiqueta' => 'Stock', 'default' => 0],
+
+                    /**
+                     * El stock solo se escribe al crear el producto.
+                     *
+                     * Una vez que existe, la unica forma de moverlo es el boton
+                     * Ajustar, que deja el movimiento anotado en el historial.
+                     * Si tambien se pudiera escribir aqui, el stock se moveria
+                     * sin dejar rastro y habria dos caminos para lo mismo: uno
+                     * que deja historial y otro que no.
+                     */
+                    'stock'         => ['tipo' => 'decimal', 'etiqueta' => 'Stock inicial', 'default' => 0, 'soloNuevo' => true],
                     'stock_minimo'  => ['tipo' => 'decimal', 'etiqueta' => 'Stock mínimo', 'default' => 0],
                     'descripcion'   => ['tipo' => 'texto', 'etiqueta' => 'Descripción'],
                     'estado'        => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]

@@ -83,7 +83,7 @@ $indicadores = [
     [
         'icono'  => 'fa fa-users',
         'titulo' => 'Personal Presente',
-        'valor'  => (string) $m['personal'] . ' / ' . (int) $m['personal'],
+        'valor'  => (string) $m['personal_presente'] . ' / ' . (int) $m['personal'],
         'tono'   => 'is-red'
     ],
     [
