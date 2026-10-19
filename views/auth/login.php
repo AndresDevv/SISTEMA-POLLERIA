@@ -105,6 +105,14 @@ if (session_status() === PHP_SESSION_NONE) {
                                 autocomplete="current-password"
                                 required
                             >
+                            <button
+                                type="button"
+                                class="toggle-password"
+                                aria-label="Mostrar u ocultar contraseña"
+                                aria-pressed="false"
+                            >
+                                <i class="fa fa-eye" aria-hidden="true"></i>
+                            </button>
                         </div>
 
                     </div>
@@ -129,5 +137,20 @@ if (session_status() === PHP_SESSION_NONE) {
 
     </div>
 
+    <script>
+        // Mostrar/ocultar contraseña
+        (function () {
+            var btn = document.querySelector('.toggle-password');
+            var input = document.getElementById('password');
+
+            if (!btn || !input) { return; }
+
+            btn.addEventListener('click', function () {
+                var visible = input.type === 'text';
+                input.type = visible ? 'password' : 'text';
+                btn.setAttribute('aria-pressed', !visible);
+            });
+        })();
+    </script>
 </body>
 </html>

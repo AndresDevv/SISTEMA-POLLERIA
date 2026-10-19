@@ -49,7 +49,6 @@ class Gestion
                      */
                     'stock'         => ['tipo' => 'decimal', 'etiqueta' => 'Stock inicial', 'default' => 0, 'soloNuevo' => true],
                     'stock_minimo'  => ['tipo' => 'decimal', 'etiqueta' => 'Stock mínimo', 'default' => 0],
-                    'descripcion'   => ['tipo' => 'texto', 'etiqueta' => 'Descripción'],
                     'estado'        => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]
                 ],
                 'listado' => 'p.id, p.nombre, c.nombre AS relacion, p.precio, p.stock, p.stock_minimo, p.estado',
