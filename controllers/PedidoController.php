@@ -171,50 +171,72 @@ class PedidoController
     }
 
     /**
-     * Cobra un pedido servido: registra la venta y libera la mesa.
+     * Cuenta de una mesa para el cajero: pedidos, platos y total.
+     *
+     * Se usa al abrir el modal de cobro en Caja y también para refrescar la
+     * cuenta si algo cambia mientras el cajero la está revisando.
      */
-    public function cobrar(): void
+    public function cuentaMesa(): void
     {
-        $datos = $this->cuerpo();
-        $id    = (int) ($datos['id'] ?? 0);
-        $pagos = $datos['pagos'] ?? [];
+        $mesaId = (int) ($_GET['mesa_id'] ?? 0);
 
-        if ($id <= 0) {
-            $this->responder(['success' => false, 'message' => 'Pedido no indicado.'], 422);
+        if ($mesaId <= 0) {
+            $this->responder(['success' => false, 'message' => 'Mesa no indicada.'], 422);
         }
 
-        $pedido = $this->pedidoModel->porId($id);
+        $mesa = $this->mesaModel->porId($mesaId);
 
-        if (!$pedido) {
-            $this->responder(['success' => false, 'message' => 'El pedido no existe.'], 404);
+        if (!$mesa) {
+            $this->responder(['success' => false, 'message' => 'La mesa no existe.'], 404);
         }
 
-        if ($this->ventaModel->yaCobrado($id)) {
-            $this->responder(['success' => false, 'message' => 'Este pedido ya fue cobrado.'], 422);
+        $pedidos = $this->pedidoModel->cuentaDeMesa($mesaId);
+
+        $this->responder([
+            'success'    => true,
+            'mesa'       => 'Mesa ' . (int) $mesa['numero'],
+            'mesa_numero'=> (int) $mesa['numero'],
+            'pedidos'    => $pedidos,
+            'total'      => $this->pedidoModel->totalDeMesa($mesaId),
+        ]);
+    }
+
+    /**
+     * Cobra toda la cuenta de una mesa (todos sus pedidos sin pagar).
+     */
+    public function cobrarMesa(): void
+    {
+        $datos    = $this->cuerpo();
+        $mesaId   = (int) ($datos['mesa_id'] ?? 0);
+        $pagos    = $datos['pagos'] ?? [];
+        $recibido = (float) ($datos['monto_recibido'] ?? 0);
+
+        if ($mesaId <= 0) {
+            $this->responder(['success' => false, 'message' => 'Mesa no indicada.'], 422);
         }
 
-        // Se acepta un solo método o varios (pago partido)
+        if (!is_array($pagos)) {
+            $pagos = [];
+        }
+
         if (isset($pagos['metodo_pago_id'])) {
             $pagos = [$pagos];
         }
 
-        $ok = $this->pedidoModel->cobrar(
-            $id,
+        if (!$pagos) {
+            $this->responder(['success' => false, 'message' => 'Indica cómo paga el cliente.'], 422);
+        }
+
+        $resultado = $this->pedidoModel->cobrarMesa(
+            $mesaId,
             (int) $_SESSION['usuario_id'],
-            is_array($pagos) ? $pagos : []
+            $pagos,
+            $recibido
         );
 
-        $this->responder(
-            $ok
-                ? ['success' => true, 'message' => 'Venta registrada y mesa liberada.']
-                : ['success' => false, 'message' => 'Los montos no coinciden con el total del pedido.'],
-            $ok ? 200 : 422
-        );
+        $this->responder($resultado, $resultado['success'] ? 200 : 422);
     }
 
-    /**
-     * Devuelve los pedidos de una mesa, para mostrarlos en el modal.
-     */
     /**
      * Huella de los pedidos activos y novedades recientes.
      *

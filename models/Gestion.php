@@ -147,7 +147,13 @@ class Gestion
                 'campos' => [
                     'concepto'        => ['tipo' => 'texto', 'etiqueta' => 'Producto', 'requerido' => true],
                     'cantidad'        => ['tipo' => 'decimal', 'etiqueta' => 'Cantidad', 'requerido' => true, 'default' => 1, 'decimales' => true],
-                    'unidad'          => ['tipo' => 'texto', 'etiqueta' => 'Unidad', 'requerido' => false],
+                    'unidad'          => [
+                        'tipo'        => 'texto',
+                        'etiqueta'    => 'Unidad de medida',
+                        'requerido'   => false,
+                        'placeholder' => 'Ej: kg, litros, cajas...',
+                        'ayuda'       => 'Escribe la palabra de la medida (kg, litros, cajas), no un número. La cantidad ya va en el campo de arriba.'
+                    ],
                     'precio_unitario' => ['tipo' => 'decimal', 'etiqueta' => 'Precio unitario', 'requerido' => true, 'default' => 0],
                     'monto'           => ['tipo' => 'calculado', 'etiqueta' => 'Total'],
                     'fecha'           => ['tipo' => 'fecha', 'etiqueta' => 'Fecha']
@@ -559,6 +565,16 @@ class Gestion
     private function valor(array $regla, $valor)
     {
         if ($valor === null || $valor === '') {
+
+            /* Un campo obligatorio nunca cae al valor de arranque.
+               El "default" sirve para que el formulario abra con un
+               número puesto (cantidad 1, precio 0), no para colar un
+               registro incompleto: si el campo es obligatorio y llega
+               vacío, se devuelve null y quien valida lo rechaza. */
+            if (!empty($regla['requerido'])) {
+                return null;
+            }
+
             return $regla['default'] ?? null;
         }
 

@@ -100,12 +100,48 @@ foreach ($def['campos'] as $campo => $regla) {
             <p class="lg-card-subtitle"><?= count($filas) ?> registro(s)</p>
         </div>
 
-        <form method="GET" action="<?= BASE_URL ?>" class="d-flex gap-2 flex-wrap">
-            <input type="hidden" name="page" value="<?= htmlspecialchars($paginaActual ?? '') ?>">
-            <input type="search" name="buscar" class="lg-input" style="min-width:200px;"
-                   value="<?= htmlspecialchars($buscar) ?>" placeholder="Buscar...">
-            <button type="submit" class="lg-btn lg-btn--ghost"><i class="fa fa-search"></i></button>
-        </form>
+        <?php
+        /**
+         * Buscador con estilo propio y filtrado sin recargar.
+         *
+         * El formulario lleva la dirección exacta de la página en
+         * "data-buscar-url" (con su pestaña cuando la tiene), para que el
+         * JavaScript sepa a dónde pedir la lista filtrada. Se usa en los
+         * módulos donde la búsqueda es parte del día a día; los demás
+         * siguen con el estilo clásico.
+         */
+        $busquedaViva = in_array($recurso, [
+            'empleados',                 // Personal
+            'productos', 'categorias',   // Inventario
+            'compras', 'ingresos',       // Finanzas
+            'servicios',                 // Servicios
+            'usuarios', 'configuracion_negocio', // Configuración
+        ], true);
+
+        $urlBusqueda = url($_GET['page'] ?? '');
+
+        if (!empty($_GET['tab'])) {
+            $urlBusqueda .= '&tab=' . urlencode($_GET['tab']);
+        }
+        ?>
+
+        <?php if ($busquedaViva): ?>
+            <form method="GET" action="<?= BASE_URL ?>" class="input-group"
+                  data-buscar-url="<?= htmlspecialchars($urlBusqueda) ?>">
+                <input type="search" name="buscar" class="lg-input"
+                       value="<?= htmlspecialchars($buscar) ?>" placeholder="Buscar..." aria-label="Buscar">
+                <button type="submit" class="input-group-btn" aria-label="Buscar">
+                    <i class="fa fa-search"></i>
+                </button>
+            </form>
+        <?php else: ?>
+            <form method="GET" action="<?= BASE_URL ?>" class="d-flex gap-2 flex-wrap">
+                <input type="hidden" name="page" value="<?= htmlspecialchars($_GET['page'] ?? '') ?>">
+                <input type="search" name="buscar" class="lg-input" style="min-width:200px;"
+                       value="<?= htmlspecialchars($buscar) ?>" placeholder="Buscar...">
+                <button type="submit" class="lg-btn lg-btn--ghost"><i class="fa fa-search"></i></button>
+            </form>
+        <?php endif; ?>
 
         <?php if (Gestion::puede($recurso, 'editar')): ?>
             <button type="button" class="lg-btn lg-btn--primary js-nuevo"

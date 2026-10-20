@@ -209,7 +209,27 @@
                         $controlo.attr('required', 'required');
                     }
 
+                    // Pista dentro del campo, cuando el recurso la declara
+                    if (regla.placeholder) {
+                        $controlo.attr('placeholder', regla.placeholder);
+                    }
+
                     $grupo.append($label).append($controlo);
+
+                    /* Ayuda bajo el campo.
+                       Explica qué se espera escribir cuando el nombre del
+                       campo puede prestarse a confusión (por ejemplo, que
+                       "Unidad de medida" es una palabra como "litros" y no
+                       un número). Como el texto es largo, el campo ocupa
+                       las dos columnas para que se lea completo. */
+                    if (regla.ayuda) {
+                        $grupo.addClass('is-ancho');
+
+                        var $explica = $('<small class="lg-muted d-block mt-1"></small>')
+                            .text(regla.ayuda);
+
+                        $grupo.append($explica);
+                    }
 
                     // Ayuda para los campos que solo aceptan dígitos
                     if (regla.tipo === 'digitos') {
@@ -282,6 +302,53 @@
             $(document).on('click', '#formGuardar', function () {
 
                 var datos = { recurso: formulario.recurso };
+
+                /**
+                 * Primero se revisan los campos obligatorios.
+                 *
+                 * El navegador no valida solo: el botón de guardar no es
+                 * un "submit" del formulario, así que el "required" que
+                 * llevan los campos no se ejecuta y una compra podía
+                 * quedar guardada sin producto, sin cantidad o sin
+                 * precio. Aquí se revisa a mano y, si falta algo, se
+                 * avisa dentro del modal y no se envía nada.
+                 */
+                var faltantes = [];
+
+                for (var campoObligatorio in formulario.campos) {
+
+                    var reglaOblig = formulario.campos[campoObligatorio];
+
+                    if (!reglaOblig.requerido || reglaOblig.tipo === 'check') {
+                        continue;
+                    }
+
+                    var $control = $('#formCampos [data-campo="' + campoObligatorio + '"]');
+
+                    if (!$control.length) {
+                        continue;
+                    }
+
+                    if ($.trim(String($control.val() || '')) === '') {
+                        faltantes.push(reglaOblig.etiqueta || campoObligatorio);
+                        $control.addClass('is-error');
+                    } else {
+                        $control.removeClass('is-error');
+                    }
+                }
+
+                if (faltantes.length) {
+                    $('#formAvisoTexto').text(
+                        faltantes.length === 1
+                            ? 'Falta completar: ' + faltantes[0] + '.'
+                            : 'Faltan completar: ' + faltantes.join(', ') + '.'
+                    );
+                    $('#formAviso').show();
+
+                    // Se lleva el cursor al primer campo que falta
+                    $('#formCampos .is-error').first().trigger('focus');
+                    return;
+                }
 
                 // Revisa antes de mandar: si un campo de dígitos va mal, se
                 // avisa dentro del modal en vez de enviar y recargar
@@ -365,6 +432,22 @@
                 });
             });
 
+            /* Al corregir un campo que había quedado marcado, se le quita
+               el resaltado y se esconde el aviso: así el formulario deja
+               de verse "en rojo" apenas la persona arregla lo que faltaba. */
+            $(document).on('input change', '#formCampos .is-error', function () {
+
+                var $c = $(this);
+
+                if ($.trim(String($c.val() || '')) !== '') {
+                    $c.removeClass('is-error');
+                }
+
+                if (!$('#formCampos .is-error').length) {
+                    $('#formAviso').hide();
+                }
+            });
+
             $(document).on('click', '.js-borrar', function () {
 
                 var $boton = $(this);
@@ -400,6 +483,56 @@
                 });
             });
         }
+
+        // -------------------------------------------------
+        // Buscador que filtra la tabla sin recargar la página
+        // -------------------------------------------------
+        /* Va aquí, antes de los bloques que solo corren cuando la página
+           trae el modal de pedidos, porque esas pantallas salen antes de
+           tiempo y este buscador tiene que quedar registrado siempre.
+
+           El formulario manda a su página con el parámetro "buscar". En
+           vez de recargar toda la pantalla —se pierde el menú, la pestaña
+           activa y el punto donde se estaba—, se pide la página al
+           servidor y se repinta solo el contenido, igual que hace el
+           sondeo en tiempo real.
+
+           La dirección exacta (con su pestaña, si la tiene) la trae el
+           formulario en "data-buscar-url", así que sirve igual para
+           Personal, Inventario, Finanzas, Servicios o Configuración. */
+        $(document).on('submit', 'form.input-group', function (e) {
+
+            e.preventDefault();
+
+            var $form = $(this);
+            var termino = $.trim($form.find('input[name="buscar"]').val());
+            var base = $form.data('buscar-url') || APP_URL;
+
+            var url = base;
+
+            if (termino) {
+                url += '&buscar=' + encodeURIComponent(termino);
+            }
+
+            // La URL nueva queda en el historial: el botón "atrás" del
+            // navegador vuelve a la lista completa sin recargar.
+            window.history.pushState({}, '', url);
+
+            /* El campo se desenfoca antes de repintar: con un campo
+               enfocado el motor de tiempo real entiende que alguien
+               sigue escribiendo y pospone el repintado. */
+            $form.find('input[name="buscar"]').blur();
+
+            window.refrescarContenido();
+        });
+
+        /* Al volver o avanzar con el botón del navegador, el contenido
+           se repinta para que quede alineado con la URL. */
+        window.addEventListener('popstate', function () {
+            if (window.refrescarContenido) {
+                window.refrescarContenido();
+            }
+        });
 
         // -------------------------------------------------
         // Menú lateral (las 3 rayas del navbar)
@@ -1364,39 +1497,72 @@
         });
 
         // -------------------------------------------------
-        // Modal de cobro (permite pago partido)
+        // Caja: cobro de la cuenta completa de una mesa
         // -------------------------------------------------
-        /* Se busca cada vez que se usa. El motor de tiempo real repone los
-           modales cada 5 segundos y una referencia guardada apuntaria al
+        /* El modal se busca cada vez que se usa: el motor de tiempo real
+           repone los modales y una referencia guardada apuntaria al
            elemento viejo, que ya no esta en la pagina. */
-        var modalCobro = function () {
-            return $('#modalCobro');
+        var modalCaja = function () {
+            return $('#modalCaja');
         };
 
-        if (modalCobro().length) {
+        if (modalCaja().length) {
 
-            var cobro = { id: 0, total: 0, lineas: [] };
+            // Estado del cobro en curso
+            var caja = { mesaId: 0, mesa: '', total: 0, lineas: [], recibido: 0 };
 
-            var pintarCobro = function () {
+            /** Pinta el detalle de la cuenta: cada pedido con sus platos. */
+            var pintarCuenta = function (pedidos) {
 
-                var $filas = $('#cobroFilas');
+                var $contenedor = $('#cajaCuenta').empty();
+
+                if (!pedidos.length) {
+                    $contenedor.append('<p class="lg-muted mb-0">Esta mesa no tiene pedidos por cobrar.</p>');
+                    return;
+                }
+
+                pedidos.forEach(function (pedido) {
+
+                    var $bloque = $('<div class="lg-caja-pedido"></div>');
+
+                    $bloque.append(
+                        $('<div class="lg-caja-pedido-head"></div>')
+                            .append($('<span></span>').text('P-' + String(pedido.id).padStart(4, '0')))
+                            .append($('<span class="lg-muted"></span>').text(soles(pedido.total)))
+                    );
+
+                    (pedido.items || []).forEach(function (item) {
+
+                        $bloque.append(
+                            $('<div class="lg-caja-item"></div>')
+                                .append($('<span></span>').text(item.cantidad + ' × ' + item.nombre))
+                                .append($('<span class="lg-muted"></span>').text(soles(item.subtotal)))
+                        );
+                    });
+
+                    $contenedor.append($bloque);
+                });
+            };
+
+            /** Repinta las filas de métodos de pago. */
+            var pintarCaja = function () {
+
+                var $filas = $('#cajaFilas');
                 var suma = 0;
 
                 $filas.empty();
 
-                if (!cobro.lineas.length) {
-                    cobro.lineas.push({ metodo_pago_id: $('#cobroMetodoNuevo').val(), monto: cobro.total });
+                if (!caja.lineas.length) {
+                    caja.lineas.push({ metodo_pago_id: $('#cajaMetodoNuevo').val(), monto: caja.total });
                 }
 
-                cobro.lineas.forEach(function (linea, indice) {
+                caja.lineas.forEach(function (linea, indice) {
 
                     suma += parseFloat(linea.monto) || 0;
 
-                    var $fila = $('<tr></tr>');
-
                     var $select = $('<select class="lg-select" style="min-height:38px;"></select>');
 
-                    $('#cobroMetodoNuevo option').each(function () {
+                    $('#cajaMetodoNuevo option').each(function () {
                         $select.append($('<option></option>').attr('value', $(this).val()).text($(this).text()));
                     });
                     $select.val(linea.metodo_pago_id);
@@ -1405,89 +1571,172 @@
                         .val(linea.monto);
 
                     $select.on('change', function () {
-                        cobro.lineas[indice].metodo_pago_id = $(this).val();
+                        caja.lineas[indice].metodo_pago_id = $(this).val();
                     });
 
                     $monto.on('input', function () {
-                        cobro.lineas[indice].monto = $(this).val();
-                        actualizarResumenCobro();
+                        caja.lineas[indice].monto = $(this).val();
+                        actualizarResumenCaja();
                     });
 
                     var $quitar = $('<button type="button" class="lg-btn lg-btn--sm lg-btn--ghost" title="Quitar">' +
                                    '<i class="fa fa-times"></i></button>');
 
                     $quitar.on('click', function () {
-                        cobro.lineas.splice(indice, 1);
-                        if (!cobro.lineas.length) {
-                            cobro.lineas.push({ metodo_pago_id: $('#cobroMetodoNuevo').val(), monto: cobro.total });
+                        caja.lineas.splice(indice, 1);
+                        if (!caja.lineas.length) {
+                            caja.lineas.push({ metodo_pago_id: $('#cajaMetodoNuevo').val(), monto: caja.total });
                         }
-                        pintarCobro();
+                        pintarCaja();
                     });
 
-                    var $celdaMonto = $('<td></td>').append($monto);
-                    var $celdaQuitar = $('<td></td>').append($quitar);
-
-                    $fila.append($('<td></td>').append($select));
-                    $fila.append($celdaMonto);
-                    $fila.append($celdaQuitar);
-
-                    $filas.append($fila);
+                    $filas.append(
+                        $('<tr></tr>')
+                            .append($('<td></td>').append($select))
+                            .append($('<td></td>').append($monto))
+                            .append($('<td></td>').append($quitar))
+                    );
                 });
 
-                actualizarResumenCobro();
+                actualizarResumenCaja();
             };
 
-            var actualizarResumenCobro = function () {
+            /**
+             * Revisa que lo pagado cuadre con el total y calcula el vuelto.
+             *
+             * El vuelto solo tiene sentido si el cliente paga en efectivo con
+             * un billete grande: se compara lo que entregó contra el total.
+             */
+            var actualizarResumenCaja = function () {
 
                 var suma = 0;
 
-                cobro.lineas.forEach(function (l) {
+                caja.lineas.forEach(function (l) {
                     suma += parseFloat(l.monto) || 0;
                 });
 
-                var diferencia = cobro.total - suma;
-                var $aviso = $('#cobroAviso');
+                var diferencia = caja.total - suma;
+                var $aviso = $('#cajaAviso');
 
                 if (Math.abs(diferencia) < 0.01) {
                     $aviso.hide();
+                } else {
+                    $('#cajaAvisoTexto').text(
+                        diferencia > 0
+                            ? 'Falta ' + soles(diferencia) + ' para completar la cuenta.'
+                            : 'Lo indicado se pasa por ' + soles(Math.abs(diferencia)) + '.'
+                    );
+                    $aviso.show();
+                }
+
+                // Vuelto: con cuánto paga menos el total de la cuenta
+                var recibido = parseFloat($('#cajaRecibido').val()) || 0;
+                var vuelto   = recibido - caja.total;
+
+                if (recibido > 0 && vuelto >= -0.01) {
+
+                    $('#cajaVuelto').text(soles(Math.max(0, vuelto)));
+                    $('#cajaVueltoTexto').text(
+                        'El cliente paga con ' + soles(recibido) + ' y la cuenta es ' + soles(caja.total) + '.'
+                    );
+                    $('#cajaVueltoCaja').show();
+
+                } else if (recibido > 0) {
+
+                    $('#cajaVuelto').text(soles(0));
+                    $('#cajaVueltoTexto').text('Con ese monto no alcanza para cubrir la cuenta.');
+                    $('#cajaVueltoCaja').show();
+
+                } else {
+                    $('#cajaVueltoCaja').hide();
+                }
+            };
+
+            // Botones de billetes: llenan "con cuánto paga"
+            $(document).on('click', '.js-billete', function () {
+                $('#cajaRecibido').val($(this).data('monto'));
+                actualizarResumenCaja();
+            });
+
+            $(document).on('input', '#cajaRecibido', actualizarResumenCaja);
+
+            $(document).on('click', '#cajaAgregarLinea', function () {
+
+                var suma = 0;
+
+                caja.lineas.forEach(function (l) {
+                    suma += parseFloat(l.monto) || 0;
+                });
+
+                caja.lineas.push({
+                    metodo_pago_id: $('#cajaMetodoNuevo').val(),
+                    monto: Math.max(0, caja.total - suma).toFixed(2)
+                });
+
+                pintarCaja();
+            });
+
+            // Abrir el modal: se pide la cuenta al servidor
+            $(document).on('click', '.js-abrir-caja', function () {
+
+                var $boton = $(this);
+
+                caja.mesaId = $boton.data('mesa-id');
+                caja.mesa   = $boton.data('mesa') || '';
+
+                $('#cajaMesa').text(caja.mesa);
+                $('#cajaCuenta').html('<p class="lg-muted mb-0">Cargando la cuenta...</p>');
+                $('#cajaAviso').hide();
+                $('#cajaRecibido').val('');
+                $('#cajaVueltoCaja').hide();
+                $('#cajaFilas').empty();
+
+                apiGet('api/caja/cuenta', { mesa_id: caja.mesaId })
+                .done(function (r) {
+
+                    if (!r || !r.success) {
+                        alert('No se pudo cargar la cuenta de la mesa.');
+                        return;
+                    }
+
+                    caja.total = parseFloat(r.total) || 0;
+                    caja.lineas = [{
+                        metodo_pago_id: $('#cajaMetodoNuevo').val(),
+                        monto: caja.total
+                    }];
+
+                    $('#cajaMesa').text(r.mesa || caja.mesa);
+                    $('#cajaTotal').text(soles(caja.total));
+
+                    pintarCuenta(r.pedidos || []);
+                    pintarCaja();
+                    modalCaja().modal('show');
+                })
+                .fail(function () {
+                    alert('No se pudo cargar la cuenta de la mesa.');
+                });
+            });
+
+            // Confirmar el cobro de toda la cuenta
+            $(document).on('click', '#cajaConfirmar', function () {
+
+                var suma = 0;
+
+                caja.lineas.forEach(function (l) {
+                    suma += parseFloat(l.monto) || 0;
+                });
+
+                if (Math.abs(caja.total - suma) > 0.01) {
+                    $('#cajaAvisoTexto').text('El pago debe coincidir con el total de la cuenta.');
+                    $('#cajaAviso').show();
                     return;
                 }
 
-                $('#cobroAvisoTexto').text(
-                    diferencia > 0
-                        ? 'Falta ' + soles(diferencia) + ' para completar el total.'
-                        : 'Te pasaste por ' + soles(Math.abs(diferencia)) + '.'
-                );
-                $aviso.show();
-            };
+                var recibido = parseFloat($('#cajaRecibido').val()) || 0;
 
-            $(document).on('click', '#cobroAgregarLinea', function () {
-
-                var suma = 0;
-
-                cobro.lineas.forEach(function (l) {
-                    suma += parseFloat(l.monto) || 0;
-                });
-
-                cobro.lineas.push({
-                    metodo_pago_id: $('#cobroMetodoNuevo').val(),
-                    monto: Math.max(0, cobro.total - suma).toFixed(2)
-                });
-
-                pintarCobro();
-            });
-
-            $(document).on('click', '#cobroConfirmar', function () {
-
-                var suma = 0;
-
-                cobro.lineas.forEach(function (l) {
-                    suma += parseFloat(l.monto) || 0;
-                });
-
-                if (Math.abs(cobro.total - suma) > 0.01) {
-                    $('#cobroAvisoTexto').text('El pago debe coincidir con el total del pedido.');
-                    $('#cobroAviso').show();
+                if (recibido > 0 && recibido < caja.total - 0.01) {
+                    $('#cajaAvisoTexto').text('El cliente no puede pagar con menos que el total.');
+                    $('#cajaAviso').show();
                     return;
                 }
 
@@ -1496,34 +1745,28 @@
 
                 $boton.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Cobrando...');
 
-                api('api/pedido/cobrar', { id: cobro.id, pagos: cobro.lineas })
+                api('api/caja/cobrar', {
+                    mesa_id: caja.mesaId,
+                    pagos: caja.lineas,
+                    monto_recibido: recibido
+                })
                 .done(function () {
-                    window.location.reload();
+                    /* Se cierra el modal antes de refrescar: el motor de
+                       tiempo real no repinta la pantalla mientras haya un
+                       modal abierto. */
+                    modalCaja().modal('hide');
+
+                    $boton.prop('disabled', false).html(textoOriginal);
+
+                    window.setTimeout(function () {
+                        window.refrescarContenido();
+                    }, 400);
                 })
                 .fail(function (xhr) {
-                    $('#cobroAvisoTexto').text(mensajeDe(xhr, 'No se pudo registrar el cobro.'));
-                    $('#cobroAviso').show();
+                    $('#cajaAvisoTexto').text(mensajeDe(xhr, 'No se pudo registrar el cobro.'));
+                    $('#cajaAviso').show();
                     $boton.prop('disabled', false).html(textoOriginal);
                 });
-            });
-
-            $(document).on('click', '.js-abrir-cobro', function () {
-
-                var $boton = $(this);
-
-                cobro.id = $boton.data('id');
-                cobro.total = parseFloat($boton.data('total')) || 0;
-                cobro.lineas = [{
-                    metodo_pago_id: $('#cobroMetodoNuevo').val(),
-                    monto: cobro.total
-                }];
-
-                $('#cobroMesa').text($boton.data('mesa') || '');
-                $('#cobroTotal').text(soles(cobro.total));
-                $('#cobroAviso').hide();
-
-                pintarCobro();
-                modalCobro().modal('show');
             });
         }
 

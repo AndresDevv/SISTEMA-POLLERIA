@@ -85,6 +85,100 @@ class Pedido
     }
 
     /**
+     * Cuentas por cobrar, agrupadas por mesa.
+     *
+     * Es lo que ve el cajero: cada mesa con pedidos sin pagar, cuántos
+     * pedidos acumula y cuánto debe en total. Se ordena por la mesa con la
+     * cuenta más antigua, que es la que más rato lleva esperando el cobro.
+     *
+     * @return array [['mesa_id','mesa_numero','pedidos','total','desde',
+     *                'ultimo'], ...]
+     */
+    public function cuentasPorMesa(): array
+    {
+        $sql = "SELECT
+                    m.id                          AS mesa_id,
+                    m.numero                      AS mesa_numero,
+                    COUNT(p.id)                   AS pedidos,
+                    COALESCE(SUM(p.total), 0)     AS total,
+                    MIN(p.fecha_creacion)         AS desde,
+                    MAX(p.fecha_creacion)         AS ultimo
+                FROM pedidos p
+                INNER JOIN mesas m ON m.id = p.mesa_id
+                LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                WHERE v.id IS NULL
+                  AND p.estado <> 'anulado'
+                GROUP BY m.id, m.numero
+                ORDER BY MIN(p.fecha_creacion)";
+
+        return $this->conexion->query($sql)->fetchAll();
+    }
+
+    /**
+     * Pedidos sin cobrar de una mesa, con el detalle de sus platos.
+     *
+     * Con esto el cajero revisa la cuenta antes de cobrar. Va junto al
+     * total de cada pedido para poder mostrar el desglose.
+     */
+    public function cuentaDeMesa(int $mesaId): array
+    {
+        $sql = "SELECT
+                    p.id,
+                    p.estado,
+                    p.total,
+                    p.fecha_creacion,
+                    u.nombre AS usuario_nombre
+                FROM pedidos p
+                INNER JOIN usuarios u ON u.id = p.usuario_id
+                LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                WHERE p.mesa_id = :mesa
+                  AND v.id IS NULL
+                  AND p.estado <> 'anulado'
+                ORDER BY p.fecha_creacion";
+
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute([':mesa' => $mesaId]);
+        $pedidos = $stmt->fetchAll();
+
+        if (!$pedidos) {
+            return [];
+        }
+
+        $detalle = $this->conexion->prepare(
+            "SELECT d.cantidad, d.precio_unitario, d.subtotal, pr.nombre
+             FROM detalle_pedidos d
+             INNER JOIN productos pr ON pr.id = d.producto_id
+             WHERE d.pedido_id = :pedido
+             ORDER BY d.id"
+        );
+
+        foreach ($pedidos as &$pedido) {
+            $detalle->execute([':pedido' => $pedido['id']]);
+            $pedido['items'] = $detalle->fetchAll();
+        }
+
+        return $pedidos;
+    }
+
+    /**
+     * Total que debe una mesa (suma de sus pedidos sin cobrar).
+     */
+    public function totalDeMesa(int $mesaId): float
+    {
+        $stmt = $this->conexion->prepare(
+            "SELECT COALESCE(SUM(p.total), 0)
+             FROM pedidos p
+             LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+             WHERE p.mesa_id = :mesa
+               AND v.id IS NULL
+               AND p.estado <> 'anulado'"
+        );
+        $stmt->execute([':mesa' => $mesaId]);
+
+        return round((float) $stmt->fetchColumn(), 2);
+    }
+
+    /**
      * Detalle de un pedido con sus productos.
      */
     public function conDetalle(int $id): ?array
@@ -360,89 +454,186 @@ class Pedido
     }
 
     /**
-     * Cobra un pedido servido: registra la venta y libera la mesa.
+     * Cobra de una sola vez todos los pedidos sin pagar de una mesa.
      *
-     * @param array $pagos [['metodo_pago_id' => int, 'monto' => float], ...]
-     *                   Permite pago partido: parte en efectivo, parte con otro método.
+     * Es como cobra el cajero: la mesa tiene una sola cuenta, aunque sean
+     * varios pedidos, y se cierra toda junta. Cada pedido genera su propia
+     * venta (el detalle de lo que se vendió no se puede perder), pero el
+     * cliente paga un único total.
+     *
+     * @param array $pagos          [['metodo_pago_id' =>, 'monto' =>], ...]
+     * @param float $montoRecibido  con cuánto paga en efectivo, si aplica
+     *
+     * @return array ['success' =>, 'message' =>, 'total' =>, 'vuelto' =>]
      */
-    public function cobrar(int $id, int $usuarioId, array $pagos): bool
+    public function cobrarMesa(int $mesaId, int $usuarioId, array $pagos, float $montoRecibido = 0.0): array
     {
         try {
             $this->conexion->beginTransaction();
 
-            $stmt = $this->conexion->prepare(
-                "SELECT mesa_id, estado FROM pedidos WHERE id = :id FOR UPDATE"
+            $pedidos = $this->conexion->prepare(
+                "SELECT p.id
+                 FROM pedidos p
+                 LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                 WHERE p.mesa_id = :mesa
+                   AND v.id IS NULL
+                   AND p.estado <> 'anulado'
+                 ORDER BY p.fecha_creacion
+                 FOR UPDATE"
             );
-            $stmt->execute([':id' => $id]);
-            $pedido = $stmt->fetch();
+            $pedidos->execute([':mesa' => $mesaId]);
+            $ids = array_map(static fn (array $f): int => (int) $f['id'], $pedidos->fetchAll());
 
-            if (!$pedido) {
+            if (!$ids) {
                 $this->conexion->rollBack();
 
-                return false;
+                return ['success' => false, 'message' => 'Esa mesa no tiene pedidos por cobrar.'];
             }
 
-            $stmt = $this->conexion->prepare(
-                "SELECT COALESCE(SUM(subtotal), 0) FROM detalle_pedidos WHERE pedido_id = :id"
-            );
-            $stmt->execute([':id' => $id]);
-            $total = round((float) $stmt->fetchColumn(), 2);
+            // Total de la cuenta completa
+            $total = $this->totalDeMesa($mesaId);
+
+            // El vuelto se calcula dentro de repartirPagos, que espera el
+            // "con cuánto paga" en el mismo arreglo de pagos.
+            $pagos['monto_recibido'] = $montoRecibido;
 
             $reparto = $this->repartirPagos($pagos, $total);
 
             if ($reparto === null) {
                 $this->conexion->rollBack();
 
-                return false;
+                return [
+                    'success' => false,
+                    'message' => 'El pago no cubre el total de la cuenta.'
+                ];
             }
 
-            $stmt = $this->conexion->prepare(
+            // Se devuelve el vuelto calculado para poder mostrarlo en pantalla
+            $vuelto = 0.0;
+
+            foreach ($reparto as $linea) {
+                if ($linea['vuelto'] !== null) {
+                    $vuelto = (float) $linea['vuelto'];
+                }
+            }
+
+            $insertaVenta = $this->conexion->prepare(
                 "INSERT INTO ventas (pedido_id, usuario_id, subtotal, descuento, total, estado)
                  VALUES (:pedido_id, :usuario_id, :subtotal, 0, :total, 'pagada')"
             );
-            $stmt->execute([
-                ':pedido_id'  => $id,
-                ':usuario_id' => $usuarioId,
-                ':subtotal'   => $total,
-                ':total'      => $total
-            ]);
 
-            $ventaId = (int) $this->conexion->lastInsertId();
-
-            $stmt = $this->conexion->prepare(
-                "INSERT INTO pagos (venta_id, metodo_pago_id, monto)
-                 VALUES (:venta_id, :metodo_id, :monto)"
+            $insertaPago = $this->conexion->prepare(
+                "INSERT INTO pagos (venta_id, metodo_pago_id, monto, monto_recibido, vuelto)
+                 VALUES (:venta_id, :metodo_id, :monto, :recibido, :vuelto)"
             );
 
-            foreach ($reparto as $pago) {
-                $stmt->execute([
-                    ':venta_id'  => $ventaId,
-                    ':metodo_id' => $pago['metodo_pago_id'],
-                    ':monto'     => $pago['monto']
+            /**
+             * El reparto de métodos se aplica pedido por pedido.
+             *
+             * El cliente paga un solo total, pero cada venta necesita su
+             * propia fila de pago para que los reportes por método cuadren.
+             * Se va consumiendo lo que indicó el cajero en el mismo orden.
+             */
+            $pendiente = $reparto;
+            $indice    = 0;
+
+            $leePedido = $this->conexion->prepare("SELECT total FROM pedidos WHERE id = :id");
+
+            foreach ($ids as $pedidoId) {
+                $leePedido->execute([':id' => $pedidoId]);
+                $montoPedido = (float) $leePedido->fetchColumn();
+
+                $insertaVenta->execute([
+                    ':pedido_id'  => $pedidoId,
+                    ':usuario_id' => $usuarioId,
+                    ':subtotal'   => $montoPedido,
+                    ':total'      => $montoPedido
+                ]);
+
+                $ventaId  = (int) $this->conexion->lastInsertId();
+                $restante = $montoPedido;
+
+                while ($restante > 0.01 && $indice < count($pendiente)) {
+
+                    $disponible = (float) $pendiente[$indice]['monto'];
+                    $aplicar    = min($disponible, $restante);
+
+                    $insertaPago->execute([
+                        ':venta_id'  => $ventaId,
+                        ':metodo_id' => $pendiente[$indice]['metodo_pago_id'],
+                        ':monto'     => round($aplicar, 2),
+                        ':recibido'  => null,
+                        ':vuelto'    => null
+                    ]);
+
+                    $pendiente[$indice]['monto'] = round($disponible - $aplicar, 2);
+                    $restante = round($restante - $aplicar, 2);
+
+                    if ($pendiente[$indice]['monto'] <= 0.01) {
+                        $indice++;
+                    }
+                }
+            }
+
+            $this->conexion->prepare(
+                "UPDATE pedidos SET estado = 'entregado' WHERE mesa_id = :mesa
+                   AND id IN (" . implode(',', array_map('intval', $ids)) . ")"
+            )->execute([':mesa' => $mesaId]);
+
+            // La mesa queda libre cuando ya no le queda nada por cobrar
+            $this->liberarMesaSiProcede($mesaId);
+
+            /**
+             * El vuelto, y con cuánto pagó el cliente, se guardan en la
+             * primera fila de pago de la venta más antigua: es la que
+             * representa el cierre de la cuenta de la mesa.
+             */
+            if ($montoRecibido > 0 || $vuelto > 0) {
+
+                $leeVenta = $this->conexion->prepare(
+                    "SELECT id FROM ventas WHERE pedido_id = :pedido ORDER BY id LIMIT 1"
+                );
+                $leeVenta->execute([':pedido' => $ids[0]]);
+                $primera = (int) $leeVenta->fetchColumn();
+
+                $this->conexion->prepare(
+                    "UPDATE pagos SET monto_recibido = :recibido, vuelto = :vuelto
+                     WHERE venta_id = :venta
+                     ORDER BY id LIMIT 1"
+                )->execute([
+                    ':recibido' => $montoRecibido > 0 ? $montoRecibido : null,
+                    ':vuelto'   => $vuelto,
+                    ':venta'    => $primera
                 ]);
             }
 
-            $stmt = $this->conexion->prepare(
-                "UPDATE pedidos SET estado = 'entregado' WHERE id = :id"
-            );
-            $stmt->execute([':id' => $id]);
-
-            $this->liberarMesaSiProcede((int) $pedido['mesa_id']);
-
             $this->conexion->commit();
 
-            return true;
+            return [
+                'success' => true,
+                'message' => 'Cuenta cobrada y mesa liberada.',
+                'total'   => $total,
+                'vuelto'  => $vuelto
+            ];
 
         } catch (PDOException $e) {
-            $this->conexion->rollBack();
 
-            return false;
+            if ($this->conexion->inTransaction()) {
+                $this->conexion->rollBack();
+            }
+
+            return ['success' => false, 'message' => 'No se pudo registrar el cobro.'];
         }
     }
 
     /**
      * Valida los pagos recibidos y los ajusta al total.
      * Devuelve null si no cuadran.
+     *
+     * En efectivo se puede indicar con cuánto paga el cliente
+     * (monto_recibido): si esa cantidad cubre la parte en efectivo, la
+     * diferencia es el vuelto que hay que devolver. Es el caso típico de
+     * pagar un pedido de S/ 28 con un billete de S/ 50 o de S/ 100.
      */
     private function repartirPagos(array $pagos, float $total): ?array
     {
@@ -457,7 +648,12 @@ class Pedido
                 continue;
             }
 
-            $limpio[] = ['metodo_pago_id' => $metodo, 'monto' => $monto];
+            $limpio[] = [
+                'metodo_pago_id' => $metodo,
+                'monto'          => $monto,
+                'monto_recibido' => null,
+                'vuelto'         => null
+            ];
             $suma += $monto;
         }
 
@@ -472,6 +668,30 @@ class Pedido
         // Lo que falte se completa en el último método (descuento, propina, etc.)
         $ultimo = array_key_last($limpio);
         $limpio[$ultimo]['monto'] = round($limpio[$ultimo]['monto'] + ($total - $suma), 2);
+
+        /**
+         * Vuelto del efectivo.
+         *
+         * Se calcula por fuera del reparto: el monto real que entra a caja
+         * es siempre lo que costó el pedido, y lo que se devuelve al cliente
+         * queda guardado aparte para poder revisarlo después.
+         */
+        $recibido = round((float) ($pagos['monto_recibido'] ?? 0), 2);
+
+        if ($recibido > 0) {
+            $efectivo = 0.0;
+
+            foreach ($limpio as $linea) {
+                $efectivo += $linea['monto'];
+            }
+
+            if ($recibido < $efectivo - 0.01) {
+                return null;
+            }
+
+            $limpio[$ultimo]['monto_recibido'] = $recibido;
+            $limpio[$ultimo]['vuelto']         = round($recibido - $efectivo, 2);
+        }
 
         return $limpio;
     }

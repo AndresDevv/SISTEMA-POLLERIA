@@ -22,7 +22,6 @@ $mesas      = $mesaModel->listar();
 $pedidosHoy = $pedidoModel->listar('hoy');
 $ventas     = $ventaModel->delDia();
 $productos  = $productoModel->listar();
-$metodosPago = $ventaModel->metodosPago();
 
 // Paginación de la lista de ventas del día
 $pagVentas = paginar($ventas, 15);
@@ -382,11 +381,10 @@ encabezadoPagina(
 
             <?php
     /**
-     * La columna Acciones solo se pinta si el rol tiene alguna acción que
-     * hacer. Al cocina no puede cobrar ni borrar, así que le aparecería una
-     * columna entera vacía.
+     * La columna Acciones solo se pinta si el rol puede borrar pedidos.
+     * Cocina no puede, así que le aparecería una columna entera vacía.
      */
-    $tieneAcciones = esPermitido('cobrar') || esPermitido('pedidos_editar');
+    $tieneAcciones = esPermitido('pedidos_editar');
     ?>
 
     <div class="table-responsive">
@@ -455,17 +453,9 @@ encabezadoPagina(
                                         <?php /* Esta tabla es solo de consulta.
                                                  El estado lo cambia cocina al
                                                  abrir la tarjeta de su mesa,
-                                                 que es donde se ven los platos. */ ?>
-
-                                        <?php if (esPermitido('cobrar')): ?>
-                                            <button type="button"
-                                                    class="lg-btn lg-btn--sm lg-btn--verde js-abrir-cobro"
-                                                    data-id="<?= (int) $pedido['id'] ?>"
-                                                    data-total="<?= htmlspecialchars((string) $pedido['total']) ?>"
-                                                    data-mesa="Mesa <?= (int) $pedido['mesa_numero'] ?>">
-                                                <i class="fa fa-money"></i> Cobrar
-                                            </button>
-                                        <?php endif; ?>
+                                                 que es donde se ven los platos.
+                                                 El cobro no vive aquí: se hace
+                                                 en Caja, mesa por mesa. */ ?>
 
                                         <?php if (esPermitido('pedidos_editar')): ?>
                                             <button type="button"
@@ -613,10 +603,6 @@ if (esPermitido('pedidos_crear')) {
 // El usuario de cocina abre el detalle de la mesa desde su tarjeta
 if ($soloCocina) {
     require APP_ROOT . '/views/partials/modal_mesa_pedidos.php';
-}
-
-if (esPermitido('cobrar')) {
-    require APP_ROOT . '/views/partials/modal_cobro.php';
 }
 
 if (esPermitido('mesas_editar')) {

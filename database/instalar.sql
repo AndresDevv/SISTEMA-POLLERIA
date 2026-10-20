@@ -10,8 +10,8 @@
 --  deja lista para empezar a trabajar:
 --
 --    - 4 roles con sus permisos: administrador, mesero, cocina
---      y almacenero
---    - 3 usuarios de acceso
+--      y cajero
+--    - 4 usuarios de acceso
 --    - La carta: 5 categorias y 13 platos y bebidas
 --    - 16 mesas del salon
 --    - 5 trabajadores
@@ -259,6 +259,8 @@ CREATE TABLE pagos (
   venta_id int(11) NOT NULL,
   metodo_pago_id int(11) NOT NULL,
   monto decimal(10,2) NOT NULL,
+  monto_recibido decimal(10,2) DEFAULT NULL,
+  vuelto decimal(10,2) DEFAULT NULL,
   fecha datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (id),
   KEY fk_pagos_venta (venta_id),
@@ -550,7 +552,7 @@ CREATE TABLE pagos_personal (
 
 -- ---------------------------------------------------------
 --  Tabla: roles
---  Los roles del sistema: administrador, mesero, cocina y almacenero.
+--  Los roles del sistema: administrador, mesero, cocina y cajero.
 -- ---------------------------------------------------------
 DROP TABLE IF EXISTS roles;
 
@@ -583,19 +585,20 @@ CREATE TABLE roles (
 -- ---------------------------------------------------------
 INSERT INTO roles (id, nombre, descripcion, estado) VALUES
   (1, 'Administrador', 'Control total del sistema', 1),
-  (2, 'Mesero', 'Atención del salón y cobro', 1),
+  (2, 'Mesero', 'Atención del salón: toma los pedidos', 1),
   (3, 'Cocina', 'Preparación de los pedidos', 1),
-  (4, 'Almacenero', 'Inventario y control de stock', 1);
+  (4, 'Cajero', 'Cobra las mesas y entrega el vuelto', 1);
 
 
 -- ---------------------------------------------------------
 --  usuarios
---  Tres usuarios de acceso. La contrasena es 123456; cambiala antes de usar el sistema.
+--  Cuatro usuarios de acceso. La contrasena es 123456; cambiala antes de usar el sistema.
 -- ---------------------------------------------------------
 INSERT INTO usuarios (id, rol_id, nombre, usuario, password, estado, fecha_creacion) VALUES
   (1, 1, 'Administrador', 'admin', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18'),
   (2, 2, 'Mesero', 'mesero', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18'),
-  (3, 3, 'Cocina', 'cocina', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18');
+  (3, 3, 'Cocina', 'cocina', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18'),
+  (4, 4, 'Jorge Ramirez', 'cajero', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18');
 
 
 -- ---------------------------------------------------------
@@ -673,7 +676,7 @@ INSERT INTO empleados (id, nombre, usuario_id, dni, telefono, direccion, cargo, 
   (2, 'Ana Quispe', NULL, 71234567, 976543210, 'Av.Principal 124', 'mesero', '2026-02-01', 1),
   (3, 'Carlos Rojas', NULL, 72345678, 965432101, 'Av.Principal 125', 'cocinero', '2026-02-10', 1),
   (4, 'Maria Diaz', NULL, 73456789, 954321010, 'Av.Principal 126', 'mesero', '2026-03-01', 1),
-  (5, 'Jorge Ramirez', NULL, 74567890, 943210109, 'Av.Principal 127', 'cajero', '2026-03-15', 1);
+  (5, 'Jorge Ramirez', 4, 74567890, 943210109, 'Av.Principal 127', 'cajero', '2026-03-15', 1);
 
 
 -- ---------------------------------------------------------
@@ -693,10 +696,13 @@ INSERT INTO configuracion_negocio (id, nombre, ruc, direccion, telefono, logo) V
 --  siquiera aparecen.
 --
 --    Administrador  todo
---    Mesero         mesas, pedidos, cobro, inventario y menu
+--    Mesero         mesas, pedidos, inventario y menu. Toma y envia
+--                   pedidos, pero ya no cobra: de eso se encarga el cajero
 --    Cocina         mesas, pedidos, inventario y menu. Mueve el
 --                   estado de los pedidos, pero no registra ni cobra
 --    Almacenero     inventario y ajuste de stock
+--    Cajero         cobra las mesas y entrega el vuelto. Ve las mesas y
+--                   los pedidos, y entra a "Cobrar" para cerrar las cuentas
 -- =========================================================
 
 -- ---------------------------------------------------------
@@ -706,7 +712,7 @@ INSERT INTO configuracion_negocio (id, nombre, ruc, direccion, telefono, logo) V
 INSERT INTO permisos (id, nombre, descripcion) VALUES
   (1, 'dashboard', 'Ver el tablero de resumen'),
   (2, 'ventas', 'Ver ventas, historial y caja'),
-  (3, 'cobrar', 'Cobrar los pedidos desde Mesas y Pedidos'),
+  (3, 'cobrar', 'Cobrar las mesas y entregar el vuelto'),
   (4, 'mesas', 'Ver las mesas del salón'),
   (5, 'mesas_reservar', 'Reservar mesas y quitar la reserva'),
   (6, 'mesas_editar', 'Agregar y eliminar mesas'),
@@ -749,21 +755,23 @@ INSERT INTO rol_permiso (id, rol_id, permiso_id) VALUES
   (17, 1, 18),
   (18, 1, 17),
   (19, 1, 2),
-  (32, 2, 3),
-  (33, 2, 13),
-  (34, 2, 11),
-  (35, 2, 12),
-  (36, 2, 4),
-  (37, 2, 5),
-  (38, 2, 8),
-  (39, 2, 7),
+  (32, 2, 13),
+  (33, 2, 11),
+  (34, 2, 12),
+  (35, 2, 4),
+  (36, 2, 5),
+  (37, 2, 8),
+  (38, 2, 7),
   (47, 3, 13),
   (48, 3, 11),
   (49, 3, 4),
   (50, 3, 10),
   (51, 3, 7),
   (54, 4, 13),
-  (55, 4, 14);
+  (55, 4, 14),
+  (56, 5, 3),
+  (57, 5, 4),
+  (58, 5, 7);
 
 SET FOREIGN_KEY_CHECKS = 1;
 

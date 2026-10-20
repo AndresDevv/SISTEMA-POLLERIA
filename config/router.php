@@ -35,6 +35,14 @@ function rutas(): array
             'permiso' => 'ventas'
         ],
 
+        // Caja: el mostrador donde el cajero ve lo que debe cada mesa y
+        // cobra. Es la pantalla del rol Cajero, pero el admin también entra.
+        'caja' => [
+            'vista'   => 'caja/index',
+            'titulo'  => 'Caja',
+            'permiso' => 'cobrar'
+        ],
+
         'mesas' => [
             'vista'   => 'mesas/index',
             'titulo'  => 'Mesas',
@@ -144,8 +152,16 @@ function rutas(): array
             'api'     => true,
             'permiso' => 'pedidos_editar'
         ],
-        'api/pedido/cobrar' => [
-            'accion'  => 'pedido_cobrar',
+        // La cuenta de una mesa, para el modal de cobro del cajero.
+        'api/caja/cuenta' => [
+            'accion'  => 'caja_cuenta',
+            'api'     => true,
+            'soloGet' => true,
+            'permiso' => 'cobrar'
+        ],
+        // Cobra de una sola vez todos los pedidos de una mesa.
+        'api/caja/cobrar' => [
+            'accion'  => 'caja_cobrar',
             'api'     => true,
             'permiso' => 'cobrar'
         ],

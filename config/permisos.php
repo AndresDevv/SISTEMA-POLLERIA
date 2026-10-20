@@ -96,8 +96,8 @@ function gruposDePermisos(): array
                     'ayuda'  => 'Aceptar, marcar como listo o servir. Es lo que usa la cocina.',
                 ],
                 'cobrar' => [
-                    'nombre' => 'Cobrar los pedidos',
-                    'ayuda'  => 'Registrar el pago de una mesa. Al cobrar, la mesa se libera.',
+                    'nombre' => 'Cobrar las mesas',
+                    'ayuda'  => 'Entrar a Caja, ver lo que debe cada mesa y cobrarle.',
                 ],
             ],
         ],

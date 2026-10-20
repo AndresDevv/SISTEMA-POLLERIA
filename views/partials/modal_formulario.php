@@ -23,7 +23,7 @@
                     <span id="formAvisoTexto"></span>
                 </div>
 
-                <div id="formCampos"></div>
+                <div id="formCampos" class="lg-form-grid"></div>
 
             </div>
 

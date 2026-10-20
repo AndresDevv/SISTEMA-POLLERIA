@@ -24,6 +24,16 @@ function menuSistema(): array
             'pagina' => 'ventas'
         ],
         [
+            'titulo' => 'Caja',
+            'icono'  => 'fa fa-money',
+            'pagina' => 'caja',
+
+            // La página se llama "caja" pero el permiso es "cobrar": sin esto
+            // el menú buscaría el permiso "caja", que no existe, y el item
+            // no le aparecería a nadie.
+            'permiso' => 'cobrar'
+        ],
+        [
             'titulo' => 'Mesas y Pedidos',
             'icono'  => 'fa fa-table',
             'pagina' => 'mesas'

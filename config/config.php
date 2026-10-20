@@ -23,7 +23,7 @@ define('APP_NOMBRE', "Makako's");
 define('APP_SIGLA', "Makako's");
 
 // Versión de los assets (rompe la caché del navegador al cambiarla)
-define('APP_VERSION', '7.0.5');
+define('APP_VERSION', '7.4.0');
 
 // Rutas de assets
 define('ASSETS_URL', BASE_URL . 'views/assets/');

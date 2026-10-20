@@ -61,11 +61,27 @@ class PulsoController
      */
     private function firma(): string
     {
+        /**
+         * Todo lo que se ve en pantalla tiene que estar aquí.
+         *
+         * Si un dato que el usuario está mirando no entra en esta firma, el
+         * navegador nunca se enterará de que cambió y la pantalla se quedará
+         * con el número viejo hasta que alguien recargue a mano.
+         *
+         * Por eso no basta con contar mesas por su estado: lo que mueve el
+         * tablero y la pantalla de mesas es el COBRO. Se cuenta lo mismo que
+         * ellas cuentan (pedidos sin cobrar) para que la firma cambie en el
+         * instante en que el cajero cierra una cuenta.
+         */
         $sql = "SELECT
                     (SELECT COUNT(*) FROM pedidos)                                AS pedidos,
                     (SELECT COALESCE(MAX(fecha_actualizacion), '0') FROM pedidos) AS pedidos_alta,
                     (SELECT COUNT(*) FROM ventas WHERE estado = 'pagada')        AS ventas,
                     (SELECT COALESCE(MAX(fecha), '0') FROM ventas)               AS ventas_alta,
+                    (SELECT COUNT(DISTINCT p.mesa_id)
+                       FROM pedidos p
+                       LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                      WHERE v.id IS NULL AND p.estado <> 'anulado')               AS mesas_ocupadas,
                     (SELECT COUNT(*) FROM egresos)                             AS compras,
                     (SELECT COALESCE(MAX(fecha), '0') FROM egresos)            AS compras_alta,
                     (SELECT COUNT(*) FROM movimientos_inventario)               AS movimientos,
@@ -73,6 +89,7 @@ class PulsoController
                     (SELECT COUNT(*) FROM mesas WHERE estado <> 'libre')       AS mesas,
                     (SELECT COUNT(*) FROM productos)                            AS productos,
                     (SELECT COALESCE(SUM(agotado), 0) FROM productos)           AS productos_agotados,
+                    (SELECT COALESCE(SUM(stock <= stock_minimo), 0) FROM productos) AS productos_bajos,
                     (SELECT COALESCE(MAX(fecha_actualizacion), '0') FROM productos) AS productos_alta,
                     (SELECT COUNT(*) FROM pedido_novedades)                     AS novedades,
                     (SELECT COUNT(*) FROM asistencias)                        AS asistencias,

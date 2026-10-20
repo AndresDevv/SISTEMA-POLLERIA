@@ -1036,6 +1036,14 @@ body {
     box-shadow: 0 0 0 3px rgba(223, 3, 3, 0.1);
 }
 
+/* Campo obligatorio que quedó vacío al intentar guardar */
+.lg-input.is-error,
+.lg-select.is-error {
+    border-color: var(--lg-rojo);
+    background-color: var(--lg-rojo-claro);
+    box-shadow: 0 0 0 3px rgba(223, 3, 3, 0.12);
+}
+
 .lg-label {
     display: block;
     font-size: 0.8rem;
@@ -1564,6 +1572,246 @@ body {
 }
 
 /* ---------------------------------------------------------
+   MODAL DE FORMULARIO (registros: Personal, Inventario, etc.)
+   --------------------------------------------------------- */
+/* El diálogo no puede pasar del alto de la pantalla, y solo el
+   cuerpo hace scroll: el título queda arriba y los botones abajo,
+   siempre a la vista. Antes, con muchos campos, el modal crecía
+   más que la ventana y había que deslizar toda la página para
+   encontrar el botón Guardar. */
+#modalFormulario .modal-dialog {
+    max-width: 720px;
+    margin: 16px auto;
+}
+
+#modalFormulario .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 32px);
+}
+
+#modalFormulario .modal-header,
+#modalFormulario .modal-footer {
+    flex: 0 0 auto;
+}
+
+#modalFormulario .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 20px 22px;
+}
+
+/* Los campos se reparten en dos columnas para que el formulario no
+   se alargue hacia abajo. En pantallas angostas vuelven a una. */
+.lg-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 18px;
+    align-items: start;
+}
+
+.lg-form-grid > .mb-3 {
+    margin-bottom: 16px;
+}
+
+/* Los campos con un texto de ayuda largo ocupan toda la fila */
+.lg-form-grid > .is-ancho {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 575px) {
+    #modalFormulario .modal-dialog {
+        max-width: none;
+        margin: 0;
+    }
+
+    #modalFormulario .modal-content {
+        border-radius: 0;
+        max-height: 100vh;
+        min-height: 100vh;
+    }
+
+    .lg-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------------------------------------------------------
+   CAJA (modal de cobro de una mesa)
+   --------------------------------------------------------- */
+/* El detalle de la cuenta puede tener varios pedidos, así que tiene su
+   propio scroll y un alto máximo: el total y los botones quedan fijos. */
+.lg-caja-cuenta {
+    max-height: 30vh;
+    overflow-y: auto;
+    border: 1px solid var(--lg-borde);
+    border-radius: var(--lg-radio);
+    padding: 12px 14px;
+    background-color: var(--lg-blanco);
+}
+
+.lg-caja-pedido + .lg-caja-pedido {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--lg-borde);
+}
+
+.lg-caja-pedido-head {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+}
+
+.lg-caja-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.85rem;
+    padding: 3px 0;
+    color: var(--lg-texto);
+}
+
+/* Billetes sugeridos: un toque y queda el monto puesto */
+.lg-caja-billetes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.js-billete {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* El vuelto va destacado: es lo que el cajero tiene que devolver */
+.lg-caja-vuelto {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: var(--lg-radio);
+    background-color: var(--lg-verde-fondo);
+    text-align: center;
+}
+
+.lg-caja-vuelto .lg-row-label {
+    color: #10B981;
+    font-weight: 600;
+}
+
+#modalCaja .modal-dialog {
+    max-width: 560px;
+    margin: 16px auto;
+}
+
+#modalCaja .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 32px);
+}
+
+#modalCaja .modal-header,
+#modalCaja .modal-footer {
+    flex: 0 0 auto;
+}
+
+#modalCaja .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 20px 22px;
+}
+
+@media (max-width: 575px) {
+    #modalCaja .modal-dialog {
+        max-width: none;
+        margin: 0;
+    }
+
+    #modalCaja .modal-content {
+        border-radius: 0;
+        max-height: 100vh;
+        min-height: 100vh;
+    }
+
+    .lg-caja-cuenta {
+        max-height: 26vh;
+    }
+}
+
+/* --- Lista de mesas por cobrar, cómoda en tablet ---------------------- */
+/* En una pantalla de tablet la tabla de seis columnas aprieta demasiado
+   el número de mesa y el total. Por debajo de 992 px cada fila se vuelve
+   una tarjeta con sus datos etiquetados: se lee de un vistazo y el botón
+   Cobrar queda grande para el dedo. */
+@media (max-width: 991px) {
+
+    .lg-table--caja thead {
+        display: none;
+    }
+
+    .lg-table--caja,
+    .lg-table--caja tbody,
+    .lg-table--caja tr,
+    .lg-table--caja td {
+        display: block;
+        width: 100%;
+    }
+
+    .lg-table--caja tbody tr {
+        border: 1px solid var(--lg-borde);
+        border-radius: var(--lg-radio);
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        background-color: var(--lg-blanco);
+    }
+
+    .lg-table--caja tbody td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 0;
+        border-bottom: 0;
+        text-align: left !important;
+    }
+
+    /* La etiqueta sale del data-label de cada celda */
+    .lg-table--caja tbody td::before {
+        content: attr(data-label);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--lg-texto-suave);
+    }
+
+    /* La mesa va como título de la tarjeta, sin repetir "Mesa" */
+    .lg-table--caja tbody td:first-child {
+        font-size: 1.05rem;
+        padding-bottom: 10px;
+        margin-bottom: 6px;
+        border-bottom: 1px solid var(--lg-borde);
+    }
+
+    .lg-table--caja tbody td:first-child::before {
+        content: none;
+    }
+
+    .lg-table--caja tbody td.lg-td-acciones {
+        display: block;
+        padding-top: 12px;
+    }
+
+    .lg-table--caja tbody td.lg-td-acciones .lg-btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+        font-size: 0.95rem;
+    }
+}
+
+/* ---------------------------------------------------------
    Utilidades propias
    Bootstrap 4.6 no incluye las utilidades gap-*
    --------------------------------------------------------- */
@@ -2004,6 +2252,77 @@ body {
     }
 }
 
+/* ---------------------------------------------------------
+    GRUPO DE ENTRADA CON BOTÓN (buscador de Personal)
+    --------------------------------------------------------- */
+.input-group {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: 380px;
+}
+
+.input-group .lg-input {
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+
+.input-group-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    min-width: 46px;
+    height: 44px;
+    padding: 0;
+
+    border: 1px solid var(--lg-rojo);
+    border-radius: 0 8px 8px 0;
+    background-color: var(--lg-rojo);
+    color: #fff;
+
+    font-size: 1.05rem;
+    font-weight: 500;
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+                box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.input-group-btn:hover {
+    background-color: #b90202;
+    border-color: #b90202;
+}
+
+.input-group-btn:active {
+    transform: scale(0.95);
+}
+
+.input-group-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(223, 3, 3, 0.25);
+}
+
+/* Focus visible en el input del grupo */
+.input-group .lg-input:focus {
+    z-index: 1;
+    border-color: var(--lg-rojo);
+    box-shadow: 0 0 0 3px rgba(223, 3, 3, 0.10);
+}
+
+/* En tablet/telefono el grupo ocupa todo el ancho disponible */
+@media (max-width: 767px) {
+    .input-group {
+        max-width: 100%;
+    }
+}
+
 /* Icono junto al nombre en una fila de tabla (Roles, Personal, etc) */
 .lg-fila-nombre {
     display: flex;
@@ -2296,4 +2615,18 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
     .lg-page-head { gap: 12px; }
     .lg-page-head h1 { font-size: 1.35rem; }
     .lg-legend { border-radius: 12px; }
+}
+
+/* ---------------------------------------------------------
+   Caja en tablet
+   --------------------------------------------------------- */
+/* Los tres resúmenes del mostrador son chicos: en tablet se ven mejor de a
+   dos que apilados uno debajo del otro. Va al final del archivo a propósito,
+   porque así gana por orden a la regla general de .lg-grid-3 (que en este
+   ancho los dejaría en una sola columna). */
+@media (min-width: 768px) and (max-width: 991px) {
+    .lg-caja-resumen {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
 }
