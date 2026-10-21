@@ -38,6 +38,10 @@ foreach ($cuentas as $cuenta) {
 // Cuánto se cobró hoy, para tener la referencia a mano en el mostrador.
 $cobradoHoy = $ventaModel->totalHoy();
 
+// Historial de cobros del día (solo lectura, se renueva cada día).
+$historial = $ventaModel->historialDelDia();
+$paginaHistorial = paginar($historial, 12);
+
 // Paginación: nunca se sabe cuántas mesas pueden quedar con cuenta abierta.
 $pagina = paginar($cuentas, 12);
 ?>
@@ -186,6 +190,58 @@ $pagina = paginar($cuentas, 12);
 
         <?php barraPaginacion($pagina,
             'Mesas ' . $pagina['desde'] . '-' . $pagina['hasta'] . ' de ' . $pagina['total']); ?>
+
+    <?php endif; ?>
+</div>
+
+<!-- Historial de cobros del día -->
+<div class="lg-card">
+    <div class="lg-card-head">
+        <span class="lg-card-icon"><i class="fa fa-history"></i></span>
+        <div>
+            <h2 class="lg-card-title">Historial de cobros del día</h2>
+            <p class="lg-card-subtitle">Cuentas cobradas hoy</p>
+        </div>
+    </div>
+
+    <?php if (!$historial): ?>
+
+        <div class="lg-empty">
+            <i class="fa fa-history"></i>
+            <p class="mb-0">No hay cobros registrados hoy.</p>
+        </div>
+
+    <?php else: ?>
+
+        <div class="table-responsive">
+            <table class="lg-table">
+                <thead>
+                    <tr>
+                        <th>Mesa</th>
+                        <th>Hora</th>
+                        <th>Métodos de pago</th>
+                        <th class="num">Total</th>
+                        <th class="num">Recibido</th>
+                        <th class="num">Vuelto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($paginaHistorial['filas'] as $cobro): ?>
+                        <tr>
+                            <td style="font-weight:600;">Mesa <?= (int) $cobro['mesa_numero'] ?></td>
+                            <td><?= date('H:i', strtotime($cobro['fecha'])) ?></td>
+                            <td><?= htmlspecialchars((string) ($cobro['metodos_pago'] ?? '-')) ?></td>
+                            <td class="num"><?= soles((float) $cobro['total']) ?></td>
+                            <td class="num"><?= soles((float) $cobro['monto_recibido']) ?></td>
+                            <td class="num"><?= soles((float) $cobro['vuelto']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php barraPaginacion($paginaHistorial,
+            'Cobros ' . $paginaHistorial['desde'] . '-' . $paginaHistorial['hasta'] . ' de ' . $paginaHistorial['total']); ?>
 
     <?php endif; ?>
 </div>

@@ -126,6 +126,37 @@ class Venta
     }
 
     /**
+     * Historial de cobros del día (solo lectura).
+     *
+     * Devuelve las ventas pagadas hoy con su mesa, hora, métodos de pago,
+     * total, monto recibido y vuelto. Se actualiza solo cada día porque
+     * filtra por fecha actual.
+     */
+    public function historialDelDia(): array
+    {
+        $sql = "SELECT
+                    v.id,
+                    v.pedido_id,
+                    v.total,
+                    v.fecha,
+                    m.numero AS mesa_numero,
+                    GROUP_CONCAT(DISTINCT mp.nombre ORDER BY mp.nombre SEPARATOR ', ') AS metodos_pago,
+                    COALESCE(SUM(pg.monto_recibido), 0) AS monto_recibido,
+                    COALESCE(SUM(pg.vuelto), 0) AS vuelto
+                FROM ventas v
+                INNER JOIN pedidos p ON p.id = v.pedido_id
+                INNER JOIN mesas m ON m.id = p.mesa_id
+                LEFT JOIN pagos pg ON pg.venta_id = v.id
+                LEFT JOIN metodos_pago mp ON mp.id = pg.metodo_pago_id
+                WHERE DATE(v.fecha) = CURDATE()
+                  AND v.estado = 'pagada'
+                GROUP BY v.id, v.pedido_id, v.total, v.fecha, m.numero
+                ORDER BY v.fecha DESC";
+
+        return $this->conexion->query($sql)->fetchAll();
+    }
+
+    /**
      * Métodos de pago activos, para el selector del cobro.
      */
     public function metodosPago(): array

@@ -2539,12 +2539,22 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
 
     /* Arranca oculto y se abre con el boton de la barra superior */
     .main-sidebar {
+        left: 0;
+        top: 0;
+        bottom: 0;
+        height: 100vh;
         margin-left: calc(-1 * var(--lg-sidebar)) !important;
         box-shadow: 4px 0 18px rgba(0, 0, 0, 0.18);
     }
 
     body:not(.lg-menu-cerrado) .main-sidebar {
         margin-left: 0 !important;
+        transform: none !important;
+    }
+
+    /* Asegurar que el sidebar sea clicable y visible sobre el contenido */
+    body:not(.lg-menu-cerrado) .main-sidebar {
+        z-index: 1045 !important;
     }
 
     /* Con el menu abierto no debe quedar scroll bloqueado detras */

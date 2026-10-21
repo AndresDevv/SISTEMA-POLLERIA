@@ -767,11 +767,7 @@ INSERT INTO rol_permiso (id, rol_id, permiso_id) VALUES
   (49, 3, 4),
   (50, 3, 10),
   (51, 3, 7),
-  (54, 4, 13),
-  (55, 4, 14),
-  (56, 5, 3),
-  (57, 5, 4),
-  (58, 5, 7);
+  (56, 4, 3);
 
 SET FOREIGN_KEY_CHECKS = 1;
 
