@@ -6,12 +6,12 @@
 --  Instala el sistema completo en una maquina vacia.
 --
 --  QUE HACE EN EL SISTEMA
---  Crea la base "polleria" con las 24 tablas del sistema y la
+--  Crea la base "polleria" con las 25 tablas del sistema y la
 --  deja lista para empezar a trabajar:
 --
---    - 4 roles con sus permisos: administrador, mesero, cocina
---      y cajero
---    - 4 usuarios de acceso
+--    - 5 roles con sus permisos: administrador, mesero, cocina,
+--      cajero y control de acceso
+--    - 5 usuarios de acceso
 --    - La carta: 5 categorias y 13 platos y bebidas
 --    - 16 mesas del salon
 --    - 5 trabajadores
@@ -53,9 +53,11 @@
 --
 --  -------------------------------------------------------------
 --  USUARIOS QUE QUEDAN CREADOS
---    admin   / 123456   Administrador
---    mesero  / 123456   Mesero
---    cocina  / 123456   Cocina
+--    admin          / 123456   Administrador
+--    mesero         / 123456   Mesero
+--    cocina         / 123456   Cocina
+--    cajero         / 123456   Cajero
+--    control_acceso / 123456   Control de acceso
 --
 --  Cambia esas contrasenas antes de usar el sistema en el
 --  local: entra con el administrador, ve a Configuracion ->
@@ -64,7 +66,7 @@
 --  -------------------------------------------------------------
 --  COMO ESTA ORDENADO ESTE ARCHIVO
 --
---  Seccion 1  Las 24 tablas del sistema. Cada una lleva arriba
+--  Seccion 1  Las 25 tablas del sistema. Cada una lleva arriba
 --             una linea que explica para que sirve.
 --  Seccion 2  Los datos que dejan el sistema listo para usar.
 --  Seccion 3  Que menus y botones ve cada rol.
@@ -126,6 +128,7 @@ CREATE TABLE empleados (
   cargo varchar(100) DEFAULT NULL,
   fecha_ingreso date DEFAULT NULL,
   estado tinyint(1) NOT NULL DEFAULT 1,
+  pin varchar(4) DEFAULT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY dni (dni),
   KEY fk_empleado_usuario (usuario_id),
@@ -343,7 +346,7 @@ CREATE TABLE permisos (
   descripcion varchar(255) DEFAULT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY nombre (nombre)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- ---------------------------------------------------------
@@ -441,7 +444,7 @@ CREATE TABLE rol_permiso (
   KEY fk_rol_permiso_permiso (permiso_id),
   CONSTRAINT fk_rol_permiso_permiso FOREIGN KEY (permiso_id) REFERENCES permisos (id) ON DELETE CASCADE,
   CONSTRAINT fk_rol_permiso_rol FOREIGN KEY (rol_id) REFERENCES roles (id) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- ---------------------------------------------------------
@@ -509,7 +512,7 @@ CREATE TABLE usuarios (
   UNIQUE KEY usuario (usuario),
   KEY fk_usuarios_rol (rol_id),
   CONSTRAINT fk_usuarios_rol FOREIGN KEY (rol_id) REFERENCES roles (id)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- ---------------------------------------------------------
@@ -528,6 +531,25 @@ CREATE TABLE asistencias (
   PRIMARY KEY (id),
   UNIQUE KEY empleado_id (empleado_id,fecha),
   CONSTRAINT fk_asistencia_empleado FOREIGN KEY (empleado_id) REFERENCES empleados (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- ---------------------------------------------------------
+--  Tabla: asistencias_log
+--  Auditoria de cada marcaje (entrada/salida) en Control de acceso.
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS asistencias_log;
+
+CREATE TABLE asistencias_log (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  empleado_id int(11) NOT NULL,
+  accion enum('entrada','salida') NOT NULL,
+  fecha_hora datetime NOT NULL DEFAULT current_timestamp(),
+  ip varchar(45) DEFAULT NULL,
+  user_agent varchar(255) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY fk_asistencia_log_empleado (empleado_id),
+  CONSTRAINT fk_asistencia_log_empleado FOREIGN KEY (empleado_id) REFERENCES empleados (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -563,7 +585,7 @@ CREATE TABLE roles (
   estado tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   UNIQUE KEY nombre (nombre)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- =========================================================
@@ -587,18 +609,20 @@ INSERT INTO roles (id, nombre, descripcion, estado) VALUES
   (1, 'Administrador', 'Control total del sistema', 1),
   (2, 'Mesero', 'Atención del salón: toma los pedidos', 1),
   (3, 'Cocina', 'Preparación de los pedidos', 1),
-  (4, 'Cajero', 'Cobra las mesas y entrega el vuelto', 1);
+  (4, 'Cajero', 'Cobra las mesas y entrega el vuelto', 1),
+  (5, 'Control de acceso', 'Marcaje de entrada y salida de personal', 1);
 
 
 -- ---------------------------------------------------------
 --  usuarios
---  Cuatro usuarios de acceso. La contrasena es 123456; cambiala antes de usar el sistema.
+--  Cinco usuarios de acceso. La contrasena es 123456; cambiala antes de usar el sistema.
 -- ---------------------------------------------------------
 INSERT INTO usuarios (id, rol_id, nombre, usuario, password, estado, fecha_creacion) VALUES
   (1, 1, 'Administrador', 'admin', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18'),
   (2, 2, 'Mesero', 'mesero', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18'),
   (3, 3, 'Cocina', 'cocina', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18'),
-  (4, 4, 'Jorge Ramirez', 'cajero', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18');
+  (4, 4, 'Jorge Ramirez', 'cajero', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18'),
+  (5, 5, 'Control de Acceso', 'control_acceso', '$2y$10$fOqlaJ4nmjjfHoJtu91w4.r1MUXIcyIHZBnz0f7b/0Lby1vzkwagS', 1, '2026-10-15 10:36:18');
 
 
 -- ---------------------------------------------------------
@@ -700,9 +724,10 @@ INSERT INTO configuracion_negocio (id, nombre, ruc, direccion, telefono, logo) V
 --                   pedidos, pero ya no cobra: de eso se encarga el cajero
 --    Cocina         mesas, pedidos, inventario y menu. Mueve el
 --                   estado de los pedidos, pero no registra ni cobra
---    Almacenero     inventario y ajuste de stock
 --    Cajero         cobra las mesas y entrega el vuelto. Ve las mesas y
 --                   los pedidos, y entra a "Cobrar" para cerrar las cuentas
+--    Control de acceso  solo entra a la pantalla de Control de acceso para
+--                       marcar su entrada y salida con PIN
 -- =========================================================
 
 -- ---------------------------------------------------------
@@ -728,7 +753,8 @@ INSERT INTO permisos (id, nombre, descripcion) VALUES
   (16, 'personal', 'Ver trabajadores, asistencia y pagos'),
   (17, 'servicios', 'Ver servicios básicos y vencimientos'),
   (18, 'reportes', 'Ver y exportar reportes'),
-  (19, 'configuracion', 'Administrar usuarios, roles y datos del negocio');
+  (19, 'configuracion', 'Administrar usuarios, roles y datos del negocio'),
+  (20, 'control_acceso_usar', 'Usar la pantalla de Control de acceso');
 
 
 -- ---------------------------------------------------------
@@ -767,7 +793,8 @@ INSERT INTO rol_permiso (id, rol_id, permiso_id) VALUES
   (49, 3, 4),
   (50, 3, 10),
   (51, 3, 7),
-  (56, 4, 3);
+  (56, 4, 3),
+  (57, 5, 20);
 
 SET FOREIGN_KEY_CHECKS = 1;
 

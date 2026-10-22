@@ -30,8 +30,8 @@ No hace falta crear la base antes: el archivo la crea.
 ### Qué deja instalado
 
 - 25 tablas con sus relaciones
-- 4 roles: Administrador, Mesero, Cocina y Almacenero
-- 3 usuarios de acceso
+- 5 roles: Administrador, Mesero, Cocina, Cajero y Control de acceso
+- 5 usuarios de acceso
 - La carta: 5 categorías y 13 platos y bebidas
 - 16 mesas del salón
 - 5 trabajadores
@@ -54,6 +54,8 @@ una copia (ver *Respaldos*).
 | `admin` | `123456` | Administrador |
 | `mesero` | `123456` | Mesero |
 | `cocina` | `123456` | Cocina |
+| `cajero` | `123456` | Cajero |
+| `control_acceso` | `123456` | Control de acceso |
 
 **Cámbialas antes de usar el sistema en el local:** entra con el administrador,
 ve a **Configuración → Usuarios**.

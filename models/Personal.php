@@ -146,4 +146,46 @@ class Personal
 
         return ['success' => true, 'message' => 'Pago registrado.'];
     }
+
+    /**
+     * Lista empleados activos para Control de acceso (con PIN).
+     */
+    public function listarActivos(): array
+    {
+        return $this->conexion->query(
+            "SELECT e.id, e.nombre, e.usuario_id, u.usuario, e.pin
+             FROM empleados e
+             LEFT JOIN usuarios u ON u.id = e.usuario_id
+             WHERE e.estado = 1
+             ORDER BY e.nombre"
+        )->fetchAll();
+    }
+
+    /**
+     * Busca un empleado por ID (para Control de acceso).
+     */
+    public function buscarPorId(int $id): ?array
+    {
+        $stmt = $this->conexion->prepare(
+            "SELECT e.id, e.nombre, e.usuario_id, u.usuario, e.pin
+             FROM empleados e
+             LEFT JOIN usuarios u ON u.id = e.usuario_id
+             WHERE e.id = :id AND e.estado = 1
+             LIMIT 1"
+        );
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /**
+     * Actualiza el PIN de un empleado (Control de acceso).
+     */
+    public function actualizarPin(int $empleadoId, string $pin): bool
+    {
+        $stmt = $this->conexion->prepare(
+            "UPDATE empleados SET pin = :pin WHERE id = :id"
+        );
+        return $stmt->execute([':pin' => $pin, ':id' => $empleadoId]);
+    }
 }

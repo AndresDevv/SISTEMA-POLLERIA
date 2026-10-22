@@ -82,6 +82,12 @@ function menuSistema(): array
             'titulo' => 'Configuración',
             'icono'  => 'fa fa-cog',
             'pagina' => 'configuracion'
+        ],
+        [
+            'titulo' => 'Control de acceso',
+            'icono'  => 'fa fa-clock-o',
+            'pagina' => 'control_acceso',
+            'permiso' => 'control_acceso_usar'
         ]
     ];
 }

@@ -105,6 +105,13 @@ function rutas(): array
             'permiso' => 'configuracion'
         ],
 
+        // Control de acceso: pantalla para que el personal marque entrada/salida con PIN
+        'control_acceso' => [
+            'vista'   => 'control_acceso/index',
+            'titulo'  => 'Control de acceso',
+            'permiso' => 'control_acceso_usar'
+        ],
+
         // -----------------------------------------------
         // Acciones AJAX
         // -----------------------------------------------

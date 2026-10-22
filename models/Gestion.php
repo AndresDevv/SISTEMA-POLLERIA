@@ -86,9 +86,11 @@ class Gestion
                     'fecha_ingreso' => ['tipo' => 'fecha', 'etiqueta' => 'Fecha de ingreso'],
                     'usuario_id'    => ['tipo' => 'relacion', 'etiqueta' => 'Usuario de acceso (opcional)',
                                          'tabla' => 'usuarios'],
+                    'pin'           => ['tipo' => 'digitos', 'etiqueta' => 'PIN Control de acceso (4 dígitos)', 'digitos' => 4,
+                                         'ayuda' => 'PIN de 4 dígitos para marcar entrada/salida en Control de acceso. Dejar vacío si no tiene.'],
                     'estado'        => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]
                 ],
-                'listado' => 'e.id, e.nombre, e.cargo, e.dni, e.telefono, e.direccion, e.fecha_ingreso, e.estado',
+                'listado' => 'e.id, e.nombre, e.cargo, e.dni, e.telefono, e.direccion, e.fecha_ingreso, e.estado, e.pin',
                 'join'    => ''
             ],
 
