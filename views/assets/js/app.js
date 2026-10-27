@@ -485,6 +485,52 @@
         }
 
         // -------------------------------------------------
+        // Reportes: buscador de la tabla "Ventas por mesero"
+        // -------------------------------------------------
+        /* Filtra en el navegador mientras se escribe, sin recargar. Va aquí
+        arriba, junto al otro buscador, porque Reportes no trae el modal de
+        pedidos y el bloque de abajo termina antes en esa pantalla. */
+        var filtrarMeseros = function () {
+
+            var $tabla = $('#tablaMeserosVentas');
+
+            if (!$tabla.length) {
+                return;
+            }
+
+            var texto = String($('#meseroBuscar').val() || '').toLowerCase().trim();
+            var visibles = 0;
+
+            $tabla.find('tbody tr[data-fila-mesero]').each(function () {
+
+                var $fila = $(this);
+                var coincide = texto === '' || $fila.text().toLowerCase().indexOf(texto) !== -1;
+
+                $fila.toggle(coincide);
+
+                if (coincide) {
+                    visibles++;
+                }
+            });
+
+            $tabla.find('#meserosSinCoincidencias').toggle(texto !== '' && visibles === 0);
+
+            // El pie muestra el total del periodo, no el de la busqueda: se
+            // oculta mientras haya un filtro activo para no confundir.
+            $tabla.find('tfoot').toggle(texto === '');
+
+            $('#meseroLimpiar').toggle(texto !== '');
+        };
+
+        $(document).on('input keyup search', '#meseroBuscar', filtrarMeseros);
+
+        $(document).on('click', '#meseroLimpiar', function () {
+            $('#meseroBuscar').val('').trigger('input').trigger('focus');
+        });
+
+        filtrarMeseros();
+
+        // -------------------------------------------------
         // Buscador que filtra la tabla sin recargar la página
         // -------------------------------------------------
         /* Va aquí, antes de los bloques que solo corren cuando la página

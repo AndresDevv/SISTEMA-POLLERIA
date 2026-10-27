@@ -144,6 +144,51 @@ $porMesa = $stmt->fetchAll();
 $pagProductos = paginar($topProductos, 15);
 $pagMesas     = paginar($porMesa, 15);
 
+/**
+ * Ventas por mesero del período.
+ *
+ * Cada venta se le atribuye al usuario que registró el pedido
+ * (pedidos.usuario_id) y no al cajero que la cobró (ventas.usuario_id): lo
+ * que se quiere ver aquí es cuánto vendió cada mesero.
+ *
+ * El LEFT JOIN deja salir también a los meseros que no vendieron nada en el
+ * período, para que la tabla los muestre en 0 y no desaparezcan de la lista.
+ */
+$ventasPorMesero = [];
+
+try {
+    $stmt = $db->prepare(
+        "SELECT u.id,
+                u.nombre,
+                u.usuario,
+                COUNT(v.id) AS ventas,
+                COALESCE(SUM(v.total), 0) AS total
+        FROM usuarios u
+        INNER JOIN roles r ON r.id = u.rol_id
+        LEFT JOIN pedidos p ON p.usuario_id = u.id
+        LEFT JOIN ventas v ON v.pedido_id = p.id
+            AND v.estado = 'pagada'
+            AND DATE(v.fecha) BETWEEN :desde AND :hasta
+        WHERE r.nombre = 'Mesero'
+        GROUP BY u.id, u.nombre, u.usuario
+        ORDER BY total DESC, u.nombre ASC"
+    );
+    $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
+    $ventasPorMesero = $stmt->fetchAll();
+
+} catch (PDOException $e) {
+    // Si la consulta falla, la sección simplemente no se dibuja
+}
+
+$totalMeserosVentas = array_sum(array_map(
+    static fn(array $fila): float => (float) $fila['total'],
+    $ventasPorMesero
+));
+$totalMeserosTickets = array_sum(array_map(
+    static fn(array $fila): int => (int) $fila['ventas'],
+    $ventasPorMesero
+));
+
 $totalPeriodo = array_sum(array_column($porDia, 'total'));
 $totalGastos  = array_sum($gastosPorDia);
 $totalGanancia = $totalPeriodo - $totalGastos;
@@ -420,4 +465,81 @@ encabezadoPagina(
         <?php endif; ?>
     </div>
 
+</div>
+
+<!-- Ventas por mesero (solo lectura, sin acciones) -->
+<div class="lg-card mt-3">
+    <div class="lg-card-head">
+        <span class="lg-card-icon"><i class="fa fa-users"></i></span>
+        <div>
+            <h2 class="lg-card-title">Ventas por mesero</h2>
+            <p class="lg-card-subtitle">
+                Del <?= date('d/m/Y', strtotime($desde)) ?> al <?= date('d/m/Y', strtotime($hasta)) ?>
+            </p>
+        </div>
+    </div>
+
+    <div class="lg-filters" style="padding:0 18px 16px;">
+        <div class="lg-field">
+            <label class="lg-label" for="meseroBuscar">Buscar mesero</label>
+            <input type="search" id="meseroBuscar" class="lg-input"
+                   placeholder="Nombre o usuario" autocomplete="off">
+        </div>
+
+        <div class="lg-field" style="flex:0 0 auto;">
+            <button type="button" class="lg-btn lg-btn--ghost" id="meseroLimpiar" style="display:none;">
+                <i class="fa fa-times"></i> Limpiar
+            </button>
+        </div>
+    </div>
+
+    <?php if (!$ventasPorMesero): ?>
+        <div class="lg-empty"><i class="fa fa-users"></i><p class="mb-0">No hay meseros registrados.</p></div>
+    <?php else: ?>
+        <div class="table-responsive">
+            <table class="lg-table" id="tablaMeserosVentas">
+                <thead>
+                    <tr>
+                        <th>Mesero</th>
+                        <th>Usuario</th>
+                        <th style="text-align:right;">Pedidos cobrados</th>
+                        <th style="text-align:right;">Total vendido</th>
+                        <th style="text-align:right;">Promedio por pedido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($ventasPorMesero as $fila):
+                        $filaVentas = (int) $fila['ventas'];
+                        $filaTotal  = (float) $fila['total'];
+                        $promedio   = $filaVentas > 0 ? $filaTotal / $filaVentas : 0.0;
+                    ?>
+                        <tr data-fila-mesero>
+                            <td style="font-weight:600;"><?= htmlspecialchars($fila['nombre']) ?></td>
+                            <td class="text-muted"><?= htmlspecialchars($fila['usuario']) ?></td>
+                            <td class="num" style="text-align:right;"><?= $filaVentas ?></td>
+                            <td class="num" style="text-align:right;font-weight:600;color:<?= $filaTotal > 0 ? '#2E9E4B' : '#9CA3AF' ?>;">
+                                <?= soles($filaTotal) ?>
+                            </td>
+                            <td class="num" style="text-align:right;"><?= soles($promedio) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+
+                    <tr id="meserosSinCoincidencias" style="display:none;">
+                        <td colspan="5" class="lg-muted" style="text-align:center;padding:18px;">
+                            Ning&uacute;n mesero coincide con la b&uacute;squeda.
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th></th>
+                        <th style="text-align:right;"><?= $totalMeserosTickets ?></th>
+                        <th style="text-align:right;"><?= soles($totalMeserosVentas) ?></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    <?php endif; ?>
 </div>
