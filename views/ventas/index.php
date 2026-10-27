@@ -116,8 +116,8 @@ $resumen  = $porCategoriaPedidos;
 
             <?php
             /* 10 ventas por página: en un día tranquilo cabe en una sola
-               página y, cuando se acumulan, la tarjeta no crece sin fin y
-               el "Caja" de al lado no se va hasta abajo. */
+            página y, cuando se acumulan, la tarjeta no crece sin fin y
+            el "Caja" de al lado no se va hasta abajo. */
             $pagVentas = paginar($ventasHoy, 10);
             ?>
 

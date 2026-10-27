@@ -9,6 +9,8 @@
  *   $recursosExtra  otros recursos del mismo módulo, para las pestañas
  */
 
+$recurso = $recurso ?? '';
+
 $gestion = new Gestion();
 $def     = Gestion::recurso($recurso);
 
@@ -76,7 +78,7 @@ foreach ($def['campos'] as $campo => $regla) {
     <div class="lg-segmentos mb-3">
         <?php foreach ($recursosExtra as $extra): ?>
             <a href="<?= BASE_URL ?>?page=<?= htmlspecialchars($extra['pagina']) ?>"
-               class="lg-segmento<?= ($extra['clave'] ?? $extra['recurso']) === $pestanaActual ? ' is-activo' : '' ?>">
+            class="lg-segmento<?= ($extra['clave'] ?? $extra['recurso']) === $pestanaActual ? ' is-activo' : '' ?>">
                 <i class="fa <?= htmlspecialchars($extra['icono']) ?>"></i> <?= htmlspecialchars($extra['titulo']) ?>
             </a>
         <?php endforeach; ?>
@@ -127,9 +129,9 @@ foreach ($def['campos'] as $campo => $regla) {
 
         <?php if ($busquedaViva): ?>
             <form method="GET" action="<?= BASE_URL ?>" class="input-group"
-                  data-buscar-url="<?= htmlspecialchars($urlBusqueda) ?>">
+                data-buscar-url="<?= htmlspecialchars($urlBusqueda) ?>">
                 <input type="search" name="buscar" class="lg-input"
-                       value="<?= htmlspecialchars($buscar) ?>" placeholder="Buscar..." aria-label="Buscar">
+                    value="<?= htmlspecialchars($buscar) ?>" placeholder="Buscar..." aria-label="Buscar">
                 <button type="submit" class="input-group-btn" aria-label="Buscar">
                     <i class="fa fa-search"></i>
                 </button>
@@ -138,7 +140,7 @@ foreach ($def['campos'] as $campo => $regla) {
             <form method="GET" action="<?= BASE_URL ?>" class="d-flex gap-2 flex-wrap">
                 <input type="hidden" name="page" value="<?= htmlspecialchars($_GET['page'] ?? '') ?>">
                 <input type="search" name="buscar" class="lg-input" style="min-width:200px;"
-                       value="<?= htmlspecialchars($buscar) ?>" placeholder="Buscar...">
+                    value="<?= htmlspecialchars($buscar) ?>" placeholder="Buscar...">
                 <button type="submit" class="lg-btn lg-btn--ghost"><i class="fa fa-search"></i></button>
             </form>
         <?php endif; ?>

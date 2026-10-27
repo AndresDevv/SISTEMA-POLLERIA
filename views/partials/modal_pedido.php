@@ -34,8 +34,8 @@ $categoriasModal = array_values(array_unique(array_column($productosModal, 'cate
             </div>
 
             <!-- Cuerpo: dos columnas con scroll propio, para que el catálogo
-                 quede siempre a la vista aunque la mesa tenga muchos
-                 pedidos ya registrados. -->
+                quede siempre a la vista aunque la mesa tenga muchos
+                pedidos ya registrados. -->
             <div class="modal-body lg-modal-cuerpo">
 
                 <!-- Aviso de validación -->
@@ -57,7 +57,7 @@ $categoriasModal = array_values(array_unique(array_column($productosModal, 'cate
                             <div class="lg-filters mb-0">
                                 <div class="lg-field">
                                     <input type="search" id="modalBuscar"
-                                           class="lg-input" placeholder="Buscar producto...">
+                                        class="lg-input" placeholder="Buscar producto...">
                                 </div>
                                 <div class="lg-field" style="max-width:180px;">
                                     <select id="modalCategoria" class="lg-select">

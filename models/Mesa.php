@@ -49,8 +49,8 @@ class Mesa
     public function porId(int $id): ?array
     {
         $stmt = $this->conexion->prepare(
-            "SELECT id, numero, capacidad, estado, reservado_por, reservado_hora, reservado_fecha
-             FROM mesas WHERE id = :id LIMIT 1"
+        "SELECT id, numero, capacidad, estado, reservado_por, reservado_hora, reservado_fecha
+            FROM mesas WHERE id = :id LIMIT 1"
         );
         $stmt->execute([':id' => $id]);
         $mesa = $stmt->fetch();
@@ -74,12 +74,12 @@ class Mesa
     {
         $stmt = $this->conexion->prepare(
             "SELECT COUNT(*) AS n, MAX(p.fecha_creacion) AS ultimo
-             FROM pedidos p
-             LEFT JOIN ventas v
-                    ON v.pedido_id = p.id AND v.estado = 'pagada'
-             WHERE p.mesa_id = :mesa
-               AND v.id IS NULL
-               AND p.estado <> 'anulado'"
+            FROM pedidos p
+            LEFT JOIN ventas v
+                ON v.pedido_id = p.id AND v.estado = 'pagada'
+            WHERE p.mesa_id = :mesa
+            AND v.id IS NULL
+            AND p.estado <> 'anulado'"
         );
         $stmt->execute([':mesa' => $mesaId]);
 
@@ -102,13 +102,13 @@ class Mesa
     {
         $stmt = $this->conexion->prepare(
             "SELECT p.id, p.estado
-             FROM pedidos p
-             LEFT JOIN ventas v
-                    ON v.pedido_id = p.id AND v.estado = 'pagada'
-             WHERE p.mesa_id = :mesa
-               AND v.id IS NULL
-               AND p.estado <> 'anulado'
-             ORDER BY p.fecha_creacion"
+            FROM pedidos p
+            LEFT JOIN ventas v
+                ON v.pedido_id = p.id AND v.estado = 'pagada'
+            WHERE p.mesa_id = :mesa
+            AND v.id IS NULL
+            AND p.estado <> 'anulado'
+            ORDER BY p.fecha_creacion"
         );
         $stmt->execute([':mesa' => $mesaId]);
 
@@ -192,11 +192,11 @@ class Mesa
         try {
             $stmt = $this->conexion->prepare(
                 "UPDATE mesas
-                 SET estado = :estado,
-                     reservado_por = NULL,
-                     reservado_hora = NULL,
-                     reservado_fecha = NULL
-                 WHERE id = :id AND estado <> 'reservada'"
+                SET estado = :estado,
+                    reservado_por = NULL,
+                    reservado_hora = NULL,
+                    reservado_fecha = NULL
+                WHERE id = :id AND estado <> 'reservada'"
             );
 
             $stmt->execute([':estado' => $estado, ':id' => $mesaId]);
@@ -303,11 +303,11 @@ class Mesa
         try {
             $stmt = $this->conexion->prepare(
                 "UPDATE mesas
-                 SET estado = 'reservada',
-                     reservado_por = :nombre,
-                     reservado_hora = :hora,
-                     reservado_fecha = CURDATE()
-                 WHERE id = :id"
+                SET estado = 'reservada',
+                    reservado_por = :nombre,
+                    reservado_hora = :hora,
+                    reservado_fecha = CURDATE()
+                WHERE id = :id"
             );
 
             $stmt->execute([

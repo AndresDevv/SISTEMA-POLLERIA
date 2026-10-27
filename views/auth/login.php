@@ -19,7 +19,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <title>Iniciar Sesión | <?= htmlspecialchars(APP_NOMBRE) ?></title>
 
     <!-- La version va en la direccion para que el navegador no se quede con
-         una copia vieja del archivo en el cache del navegador. -->
+        una copia vieja del archivo en el cache del navegador. -->
     <link rel="stylesheet" href="<?= ASSETS_URL ?>css/login.css?v=<?= APP_VERSION ?>">
 
 </head>
@@ -32,16 +32,16 @@ if (session_status() === PHP_SESSION_NONE) {
         <div class="login-brand">
             <?php /* El logo va sobre un cuadro blanco.
 
-                     El dibujo es negro con fondo transparente y este panel es
-                     rojo: puestos tal cual no se leeria nada. El cuadro
-                     blanco es lo que lo hace visible, y de paso lo separa
-                     del fondo como la marca del local. */ ?>
+                    El dibujo es negro con fondo transparente y este panel es
+                    rojo: puestos tal cual no se leeria nada. El cuadro
+                    blanco es lo que lo hace visible, y de paso lo separa
+                    del fondo como la marca del local. */ ?>
             <div class="brand-inner">
 
                 <div class="logo-container">
                     <img src="<?= IMAGENES_URL ?>logo.png"
-                         alt="<?= htmlspecialchars(APP_NOMBRE) ?>"
-                         class="logo-image">
+                        alt="<?= htmlspecialchars(APP_NOMBRE) ?>"
+                        class="logo-image">
                 </div>
 
             </div>

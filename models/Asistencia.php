@@ -47,7 +47,7 @@ class Asistencia
 
         $stmt = $this->conexion->prepare(
             "INSERT INTO asistencias (empleado_id, fecha, hora_entrada, estado)
-             VALUES (:emp, CURDATE(), CURTIME(), 'presente')"
+            VALUES (:emp, CURDATE(), CURTIME(), 'presente')"
         );
         return $stmt->execute([':emp' => $empleadoId]);
     }
@@ -80,7 +80,7 @@ class Asistencia
     {
         $stmt = $this->conexion->prepare(
             "INSERT INTO asistencias_log (empleado_id, accion, fecha_hora, ip, user_agent)
-             VALUES (:emp, :accion, NOW(), :ip, :ua)"
+            VALUES (:emp, :accion, NOW(), :ip, :ua)"
         );
         return $stmt->execute([
             ':emp'     => $empleadoId,

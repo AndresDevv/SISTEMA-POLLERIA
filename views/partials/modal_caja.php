@@ -84,12 +84,12 @@ $metodosPago = $metodosPago ?? [];
 
                     <label class="lg-label" for="cajaRecibido">¿Con cuánto paga el cliente?</label>
                     <input type="number"
-                           class="lg-input"
-                           id="cajaRecibido"
-                           step="0.01"
-                           min="0"
-                           placeholder="Ej: 100"
-                           inputmode="decimal">
+                        class="lg-input"
+                        id="cajaRecibido"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ej: 100"
+                        inputmode="decimal">
 
                     <div class="lg-caja-billetes" id="cajaBilletes">
                         <button type="button" class="lg-chip js-billete" data-monto="20">S/ 20</button>

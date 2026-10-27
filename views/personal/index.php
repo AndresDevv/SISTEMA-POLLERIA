@@ -55,11 +55,11 @@ if ($pestana === 'trabajadores'):
 
     $recursosExtra = [
         ['clave' => 'trabajadores', 'recurso' => 'empleados', 'pagina' => 'personal',
-         'titulo' => 'Trabajadores', 'icono' => 'fa fa-users'],
+        'titulo' => 'Trabajadores', 'icono' => 'fa fa-users'],
         ['clave' => 'asistencia',    'recurso' => 'empleados', 'pagina' => 'personal&tab=asistencia',
-         'titulo' => 'Asistencia', 'icono' => 'fa fa-clock-o'],
+        'titulo' => 'Asistencia', 'icono' => 'fa fa-clock-o'],
         ['clave' => 'pagos',         'recurso' => 'empleados', 'pagina' => 'personal&tab=pagos',
-         'titulo' => 'Pagos', 'icono' => 'fa fa-money']
+        'titulo' => 'Pagos', 'icono' => 'fa fa-money']
     ];
 
     require APP_ROOT . '/views/admin/gestion.php';

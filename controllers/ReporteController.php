@@ -24,12 +24,12 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $desde) || !preg_match('/^\d{4}-\d{2}-\
 $stmt = $db->prepare(
     "SELECT v.id, v.fecha, v.pedido_id, v.subtotal, v.descuento, v.total, v.estado,
             m.numero AS mesa, u.nombre AS cajero
-     FROM ventas v
-     INNER JOIN pedidos p ON p.id = v.pedido_id
-     INNER JOIN mesas m ON m.id = p.mesa_id
-     LEFT JOIN usuarios u ON u.id = v.usuario_id
-     WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
-     ORDER BY v.fecha"
+    FROM ventas v
+    INNER JOIN pedidos p ON p.id = v.pedido_id
+    INNER JOIN mesas m ON m.id = p.mesa_id
+    LEFT JOIN usuarios u ON u.id = v.usuario_id
+    WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
+    ORDER BY v.fecha"
 );
 $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $ventas = $stmt->fetchAll();
@@ -45,10 +45,10 @@ $marcadoresVenta  = $idsVenta ? implode(',', array_fill(0, count($idsVenta), '?'
 /** Productos por venta */
 $stmt = $db->prepare(
     "SELECT d.pedido_id, GROUP_CONCAT(CONCAT(d.cantidad, ' x ', pr.nombre) SEPARATOR ' | ') AS productos
-     FROM detalle_pedidos d
-     INNER JOIN productos pr ON pr.id = d.producto_id
-     WHERE d.pedido_id IN ($marcadoresPedido)
-     GROUP BY d.pedido_id"
+    FROM detalle_pedidos d
+    INNER JOIN productos pr ON pr.id = d.producto_id
+    WHERE d.pedido_id IN ($marcadoresPedido)
+    GROUP BY d.pedido_id"
 );
 $stmt->execute($idsPedido);
 $porPedido = [];
@@ -60,11 +60,11 @@ foreach ($stmt->fetchAll() as $fila) {
 /** Pagos por venta, agrupados por método */
 $stmt = $db->prepare(
     "SELECT pg.venta_id, m.nombre AS metodo, SUM(pg.monto) AS total
-     FROM pagos pg
-     INNER JOIN metodos_pago m ON m.id = pg.metodo_pago_id
-     WHERE pg.venta_id IN ($marcadoresVenta)
-     GROUP BY pg.venta_id, m.nombre
-     ORDER BY m.nombre"
+    FROM pagos pg
+    INNER JOIN metodos_pago m ON m.id = pg.metodo_pago_id
+    WHERE pg.venta_id IN ($marcadoresVenta)
+    GROUP BY pg.venta_id, m.nombre
+    ORDER BY m.nombre"
 );
 $stmt->execute($idsVenta);
 $porVenta = [];
@@ -123,9 +123,9 @@ try {
                 precio_unitario,
                 cantidad,
                 monto
-         FROM egresos
-         WHERE DATE(fecha) BETWEEN :desde AND :hasta
-         ORDER BY fecha"
+        FROM egresos
+        WHERE DATE(fecha) BETWEEN :desde AND :hasta
+        ORDER BY fecha"
     );
     $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 

@@ -27,15 +27,15 @@ class Producto
                     p.stock_minimo,
 
                     /* La marca de agotado va aparte del stock: un plato
-                       puede acabarse en la cocina aunque todavia queden
-                       unidades contadas. La usa el Menu del dia para marcar
+                    puede acabarse en la cocina aunque todavia queden
+                    unidades contadas. La usa el Menu del dia para marcar
                        y el catalogo de pedidos para no ofrecerlo. */
                     p.agotado,
                     c.nombre AS categoria
                 FROM productos p
                 INNER JOIN categorias c ON c.id = p.categoria_id
                 WHERE p.estado = 1
-                  AND c.estado = 1";
+                AND c.estado = 1";
 
         $condiciones = [];
         $parametros  = [];
@@ -90,9 +90,9 @@ class Producto
     {
         $stmt = $this->conexion->prepare(
             "SELECT id, nombre, precio, stock, stock_minimo
-             FROM productos
-             WHERE id = :id AND estado = 1
-             LIMIT 1"
+            FROM productos
+            WHERE id = :id AND estado = 1
+            LIMIT 1"
         );
         $stmt->execute([':id' => $id]);
         $producto = $stmt->fetch();

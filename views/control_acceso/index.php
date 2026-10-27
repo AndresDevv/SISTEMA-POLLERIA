@@ -155,11 +155,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar'])) {
 
     <div class="input-group mb-3 lg-buscar">
         <input type="search"
-               class="lg-input"
-               id="filtroEmpleados"
-               placeholder="Buscar por nombre o usuario..."
-               autocomplete="off"
-               aria-label="Buscar empleado">
+            class="lg-input"
+            id="filtroEmpleados"
+            placeholder="Buscar por nombre o usuario..."
+            autocomplete="off"
+            aria-label="Buscar empleado">
         <span class="input-group-btn">
             <button type="button" class="lg-btn lg-btn--primary" id="btnLimpiarBusqueda" title="Limpiar">
                 <i class="fa fa-times"></i>
@@ -176,8 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar'])) {
         <div class="row" id="listaEmpleados">
             <?php foreach ($empleados as $emp): ?>
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3 empleado-card" 
-                     data-nombre="<?= htmlspecialchars(strtolower($emp['nombre'])) ?>"
-                     data-usuario="<?= htmlspecialchars(strtolower($emp['usuario'])) ?>">
+                    data-nombre="<?= htmlspecialchars(strtolower($emp['nombre'])) ?>"
+                    data-usuario="<?= htmlspecialchars(strtolower($emp['usuario'])) ?>">
                     <button type="button" 
                             class="lg-btn lg-btn--outline lg-btn--block btn-seleccionar-empleado"
                             data-empleado-id="<?= (int) $emp['id'] ?>"
@@ -222,25 +222,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar'])) {
                     <label class="font-weight-bold">Cree su PIN de 4 dígitos</label>
                     <div class="input-group mb-2">
                         <input type="password" 
-                               class="lg-input text-center form-control-lg" 
-                               name="pin1" 
-                               maxlength="4" 
-                               pattern="\d{4}" 
-                               placeholder="****" 
-                               required
-                               autocomplete="off"
-                               style="font-size: 2rem; letter-spacing: 0.5em;">
+                            class="lg-input text-center form-control-lg" 
+                            name="pin1" 
+                            maxlength="4" 
+                            pattern="\d{4}" 
+                            placeholder="****" 
+                            required
+                            autocomplete="off"
+                            style="font-size: 2rem; letter-spacing: 0.5em;">
                     </div>
                     <div class="input-group mb-3">
                         <input type="password" 
-                               class="lg-input text-center form-control-lg" 
-                               name="pin2" 
-                               maxlength="4" 
-                               pattern="\d{4}" 
-                               placeholder="****" 
-                               required
-                               autocomplete="off"
-                               style="font-size: 2rem; letter-spacing: 0.5em;">
+                            class="lg-input text-center form-control-lg" 
+                            name="pin2" 
+                            maxlength="4" 
+                            pattern="\d{4}" 
+                            placeholder="****" 
+                            required
+                            autocomplete="off"
+                            style="font-size: 2rem; letter-spacing: 0.5em;">
                     </div>
                     <small class="text-muted d-block mb-3">El PIN debe ser de 4 dígitos numéricos. Solo usted debe conocerlo.</small>
                     <button type="submit" name="crear_pin" class="lg-btn lg-btn--primary lg-btn--block" style="min-height: 56px; font-size: 1.2rem;">
@@ -268,16 +268,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar'])) {
                     <label class="font-weight-bold">PIN de 4 dígitos</label>
                     <div class="input-group mb-3">
                         <input type="password" 
-                               class="lg-input text-center form-control-lg" 
-                               name="pin" 
-                               id="inputPin"
-                               maxlength="4" 
-                               pattern="\d{4}" 
-                               placeholder="****" 
-                               required
-                               autocomplete="off"
-                               autofocus
-                               style="font-size: 2.5rem; letter-spacing: 0.8em;">
+                            class="lg-input text-center form-control-lg" 
+                            name="pin" 
+                            id="inputPin"
+                            maxlength="4" 
+                            pattern="\d{4}" 
+                            placeholder="****" 
+                            required
+                            autocomplete="off"
+                            autofocus
+                            style="font-size: 2.5rem; letter-spacing: 0.8em;">
                     </div>
                 </div>
 

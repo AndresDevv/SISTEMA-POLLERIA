@@ -3,6 +3,10 @@
  * Layout: cabecera (head) y apertura del wrapper de AdminLTE.
  * Variables esperadas: $tituloPagina
  */
+
+// La define index.php antes del require. El valor por defecto solo evita el
+// aviso de "variable no definida" si alguien abre el layout por su cuenta.
+$tituloPagina = $tituloPagina ?? 'Sistema';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -35,15 +39,15 @@
 
 <!-- Menú lateral: cerrado o abierto antes de que se dibuje la página.
 
-     Este script va aquí, pegado al <body> y no en el pie como app.js, por un
-     motivo concreto: el navegador pinta la página a medida que la va leyendo.
-     Si la clase "lg-menu-cerrado" se pusiera más abajo, en tablet el menú se
-     vería abierto durante un instante en cada carga —y en cada cambio de
-     pestaña— hasta que el script del pie lo cerrara.
+    Este script va aquí, pegado al <body> y no en el pie como app.js, por un
+    motivo concreto: el navegador pinta la página a medida que la va leyendo.
+    Si la clase "lg-menu-cerrado" se pusiera más abajo, en tablet el menú se
+    vería abierto durante un instante en cada carga —y en cada cambio de
+    pestaña— hasta que el script del pie lo cerrara.
 
-     La regla que decide es la misma que usa app.js: en pantalla ancha se
-     respeta lo que el usuario dejó la última vez; en tablet (991 px o menos)
-     siempre arranca cerrado. -->
+    La regla que decide es la misma que usa app.js: en pantalla ancha se
+    respeta lo que el usuario dejó la última vez; en tablet (991 px o menos)
+    siempre arranca cerrado. -->
 <script>
     (function () {
         var CERRADO = 'lg-menu-cerrado';
@@ -77,7 +81,7 @@
 
         <section class="content">
             <!-- El id permite refrescar solo esta zona cuando algo cambia, sin
-                 recargar la pagina entera: el menu, el usuario y la posicion
-                 dentro de una lista se quedan donde estan. -->
+                recargar la pagina entera: el menu, el usuario y la posicion
+                dentro de una lista se quedan donde estan. -->
             <div class="container-fluid p-0" id="lg-contenido">
 

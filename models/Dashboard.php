@@ -52,12 +52,12 @@ class Dashboard
     {
         $stmt = $db->prepare(
             "SELECT COUNT(*)
-             FROM asistencias a
-             INNER JOIN empleados e ON e.id = a.empleado_id
-             WHERE a.fecha = :f
-               AND a.hora_entrada IS NOT NULL
-               AND a.hora_salida IS NULL
-               AND e.estado = 1"
+            FROM asistencias a
+            INNER JOIN empleados e ON e.id = a.empleado_id
+            WHERE a.fecha = :f
+            AND a.hora_entrada IS NOT NULL
+            AND a.hora_salida IS NULL
+            AND e.estado = 1"
         );
         $stmt->execute([':f' => $fecha]);
 
@@ -124,12 +124,12 @@ class Dashboard
     {
         $stmt = $db->prepare(
             "SELECT COUNT(DISTINCT p.mesa_id)
-             FROM pedidos p
-             LEFT JOIN ventas v
-                    ON v.pedido_id = p.id AND v.estado = 'pagada'
-             WHERE v.id IS NULL
-               AND p.estado <> 'anulado'
-               AND p.mesa_id IS NOT NULL"
+            FROM pedidos p
+            LEFT JOIN ventas v
+                ON v.pedido_id = p.id AND v.estado = 'pagada'
+            WHERE v.id IS NULL
+            AND p.estado <> 'anulado'
+            AND p.mesa_id IS NOT NULL"
         );
         $stmt->execute();
 

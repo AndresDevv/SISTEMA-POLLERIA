@@ -71,9 +71,9 @@ if ($recurso !== 'movimientos'):
 
     $recursosExtra = [
         ['clave' => 'productos',   'recurso' => $recursoCrud, 'pagina' => 'inventario',
-         'titulo' => 'Productos',   'icono' => 'fa fa-cube'],
+        'titulo' => 'Productos',   'icono' => 'fa fa-cube'],
         ['clave' => 'categorias',  'recurso' => 'categorias', 'pagina' => 'inventario&tab=categorias',
-         'titulo' => 'Categorías',  'icono' => 'fa fa-tags'],
+        'titulo' => 'Categorías',  'icono' => 'fa fa-tags'],
     ];
 
     if ($veMovimientos) {

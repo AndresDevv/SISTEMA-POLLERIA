@@ -19,8 +19,8 @@ $saludo    = primerNombreDelUsuario();
     */ ?>
     <a href="<?= url(primeraPaginaPermitida()) ?>" class="brand-link lg-marca">
         <img src="<?= IMAGENES_URL ?>logo.png"
-             alt="<?= htmlspecialchars(APP_NOMBRE) ?>"
-             class="lg-marca-logo">
+            alt="<?= htmlspecialchars(APP_NOMBRE) ?>"
+            class="lg-marca-logo">
     </a>
 
     <div class="sidebar">

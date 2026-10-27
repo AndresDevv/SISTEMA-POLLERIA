@@ -46,11 +46,11 @@ class MenuDelDia
                     p.stock_minimo,
                     p.agotado,
                     c.nombre AS categoria
-             FROM productos p
-             INNER JOIN categorias c ON c.id = p.categoria_id
-             WHERE p.estado = 1
-               AND c.estado = 1
-             ORDER BY c.nombre, p.nombre"
+            FROM productos p
+            INNER JOIN categorias c ON c.id = p.categoria_id
+            WHERE p.estado = 1
+            AND c.estado = 1
+            ORDER BY c.nombre, p.nombre"
         );
 
         $grupos = [];

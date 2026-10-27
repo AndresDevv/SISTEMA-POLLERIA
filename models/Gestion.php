@@ -78,16 +78,16 @@ class Gestion
                 'campos' => [
                     'nombre'        => ['tipo' => 'texto', 'etiqueta' => 'Nombre y apellidos', 'requerido' => true],
                     'cargo'         => ['tipo' => 'enum', 'etiqueta' => 'Cargo', 'requerido' => true,
-                                         'opciones' => ['mesero', 'cocinero', 'cajero', 'administrador'],
-                                         'default'  => 'mesero'],
+                                        'opciones' => ['mesero', 'cocinero', 'cajero', 'administrador'],
+                                        'default'  => 'mesero'],
                     'dni'           => ['tipo' => 'digitos', 'etiqueta' => 'DNI', 'digitos' => 8, 'requerido' => true],
                     'telefono'      => ['tipo' => 'digitos', 'etiqueta' => 'Teléfono', 'digitos' => 9],
                     'direccion'     => ['tipo' => 'texto', 'etiqueta' => 'Dirección'],
                     'fecha_ingreso' => ['tipo' => 'fecha', 'etiqueta' => 'Fecha de ingreso'],
                     'usuario_id'    => ['tipo' => 'relacion', 'etiqueta' => 'Usuario de acceso (opcional)',
-                                         'tabla' => 'usuarios'],
+                                        'tabla' => 'usuarios'],
                     'pin'           => ['tipo' => 'digitos', 'etiqueta' => 'PIN Control de acceso (4 dígitos)', 'digitos' => 4,
-                                         'ayuda' => 'PIN de 4 dígitos para marcar entrada/salida en Control de acceso. Dejar vacío si no tiene.'],
+                                        'ayuda' => 'PIN de 4 dígitos para marcar entrada/salida en Control de acceso. Dejar vacío si no tiene.'],
                     'estado'        => ['tipo' => 'check', 'etiqueta' => 'Activo', 'default' => 1]
                 ],
                 'listado' => 'e.id, e.nombre, e.cargo, e.dni, e.telefono, e.direccion, e.fecha_ingreso, e.estado, e.pin',
@@ -119,13 +119,13 @@ class Gestion
                 'orden'  => 'fecha_vencimiento DESC',
                 'campos' => [
                     'tipo'              => ['tipo' => 'enum', 'etiqueta' => 'Tipo', 'requerido' => true,
-                                             'opciones' => ['luz', 'agua', 'internet', 'otro']],
+                                            'opciones' => ['luz', 'agua', 'internet', 'otro']],
                     'descripcion'       => ['tipo' => 'texto', 'etiqueta' => 'Descripción'],
                     'monto'             => ['tipo' => 'decimal', 'etiqueta' => 'Monto', 'requerido' => true, 'default' => 0],
                     'fecha_vencimiento' => ['tipo' => 'fecha', 'etiqueta' => 'Vencimiento'],
                     'fecha_pago'        => ['tipo' => 'fecha', 'etiqueta' => 'Fecha de pago'],
                     'estado'            => ['tipo' => 'enum', 'etiqueta' => 'Estado',
-                                             'opciones' => ['pendiente', 'pagado', 'vencido'], 'default' => 'pendiente']
+                                            'opciones' => ['pendiente', 'pagado', 'vencido'], 'default' => 'pendiente']
                 ],
                 'listado' => '*'
             ],
@@ -569,9 +569,9 @@ class Gestion
         if ($valor === null || $valor === '') {
 
             /* Un campo obligatorio nunca cae al valor de arranque.
-               El "default" sirve para que el formulario abra con un
-               número puesto (cantidad 1, precio 0), no para colar un
-               registro incompleto: si el campo es obligatorio y llega
+            El "default" sirve para que el formulario abra con un
+            número puesto (cantidad 1, precio 0), no para colar un
+            registro incompleto: si el campo es obligatorio y llega
                vacío, se devuelve null y quien valida lo rechaza. */
             if (!empty($regla['requerido'])) {
                 return null;

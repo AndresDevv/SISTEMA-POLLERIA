@@ -24,13 +24,13 @@ foreach ($productosModal as $p):
 
     /* Agotado y sin stock son dos cosas distintas y se muestran distinto.
 
-       Agotado es una decisión del turno: alguien del servicio lo marcó en el
-       Menú del día porque se terminó, y sale en rojo.
+    Agotado es una decisión del turno: alguien del servicio lo marcó en el
+    Menú del día porque se terminó, y sale en rojo.
 
-       Sin stock es un hecho del inventario: no hay unidades y no se puede
-       pedir, pero no está marcado como agotado y no se anuncia en rojo.
+    Sin stock es un hecho del inventario: no hay unidades y no se puede
+    pedir, pero no está marcado como agotado y no se anuncia en rojo.
 
-       Las dos impiden pedirlo, pero solo la primera se anuncia. */
+    Las dos impiden pedirlo, pero solo la primera se anuncia. */
     $marcadoAgotado = (int) ($p['agotado'] ?? 0) === 1;
     $sinStock       = $stockModal <= 0;
     $noSePuede      = $marcadoAgotado || $sinStock;

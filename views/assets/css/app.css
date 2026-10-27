@@ -1,8 +1,8 @@
 /* =========================================================
 /* =========================================================
-   LOS GOMEZ - Sistema de diseño
-   Basado en los diseños de Figma (dashboard, ventas, mesas)
-   ========================================================= */
+LOS GOMEZ - Sistema de diseño
+Basado en los diseños de Figma (dashboard, ventas, mesas)
+========================================================= */
 
 :root {
     /* Marca */
@@ -47,10 +47,10 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Tipografía de marca
-   Alfa Slab One: serif gruesa de estilo rótulo/restaurante.
-   Se guarda en local para que el sistema no dependa de internet.
-   --------------------------------------------------------- */
+Tipografía de marca
+Alfa Slab One: serif gruesa de estilo rótulo/restaurante.
+Se guarda en local para que el sistema no dependa de internet.
+--------------------------------------------------------- */
 @font-face {
     font-family: 'Alfa Slab One';
     src: url('../fonts/alfa-slab-one.woff2') format('woff2');
@@ -60,22 +60,22 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Sidebar amarillo
-   --------------------------------------------------------- */
+Sidebar amarillo
+--------------------------------------------------------- */
 .main-sidebar {
     width: var(--lg-sidebar);
     background-color: var(--lg-amarillo);
     box-shadow: none;
 
     /* AdminLTE deja 50 px de hueco arriba para que el navbar, que en su
-       diseño va fijo encima de todo, no tape el logo del menú.
+    diseño va fijo encima de todo, no tape el logo del menú.
 
-       Aquí el navbar no pasa por encima del menú lateral: arranca a la
-       derecha de la barra, así que ese hueco no lo tapa nada y solo empuja
-       el logo hacia abajo, dejando una franja amarilla vacía encima de él.
+    Aquí el navbar no pasa por encima del menú lateral: arranca a la
+    derecha de la barra, así que ese hueco no lo tapa nada y solo empuja
+    el logo hacia abajo, dejando una franja amarilla vacía encima de él.
 
-       Se deja en 10 px, que es el aire justo para que el logo no quede
-       pegado al borde superior como un recorte. */
+    Se deja en 10 px, que es el aire justo para que el logo no quede
+    pegado al borde superior como un recorte. */
     padding-top: 10px !important;
 }
 
@@ -86,8 +86,8 @@ body {
 
 
 /* ---------------------------------------------------------
-   Saludo del usuario, arriba del menú
-   --------------------------------------------------------- */
+Saludo del usuario, arriba del menú
+--------------------------------------------------------- */
 .lg-saludo {
     display: flex;
     align-items: center;
@@ -147,11 +147,11 @@ body {
 
 /* El logo del local, en la barra amarilla del menú.
 
-   El dibujo es negro con fondo transparente, así que se lee directo sobre
-   el amarillo. El margen de abajo lo sube un poco: al ser más ancho que
-   alto, centrado a la redonda deja más aire arriba que abajo y el logo
-   parece caído. El ancho se limita a la barra para que en tablet, donde el
-   menú se angosta, la imagen baje de tamaño en vez de salirse. */
+El dibujo es negro con fondo transparente, así que se lee directo sobre
+el amarillo. El margen de abajo lo sube un poco: al ser más ancho que
+alto, centrado a la redonda deja más aire arriba que abajo y el logo
+parece caído. El ancho se limita a la barra para que en tablet, donde el
+menú se angosta, la imagen baje de tamaño en vez de salirse. */
 .lg-marca-logo {
     display: block;
     max-width: 100%;
@@ -229,8 +229,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Navbar
-   --------------------------------------------------------- */
+Navbar
+--------------------------------------------------------- */
 .main-header {
     height: var(--lg-header);
     background-color: var(--lg-blanco);
@@ -284,8 +284,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Estructura de contenido
-   --------------------------------------------------------- */
+Estructura de contenido
+--------------------------------------------------------- */
 /* AdminLTE reserva 250px; lo alineamos a nuestro ancho de sidebar */
 .layout-fixed .main-sidebar {
     width: var(--lg-sidebar);
@@ -348,8 +348,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Tarjetas
-   --------------------------------------------------------- */
+Tarjetas
+--------------------------------------------------------- */
 .lg-card {
     background-color: var(--lg-blanco);
     border-radius: var(--lg-radio);
@@ -368,7 +368,7 @@ body {
 }
 
 /* Los botones que representan mesas heredan el color del estado
-   (especificidad mayor que .lg-btn para ganar la cascada) */
+(especificidad mayor que .lg-btn para ganar la cascada) */
 .lg-btn.lg-mesa-badge--libre     { background-color: var(--lg-verde-fondo);        color: #10B981; }
 .lg-btn.lg-mesa-badge--ocupada   { background-color: var(--lg-rojo-estado-fondo);  color: #EF4444; }
 .lg-btn.lg-mesa-badge--reservada { background-color: var(--lg-ambar-fondo);        color: var(--lg-ambar-texto); }
@@ -403,14 +403,14 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Menú del día
+Menú del día
 
-   La carta se lee de un vistazo: una fila por plato, con el
-   nombre grande a la izquierda y el botón de "agotado" a la
-   derecha. Todo lo que cambia según el estado va en una sola
-   línea de metadatos para que la vista se compare en vertical
-   y se sepa de un vistazo qué falta.
-   --------------------------------------------------------- */
+La carta se lee de un vistazo: una fila por plato, con el
+nombre grande a la izquierda y el botón de "agotado" a la
+derecha. Todo lo que cambia según el estado va en una sola
+línea de metadatos para que la vista se compare en vertical
+y se sepa de un vistazo qué falta.
+--------------------------------------------------------- */
 .lg-menu {
     display: flex;
     flex-direction: column;
@@ -430,9 +430,9 @@ body {
 }
 
 /* Lo que no se puede pedir se ve más apagado, sin llegar a desaparecer:
-   el mesero tiene que poder leer el nombre igual para saber qué se
-   terminó. Entra aquí tanto lo que se marcó como agotado como lo que se
-   quedó sin stock: para el que atiende la mesa es lo mismo. */
+el mesero tiene que poder leer el nombre igual para saber qué se
+terminó. Entra aquí tanto lo que se marcó como agotado como lo que se
+quedó sin stock: para el que atiende la mesa es lo mismo. */
 .lg-menu-item--fuera .lg-menu-nombre,
 .lg-menu-item--fuera .lg-menu-descripcion {
     opacity: 0.55;
@@ -474,7 +474,7 @@ body {
 }
 
 /* En tablet el botón va debajo del texto en vez de al costado: en
-   dos columnas la fila se queda sin ancho para las dos cosas. */
+dos columnas la fila se queda sin ancho para las dos cosas. */
 @media (max-width: 991px) {
     .lg-menu-item {
         align-items: stretch;
@@ -509,9 +509,9 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Tarjetas de indicador (dashboard)
-   Compactas: las 12 tarjetas entran sin barra de scroll
-   --------------------------------------------------------- */
+Tarjetas de indicador (dashboard)
+Compactas: las 12 tarjetas entran sin barra de scroll
+--------------------------------------------------------- */
 .lg-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -559,8 +559,8 @@ body {
 .lg-stat-value.is-dark  { color: #111; }
 
 /* ---------------------------------------------------------
-   Píldoras / badges
-   --------------------------------------------------------- */
+Píldoras / badges
+--------------------------------------------------------- */
 .lg-pill {
     display: inline-block;
     padding: 5px 14px;
@@ -577,8 +577,8 @@ body {
 .lg-pill--pizarra  { background-color: var(--lg-pizarra-fondo);     color: var(--lg-pizarra-texto); }
 
 /* ---------------------------------------------------------
-   Stock: verde si alcanza, rojo si falta
-   --------------------------------------------------------- */
+Stock: verde si alcanza, rojo si falta
+--------------------------------------------------------- */
 .lg-stock--alto {
     color: #2E9E4B;
     font-weight: 700;
@@ -628,8 +628,8 @@ body {
 .modal-producto-precio.lg-stock--agotado { color: var(--lg-rojo); }
 
 /* ---------------------------------------------------------
-   Tablas
-   --------------------------------------------------------- */
+Tablas
+--------------------------------------------------------- */
 .lg-table {
     width: 100%;
     border-collapse: collapse;
@@ -663,8 +663,8 @@ body {
 .lg-table--compact tbody td { padding: 10px 14px; }
 
 /* ---------------------------------------------------------
-   Filas label / valor (panel caja)
-   --------------------------------------------------------- */
+Filas label / valor (panel caja)
+--------------------------------------------------------- */
 .lg-rows { margin: 0; }
 
 .lg-row {
@@ -724,8 +724,8 @@ body {
 .lg-movement .lg-movement-value { margin-left: auto; font-weight: 600; }
 
 /* ---------------------------------------------------------
-   Mesas
-   --------------------------------------------------------- */
+Mesas
+--------------------------------------------------------- */
 .lg-mesas {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -838,7 +838,7 @@ body {
 .lg-mesa--reservada { background-color: #FFFDF5; border-color: #FDEBC8; }
 
 /* Tarjetas del usuario de cocina. Una mesa con pedido sin aceptar tiene que
-   saltar a la vista, así que va en amarillo y con un borde marcado. */
+saltar a la vista, así que va en amarillo y con un borde marcado. */
 .lg-mesa--pendiente  { background-color: #FFFBEB; border-color: #FCD34D; }
 .lg-mesa--preparando { background-color: #FEE6E6; border-color: #FBD5D5; }
 .lg-mesa--listo      { background-color: #ECFDF5; border-color: #A7F3D0; }
@@ -952,8 +952,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Aviso informativo
-   --------------------------------------------------------- */
+Aviso informativo
+--------------------------------------------------------- */
 .lg-info {
     display: flex;
     align-items: center;
@@ -967,8 +967,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Botones
-   --------------------------------------------------------- */
+Botones
+--------------------------------------------------------- */
 .lg-btn {
     display: inline-flex;
     align-items: center;
@@ -1004,8 +1004,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Formularios
-   --------------------------------------------------------- */
+Formularios
+--------------------------------------------------------- */
 .lg-input,
 .lg-select {
     width: 100%;
@@ -1062,8 +1062,8 @@ body {
 .lg-filters .lg-field { min-width: 180px; flex: 1 1 180px; }
 
 /* ---------------------------------------------------------
-   Segmentos (pestañas de la vista Mesas y Pedidos)
-   --------------------------------------------------------- */
+Segmentos (pestañas de la vista Mesas y Pedidos)
+--------------------------------------------------------- */
 .lg-segmentos {
     display: flex;
     flex-wrap: wrap;
@@ -1117,17 +1117,17 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Producto agotado y producto sin stock
+Producto agotado y producto sin stock
 
-   Son dos cosas distintas y se avisan distinto:
+Son dos cosas distintas y se avisan distinto:
 
-   - Agotado: alguien del servicio lo marcó en el Menú del día
-     porque se terminó. Se ve en rojo, es notorio y no se puede
-     pulsar.
-   - Sin stock: el inventario llegó a cero. No está marcado como
-     agotado, así que no se anuncia en rojo: solo se ve atenuado
-     y sin poder pulsarse, que es lo de siempre.
-   --------------------------------------------------------- */
+- Agotado: alguien del servicio lo marcó en el Menú del día
+    porque se terminó. Se ve en rojo, es notorio y no se puede
+    pulsar.
+- Sin stock: el inventario llegó a cero. No está marcado como
+    agotado, así que no se anuncia en rojo: solo se ve atenuado
+    y sin poder pulsarse, que es lo de siempre.
+--------------------------------------------------------- */
 
 /* Agotado: rojo, claro y a la vista. */
 .modal-producto.is-agotado {
@@ -1155,8 +1155,8 @@ body {
 }
 
 /* Sin stock: se sigue viendo, pero en gris y sin poder pulsarse.
-   Se atenúa un poco más que un botón deshabilitado normal para que resalte
-   que no es un fallo de la pantalla sino que no hay. */
+Se atenúa un poco más que un botón deshabilitado normal para que resalte
+que no es un fallo de la pantalla sino que no hay. */
 .modal-producto.is-sin-stock {
     opacity: 0.45;
     cursor: not-allowed;
@@ -1181,21 +1181,21 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Modal de pedido
-   --------------------------------------------------------- */
+Modal de pedido
+--------------------------------------------------------- */
 .modal-backdrop.show {
     opacity: 0.45;
 }
 
 /* ---------------------------------------------------------
-   Cuerpo del modal de pedido: dos paneles con scroll propio
+Cuerpo del modal de pedido: dos paneles con scroll propio
 
-   El problema que resuelve: "Pedidos ya registrados en esta
-   mesa" crecía hacia abajo y empujaba el catálogo fuera de
-   la pantalla, así que había que deslizar para poder pedir.
-   Ahora el catálogo es una columna fija con su propio scroll
-   y los pedidos anteriores van plegados en una línea.
-   --------------------------------------------------------- */
+El problema que resuelve: "Pedidos ya registrados en esta
+mesa" crecía hacia abajo y empujaba el catálogo fuera de
+la pantalla, así que había que deslizar para poder pedir.
+Ahora el catálogo es una columna fija con su propio scroll
+y los pedidos anteriores van plegados en una línea.
+--------------------------------------------------------- */
 #modalPedido .modal-dialog {
     max-width: 1000px;
 }
@@ -1243,9 +1243,9 @@ body {
 }
 
 /* Panel del pedido: el alto se reparte entre el plegable, la lista de
-   productos (que es la que scrollea) y la caja del Total (fija abajo).
-   Antes la lista crecía sin límite y empujaba el Total fuera de la pantalla,
-   sin scroll para llegar a él. */
+productos (que es la que scrollea) y la caja del Total (fija abajo).
+Antes la lista crecía sin límite y empujaba el Total fuera de la pantalla,
+sin scroll para llegar a él. */
 .lg-modal-pane--pedido {
     height: 100%;
 }
@@ -1498,7 +1498,7 @@ body {
 }
 
 /* Tablet: el modal ocupa toda la pantalla para que los botones
-   de acción queden siempre al alcance del dedo */
+de acción queden siempre al alcance del dedo */
 @media (max-width: 991px) {
     #modalPedido .modal-dialog {
         margin: 0;
@@ -1547,8 +1547,8 @@ body {
     }
 
     /* Apilados, los dos paneles no pueden repartirse un alto fijo: el
-       contenedor crece y scrollea el cuerpo del modal. El Total sigue
-       anclado abajo de su panel y la lista acota su propio alto. */
+    contenedor crece y scrollea el cuerpo del modal. El Total sigue
+    anclado abajo de su panel y la lista acota su propio alto. */
     .lg-modal-cuerpo {
         height: auto;
     }
@@ -1572,13 +1572,13 @@ body {
 }
 
 /* ---------------------------------------------------------
-   MODAL DE FORMULARIO (registros: Personal, Inventario, etc.)
-   --------------------------------------------------------- */
+MODAL DE FORMULARIO (registros: Personal, Inventario, etc.)
+--------------------------------------------------------- */
 /* El diálogo no puede pasar del alto de la pantalla, y solo el
-   cuerpo hace scroll: el título queda arriba y los botones abajo,
-   siempre a la vista. Antes, con muchos campos, el modal crecía
-   más que la ventana y había que deslizar toda la página para
-   encontrar el botón Guardar. */
+cuerpo hace scroll: el título queda arriba y los botones abajo,
+siempre a la vista. Antes, con muchos campos, el modal crecía
+más que la ventana y había que deslizar toda la página para
+encontrar el botón Guardar. */
 #modalFormulario .modal-dialog {
     max-width: 720px;
     margin: 16px auto;
@@ -1602,7 +1602,7 @@ body {
 }
 
 /* Los campos se reparten en dos columnas para que el formulario no
-   se alargue hacia abajo. En pantallas angostas vuelven a una. */
+se alargue hacia abajo. En pantallas angostas vuelven a una. */
 .lg-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1637,10 +1637,10 @@ body {
 }
 
 /* ---------------------------------------------------------
-   CAJA (modal de cobro de una mesa)
-   --------------------------------------------------------- */
+CAJA (modal de cobro de una mesa)
+--------------------------------------------------------- */
 /* El detalle de la cuenta puede tener varios pedidos, así que tiene su
-   propio scroll y un alto máximo: el total y los botones quedan fijos. */
+propio scroll y un alto máximo: el total y los botones quedan fijos. */
 .lg-caja-cuenta {
     max-height: 30vh;
     overflow-y: auto;
@@ -1741,9 +1741,9 @@ body {
 
 /* --- Lista de mesas por cobrar, cómoda en tablet ---------------------- */
 /* En una pantalla de tablet la tabla de seis columnas aprieta demasiado
-   el número de mesa y el total. Por debajo de 992 px cada fila se vuelve
-   una tarjeta con sus datos etiquetados: se lee de un vistazo y el botón
-   Cobrar queda grande para el dedo. */
+el número de mesa y el total. Por debajo de 992 px cada fila se vuelve
+una tarjeta con sus datos etiquetados: se lee de un vistazo y el botón
+Cobrar queda grande para el dedo. */
 @media (max-width: 991px) {
 
     .lg-table--caja thead {
@@ -1812,15 +1812,15 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Utilidades propias
-   Bootstrap 4.6 no incluye las utilidades gap-*
-   --------------------------------------------------------- */
+Utilidades propias
+Bootstrap 4.6 no incluye las utilidades gap-*
+--------------------------------------------------------- */
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 1rem; }
 
 /* ---------------------------------------------------------
-   Utilidades
-   --------------------------------------------------------- */
+Utilidades
+--------------------------------------------------------- */
 .lg-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: start; }
 .lg-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
 .lg-muted { color: var(--lg-texto-suave); }
@@ -1894,8 +1894,8 @@ body {
 }
 
 /* Marcado: fondo suave y borde del color de marca.
-   Se usa :has() y también una clase .is-activo que pone el JavaScript,
-   para que el resaltado no dependa del navegador. */
+Se usa :has() y también una clase .is-activo que pone el JavaScript,
+para que el resaltado no dependa del navegador. */
 .lg-chip--permiso:has(input:checked),
 .lg-chip--permiso.is-activo {
     background-color: var(--lg-rojo-claro);
@@ -1959,7 +1959,7 @@ body {
 }
 
 /* Aviso de "hay informacion nueva". Sale mientras se espera un momento
-   seguro para actualizar: hay un modal abierto o alguien escribiendo. */
+seguro para actualizar: hay un modal abierto o alguien escribiendo. */
 .lg-flash--pulso {
     position: fixed;
     top: 76px;
@@ -1983,13 +1983,13 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Comanda de cocina (modal de pedidos de una mesa)
+Comanda de cocina (modal de pedidos de una mesa)
 
-   A propósito NO reutiliza las tarjetas cuadradas del panel
-   de cocina general: aquí cabe el detalle de una sola mesa,
-   así que se presenta como una comanda de papel, con la
-   franja de color al costado y los pasos en fila.
-   --------------------------------------------------------- */
+A propósito NO reutiliza las tarjetas cuadradas del panel
+de cocina general: aquí cabe el detalle de una sola mesa,
+así que se presenta como una comanda de papel, con la
+franja de color al costado y los pasos en fila.
+--------------------------------------------------------- */
 .lg-comanda {
     display: flex;
     background-color: var(--lg-blanco);
@@ -2178,8 +2178,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Paginación de tablas
-   --------------------------------------------------------- */
+Paginación de tablas
+--------------------------------------------------------- */
 .lg-paginacion {
     display: flex;
     flex-wrap: wrap;
@@ -2402,14 +2402,14 @@ body {
 }
 
 /* ---------------------------------------------------------
-   Menú lateral: estado abierto / cerrado
+Menú lateral: estado abierto / cerrado
 
-   El contenido se separa del menú con `left`, no con `margin-left`.
-   Si se dejara el margen de AdminLTE, se sumaría al `left` y el
-   contenido quedaría corrido el doble. Por eso se pone a cero y se
-   fuerza con !important: AdminLTE lo declara dentro de sus propias
-   media queries y, sin esto, el margen ganaría.
-   --------------------------------------------------------- */
+El contenido se separa del menú con `left`, no con `margin-left`.
+Si se dejara el margen de AdminLTE, se sumaría al `left` y el
+contenido quedaría corrido el doble. Por eso se pone a cero y se
+fuerza con !important: AdminLTE lo declara dentro de sus propias
+media queries y, sin esto, el margen ganaría.
+--------------------------------------------------------- */
 .layout-fixed .main-header,
 .layout-fixed .content-wrapper {
     margin-left: 0 !important;
@@ -2417,9 +2417,9 @@ body {
 }
 
 /* Animación del menú.
-   El sidebar se desliza con transform (va por GPU) y el contenido acompaña
-   con la transición de `left`. Se declara explícitamente para reemplazar la
-   de AdminLTE, que se quedaba pendiente. */
+El sidebar se desliza con transform (va por GPU) y el contenido acompaña
+con la transición de `left`. Se declara explícitamente para reemplazar la
+de AdminLTE, que se quedaba pendiente. */
 .main-sidebar {
     transition: transform 0.28s ease, margin-left 0.28s ease;
     will-change: transform;
@@ -2440,17 +2440,17 @@ body.lg-menu-cerrado .content-wrapper {
 }
 
 /* ---------------------------------------------------------
-   Desplazamiento independiente
+Desplazamiento independiente
 
-   Antes toda la página se desplazaba junta, así que al bajar
-   en una tabla larga el navbar y el menú lateral se iban
-   con ella. Ahora el documento no tiene scroll: lo que
-   desliza es solo el contenido.
+Antes toda la página se desplazaba junta, así que al bajar
+en una tabla larga el navbar y el menú lateral se iban
+con ella. Ahora el documento no tiene scroll: lo que
+desliza es solo el contenido.
 
-   Ojo: nada de transform/will-change en .content-wrapper,
-   porque eso convertiría al contenedor en referencia de los
-   position:fixed de los modales y los dejaría encerrados.
-   --------------------------------------------------------- */
+Ojo: nada de transform/will-change en .content-wrapper,
+porque eso convertiría al contenedor en referencia de los
+position:fixed de los modales y los dejaría encerrados.
+--------------------------------------------------------- */
 html,
 body {
     height: 100%;
@@ -2472,12 +2472,12 @@ body {
     left: 0;
 
     /**
-     * El menú va POR ENCIMA del navbar.
-     *
-     * El navbar tiene z-index 1035 y el sidebar no tenía ninguno, así que
-     * al abrir el menú en una pantalla estrecha quedaba dibujado debajo y
-     * parecía escondido detrás de la barra.
-     */
+    * El menú va POR ENCIMA del navbar.
+    *
+    * El navbar tiene z-index 1035 y el sidebar no tenía ninguno, así que
+    * al abrir el menú en una pantalla estrecha quedaba dibujado debajo y
+    * parecía escondido detrás de la barra.
+    */
     z-index: 1045;
 
     /* Con muchos menús (el admin tiene 11) el sidebar se desliza solo */
@@ -2498,24 +2498,24 @@ body {
 }
 
 /* Ojo con el selector: layout-fixed está en el propio body, así que tiene
-   que ir en la misma cadena (body.lg-menu-cerrado.layout-fixed) y no como
-   descendiente (body.lg-menu-cerrado .layout-fixed), que nunca coincidiría. */
+que ir en la misma cadena (body.lg-menu-cerrado.layout-fixed) y no como
+descendiente (body.lg-menu-cerrado .layout-fixed), que nunca coincidiría. */
 body.lg-menu-cerrado.layout-fixed .main-header,
 body.lg-menu-cerrado.layout-fixed .content-wrapper {
     left: 0 !important;
 }
 
 /* ---------------------------------------------------------
-   Responsivo - tablet (prioridad: mesero / cocinero)
+Responsivo - tablet (prioridad: mesero / cocinero)
 
-   El equipo de salon no usa PC: usa tablet. Por eso los cortes estan
-   puestos donde importan de verdad y no pensando en el escritorio:
+El equipo de salon no usa PC: usa tablet. Por eso los cortes estan
+puestos donde importan de verdad y no pensando en el escritorio:
 
-     1200px+   tablet en horizontal con menu fijo
-      992-1199 tablet en horizontal justo (menu fijo y mas angosto)
-      768-991  tablet en vertical (el menu se desliza sobre el contenido)
-      <=767    telefono
-   --------------------------------------------------------- */
+    1200px+   tablet en horizontal con menu fijo
+    992-1199 tablet en horizontal justo (menu fijo y mas angosto)
+    768-991  tablet en vertical (el menu se desliza sobre el contenido)
+    <=767    telefono
+--------------------------------------------------------- */
 @media (max-width: 1199px) {
 
     /* Menu mas angosto para dejarle sitio al contenido */
@@ -2530,7 +2530,7 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
     :root { --lg-sidebar: 240px; }
 
     /* En tablet el sidebar se desliza, no empuja: el contenido ocupa todo
-       el ancho y el menu se superpone con el velo oscuro. */
+    el ancho y el menu se superpone con el velo oscuro. */
     .layout-fixed .main-header,
     .layout-fixed .content-wrapper {
         margin-left: 0 !important;
@@ -2588,7 +2588,7 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
     .lg-stat-value { font-size: 1.5rem; }
 
     /* Pulsera de pestanas y botones mas grandes: se tocan con el dedo,
-       no con el puntero fino de un raton. */
+    no con el puntero fino de un raton. */
     .lg-segmento {
         min-height: 50px;
         padding: 0 18px;
@@ -2628,12 +2628,12 @@ body.lg-menu-cerrado.layout-fixed .content-wrapper {
 }
 
 /* ---------------------------------------------------------
-   Caja en tablet
-   --------------------------------------------------------- */
+Caja en tablet
+--------------------------------------------------------- */
 /* Los tres resúmenes del mostrador son chicos: en tablet se ven mejor de a
-   dos que apilados uno debajo del otro. Va al final del archivo a propósito,
-   porque así gana por orden a la regla general de .lg-grid-3 (que en este
-   ancho los dejaría en una sola columna). */
+dos que apilados uno debajo del otro. Va al final del archivo a propósito,
+porque así gana por orden a la regla general de .lg-grid-3 (que en este
+ancho los dejaría en una sola columna). */
 @media (min-width: 768px) and (max-width: 991px) {
     .lg-caja-resumen {
         grid-template-columns: repeat(2, 1fr);

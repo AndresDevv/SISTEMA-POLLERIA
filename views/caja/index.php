@@ -124,14 +124,14 @@ $pagina = paginar($cuentas, 12);
     <?php else: ?>
 
         <form class="input-group mb-3 lg-buscar"
-              data-buscar-url="<?= BASE_URL ?>?page=caja">
+            data-buscar-url="<?= BASE_URL ?>?page=caja">
             <input type="search"
-                   class="lg-input"
-                   name="buscar"
-                   placeholder="Buscar mesa por número..."
-                   value="<?= htmlspecialchars($buscar) ?>"
-                   autocomplete="off"
-                   aria-label="Buscar">
+                class="lg-input"
+                name="buscar"
+                placeholder="Buscar mesa por número..."
+                value="<?= htmlspecialchars($buscar) ?>"
+                autocomplete="off"
+                aria-label="Buscar">
             <span class="input-group-btn">
                 <button type="submit" class="lg-btn lg-btn--primary" title="Buscar">
                     <i class="fa fa-search"></i>

@@ -245,8 +245,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
                 $_SESSION['mensaje'] = [
                     'tipo'  => 'ok',
                     'texto' => 'Rol "' . $nombre . '" creado con ' . $cuenta
-                             . ' permiso' . ($cuenta === 1 ? '' : 's')
-                             . '. Ya puede usarse al agregar usuarios.'
+                            . ' permiso' . ($cuenta === 1 ? '' : 's')
+                            . '. Ya puede usarse al agregar usuarios.'
                 ];
             }
         }

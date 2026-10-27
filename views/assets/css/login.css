@@ -1,10 +1,10 @@
 /* =========================================================
-   Pantalla de inicio de sesión
+Pantalla de inicio de sesión
 
-   El diseño usa los mismos colores que el resto del sistema: el rojo de
-   la marca en los botones y los detalles, y el gris claro del fondo para
-   que la tarjeta se lea sin esfuerzo.
-   ========================================================= */
+El diseño usa los mismos colores que el resto del sistema: el rojo de
+la marca en los botones y los detalles, y el gris claro del fondo para
+que la tarjeta se lea sin esfuerzo.
+========================================================= */
 
 * {
     margin: 0;
@@ -26,8 +26,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   PANEL DE LA MARCA (izquierda)
-   --------------------------------------------------------- */
+PANEL DE LA MARCA (izquierda)
+--------------------------------------------------------- */
 .login-brand {
     width: 36%;
     min-height: 100vh;
@@ -49,9 +49,9 @@ body {
 
 /* Cuadro del logo.
 
-   El logo es un dibujo negro con fondo transparente y este panel es rojo:
-   sin un fondo propio no se leeria nada. El ancho se limita al panel para
-   que en una pantalla angosta la imagen baje de tamaño en vez de salirse. */
+El logo es un dibujo negro con fondo transparente y este panel es rojo:
+sin un fondo propio no se leeria nada. El ancho se limita al panel para
+que en una pantalla angosta la imagen baje de tamaño en vez de salirse. */
 .logo-container {
     background-color: #ffffff;
     border-radius: 16px;
@@ -68,8 +68,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   PANEL DEL FORMULARIO (derecha)
-   --------------------------------------------------------- */
+PANEL DEL FORMULARIO (derecha)
+--------------------------------------------------------- */
 .login-panel {
     width: 64%;
     min-height: 100vh;
@@ -125,8 +125,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   CAMPOS
-   --------------------------------------------------------- */
+CAMPOS
+--------------------------------------------------------- */
 .form-group {
     margin-bottom: 22px;
 }
@@ -171,8 +171,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   BOTON
-   --------------------------------------------------------- */
+BOTON
+--------------------------------------------------------- */
 
 /* ---------------------------------------------------------
     BOTÓN DE MOSTRAR/OCULTAR CONTRASEÑA
@@ -265,8 +265,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   MENSAJE DE ERROR
-   --------------------------------------------------------- */
+MENSAJE DE ERROR
+--------------------------------------------------------- */
 .login-error {
     display: flex;
     align-items: center;
@@ -286,11 +286,11 @@ body {
 }
 
 /* ---------------------------------------------------------
-   TABLET Y PANTALLA ANGOSTA
+TABLET Y PANTALLA ANGOSTA
 
-   El equipo entra con tablet, así que los campos y el botón se hacen
-   más altos: se tocan con el dedo, no con el puntero de un ratón.
-   --------------------------------------------------------- */
+El equipo entra con tablet, así que los campos y el botón se hacen
+más altos: se tocan con el dedo, no con el puntero de un ratón.
+--------------------------------------------------------- */
 @media (max-width: 900px) {
 
     .login-container {

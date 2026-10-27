@@ -46,9 +46,9 @@ class Permiso
 
             $stmt = $db->prepare(
                 "SELECT p.nombre
-                 FROM rol_permiso rp
-                 INNER JOIN permisos p ON p.id = rp.permiso_id
-                 WHERE rp.rol_id = :rol"
+                FROM rol_permiso rp
+                INNER JOIN permisos p ON p.id = rp.permiso_id
+                WHERE rp.rol_id = :rol"
             );
             $stmt->execute([':rol' => $rolId]);
 

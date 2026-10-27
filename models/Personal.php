@@ -27,10 +27,10 @@ class Personal
                     e.estado,
                     u.usuario,
                     r.nombre AS rol
-             FROM empleados e
-             LEFT JOIN usuarios u ON u.id = e.usuario_id
-             LEFT JOIN roles r ON r.id = u.rol_id
-             ORDER BY nombre"
+            FROM empleados e
+            LEFT JOIN usuarios u ON u.id = e.usuario_id
+            LEFT JOIN roles r ON r.id = u.rol_id
+            ORDER BY nombre"
         )->fetchAll();
     }
 
@@ -41,11 +41,11 @@ class Personal
     {
         return $this->conexion->query(
             "SELECT a.*, COALESCE(e.nombre, u.nombre, e.cargo, 'Trabajador') AS empleado
-             FROM asistencias a
-             INNER JOIN empleados e ON e.id = a.empleado_id
-             LEFT JOIN usuarios u ON u.id = e.usuario_id
-             WHERE a.fecha = CURDATE()
-             ORDER BY empleado"
+            FROM asistencias a
+            INNER JOIN empleados e ON e.id = a.empleado_id
+            LEFT JOIN usuarios u ON u.id = e.usuario_id
+            WHERE a.fecha = CURDATE()
+            ORDER BY empleado"
         )->fetchAll();
     }
 
@@ -82,7 +82,7 @@ class Personal
 
             $stmt = $this->conexion->prepare(
                 "INSERT INTO asistencias (empleado_id, fecha, hora_entrada, estado)
-                 VALUES (:emp, CURDATE(), CURTIME(), 'presente')"
+                VALUES (:emp, CURDATE(), CURTIME(), 'presente')"
             );
             $stmt->execute([':emp' => $empleadoId]);
 
@@ -135,7 +135,7 @@ class Personal
 
         $stmt = $this->conexion->prepare(
             "INSERT INTO pagos_personal (empleado_id, periodo, monto, fecha_pago, observacion)
-             VALUES (:emp, :periodo, :monto, CURDATE(), :obs)"
+            VALUES (:emp, :periodo, :monto, CURDATE(), :obs)"
         );
         $stmt->execute([
             ':emp'     => $empleadoId,
@@ -154,10 +154,10 @@ class Personal
     {
         return $this->conexion->query(
             "SELECT e.id, e.nombre, e.usuario_id, u.usuario, e.pin
-             FROM empleados e
-             LEFT JOIN usuarios u ON u.id = e.usuario_id
-             WHERE e.estado = 1
-             ORDER BY e.nombre"
+            FROM empleados e
+            LEFT JOIN usuarios u ON u.id = e.usuario_id
+            WHERE e.estado = 1
+            ORDER BY e.nombre"
         )->fetchAll();
     }
 
@@ -168,10 +168,10 @@ class Personal
     {
         $stmt = $this->conexion->prepare(
             "SELECT e.id, e.nombre, e.usuario_id, u.usuario, e.pin
-             FROM empleados e
-             LEFT JOIN usuarios u ON u.id = e.usuario_id
-             WHERE e.id = :id AND e.estado = 1
-             LIMIT 1"
+            FROM empleados e
+            LEFT JOIN usuarios u ON u.id = e.usuario_id
+            WHERE e.id = :id AND e.estado = 1
+            LIMIT 1"
         );
         $stmt->execute([':id' => $id]);
         $row = $stmt->fetch();

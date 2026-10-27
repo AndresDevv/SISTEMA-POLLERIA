@@ -77,9 +77,9 @@ class Venta
 
         $stmt = $this->conexion->prepare(
             "SELECT COALESCE(SUM(total), 0)
-             FROM ventas
-             WHERE DATE(fecha) = :f
-               AND estado = 'pagada'"
+            FROM ventas
+            WHERE DATE(fecha) = :f
+            AND estado = 'pagada'"
         );
         $stmt->execute([':f' => $fecha]);
 
@@ -149,7 +149,7 @@ class Venta
                 LEFT JOIN pagos pg ON pg.venta_id = v.id
                 LEFT JOIN metodos_pago mp ON mp.id = pg.metodo_pago_id
                 WHERE DATE(v.fecha) = CURDATE()
-                  AND v.estado = 'pagada'
+                AND v.estado = 'pagada'
                 GROUP BY v.id, v.pedido_id, v.total, v.fecha, m.numero
                 ORDER BY v.fecha DESC";
 

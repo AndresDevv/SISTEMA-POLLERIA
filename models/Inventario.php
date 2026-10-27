@@ -97,7 +97,7 @@ class Inventario
             $stmt = $this->conexion->prepare(
                 "INSERT INTO movimientos_inventario
                     (producto_id, usuario_id, tipo, cantidad, stock_anterior, stock_nuevo, motivo)
-                 VALUES (:producto_id, :usuario_id, :tipo, :cantidad, :anterior, :nuevo, :motivo)"
+                VALUES (:producto_id, :usuario_id, :tipo, :cantidad, :anterior, :nuevo, :motivo)"
             );
             $stmt->execute([
                 ':producto_id' => $productoId,

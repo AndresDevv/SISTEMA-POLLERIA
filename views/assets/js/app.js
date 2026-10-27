@@ -1,6 +1,6 @@
 /* =========================================================
     LOS GOMEZ - Comportamiento de las vistas
-   ========================================================= */
+========================================================= */
 
 (function ($) {
     'use strict';
@@ -13,7 +13,7 @@
         /* Se busca cada vez que se usa. El motor de tiempo real repone los
             modales cada 5 segundos y una referencia guardada apuntaria al
             elemento viejo, que ya no esta en la pagina: el formulario se
-           llenaba pero no se abria. */
+        llenaba pero no se abria. */
         var formModal = function () {
             return $('#modalFormulario');
         };
@@ -221,7 +221,7 @@
                         campo puede prestarse a confusión (por ejemplo, que
                         "Unidad de medida" es una palabra como "litros" y no
                         un número). Como el texto es largo, el campo ocupa
-                       las dos columnas para que se lea completo. */
+                    las dos columnas para que se lea completo. */
                     if (regla.ayuda) {
                         $grupo.addClass('is-ancho');
 
@@ -527,7 +527,7 @@
         });
 
         /* Al volver o avanzar con el botón del navegador, el contenido
-           se repinta para que quede alineado con la URL. */
+        se repinta para que quede alineado con la URL. */
         window.addEventListener('popstate', function () {
             if (window.refrescarContenido) {
                 window.refrescarContenido();
@@ -808,23 +808,23 @@
         // Avisosemergentes
         // -------------------------------------------------
         /**
-         * Cartel flotante con un mensaje.
-         *
-         * Se usa para confirmar o explicar un cambio puntual, cuando el
-         * refresco automático se encarga del resto y no hay un botón que
-         * quede pulsado que ya lo diga.
-         *
-         * Vive fuera del recuadro de contenido, así que sobrevive al
-         * refresco de los datos y no lo borra el que viene después.
-         */
+            * Cartel flotante con un mensaje.
+            *
+            * Se usa para confirmar o explicar un cambio puntual, cuando el
+            * refresco automático se encarga del resto y no hay un botón que
+            * quede pulsado que ya lo diga.
+            *
+            * Vive fuera del recuadro de contenido, así que sobrevive al
+            * refresco de los datos y no lo borra el que viene después.
+            */
         window.Alerta = (function () {
 
             var DURACION_MS = 3200;
 
             /**
-             * @param {string} texto  mensaje a mostrar
-             * @param {string} tipo   'ok', 'error' o 'alerta'
-             */
+                * @param {string} texto  mensaje a mostrar
+                * @param {string} tipo   'ok', 'error' o 'alerta'
+                */
             var mostrar = function (texto, tipo) {
 
                 if (!texto) {
@@ -868,14 +868,14 @@
         // Tiempo real: toda la pantalla se sola
         // -------------------------------------------------
         /**
-         * Consulta cada pocos segundos si algo cambió en el sistema y, si
-         * cambió, actualiza la página sin que nadie tenga que recargar.
-         *
-         * No se refresca si hay un modal abierto o si alguien está escribiendo
-         * en un campo: en ese caso se avisa con una barrita y se actualiza
-         * apenas quede libre, para no borrar lo que la persona estaba
-         * escribiendo ni dejarla a medias de un cobro.
-         */
+            * Consulta cada pocos segundos si algo cambió en el sistema y, si
+            * cambió, actualiza la página sin que nadie tenga que recargar.
+            *
+            * No se refresca si hay un modal abierto o si alguien está escribiendo
+            * en un campo: en ese caso se avisa con una barrita y se actualiza
+            * apenas quede libre, para no borrar lo que la persona estaba
+            * escribiendo ni dejarla a medias de un cobro.
+            */
         var TiempoReal = (function () {
 
             var CADA_CUANTO_MS = 5000;
@@ -930,33 +930,33 @@
             };
 
             /**
-             * Actualiza SOLO el contenido de la pantalla, sin recargar.
-             *
-             * Se vuelve a pedir la página al servidor y se cambia el interior
-             * del recuadro de contenido por el nuevo. Así el menú, el usuario y
-             * la posición dentro de una lista se quedan donde están.
-             *
-             * Los modales viven fuera de ese recuadro (se mudan al body al
-             * cargar) y los botones usan eventos delegados sobre document, así
-             * que todo sigue funcionando tras el cambio.
-             *
-             * @param function|null alTerminar  se llama solo si la pantalla se
-             *        repintó de verdad, que es cuando el cambio puede darse por
-             *        visto.
-             * @param function|null alFallar    se llama si la petición no pudo
-             *        completarse, para que el cambio siga pendiente y se
-             *        reintente solo en el siguiente sondeo.
-             */
+                * Actualiza SOLO el contenido de la pantalla, sin recargar.
+                *
+                * Se vuelve a pedir la página al servidor y se cambia el interior
+                * del recuadro de contenido por el nuevo. Así el menú, el usuario y
+                * la posición dentro de una lista se quedan donde están.
+                *
+                * Los modales viven fuera de ese recuadro (se mudan al body al
+                * cargar) y los botones usan eventos delegados sobre document, así
+                * que todo sigue funcionando tras el cambio.
+                *
+                * @param function|null alTerminar  se llama solo si la pantalla se
+                *        repintó de verdad, que es cuando el cambio puede darse por
+                *        visto.
+                * @param function|null alFallar    se llama si la petición no pudo
+                *        completarse, para que el cambio siga pendiente y se
+                *        reintente solo en el siguiente sondeo.
+                */
             var refrescarContenido = function (alTerminar, alFallar) {
 
                 /**
-                 * Con un modal abierto o un campo enfocado no se toca nada.
-                 *
-                 * Cambiar el contenido por debajo dejaria a medias lo que la
-                 * persona esta haciendo, y ademas se perderia un modal
-                 * abierto: al meter el HTML nuevo se borra el que estaba en
-                 * pantalla. Se espera un poco y se reintenta cuando quede libre.
-                 */
+                    * Con un modal abierto o un campo enfocado no se toca nada.
+                    *
+                    * Cambiar el contenido por debajo dejaria a medias lo que la
+                    * persona esta haciendo, y ademas se perderia un modal
+                    * abierto: al meter el HTML nuevo se borra el que estaba en
+                    * pantalla. Se espera un poco y se reintenta cuando quede libre.
+                    */
                 if (!seguro()) {
                     window.setTimeout(function () {
                         refrescarContenido(alTerminar, alFallar);
@@ -991,15 +991,15 @@
                     $contenido.html(nuevo.innerHTML);
 
                     /**
-                     * Los modales hay que mudarlos otra vez al body.
-                     *
-                     * Al cargar la pagina se mudan para que sus capas queden
-                     * por encima del menu. Si no se hiciera tras el refresco,
-                     * cada cambio dejaria un modal nuevo atrapado dentro del
-                     * contenido y el de verdad se quedaria abierto con el
-                     * "Cargando pedidos..." congelado: dos elementos con el
-                     * mismo id, y el primero que se encuentra gana.
-                     */
+                        * Los modales hay que mudarlos otra vez al body.
+                        *
+                        * Al cargar la pagina se mudan para que sus capas queden
+                        * por encima del menu. Si no se hiciera tras el refresco,
+                        * cada cambio dejaria un modal nuevo atrapado dentro del
+                        * contenido y el de verdad se quedaria abierto con el
+                        * "Cargando pedidos..." congelado: dos elementos con el
+                        * mismo id, y el primero que se encuentra gana.
+                        */
                     $('body > .modal').remove();
                     $contenido.find('.modal').appendTo(document.body);
 
@@ -1010,13 +1010,13 @@
                 .fail(function () {
 
                     /**
-                     * La pantalla no se pudo repintar.
-                     *
-                     * Se avisa para que el cambio siga marcado como pendiente y
-                     * se vuelva a intentar en el siguiente sondeo. Sin esto, el
-                     * fallo se comeria el cambio en silencio y la pantalla
-                     * quedaria desfasada hasta que alguien recargara a mano.
-                     */
+                        * La pantalla no se pudo repintar.
+                        *
+                        * Se avisa para que el cambio siga marcado como pendiente y
+                        * se vuelva a intentar en el siguiente sondeo. Sin esto, el
+                        * fallo se comeria el cambio en silencio y la pantalla
+                        * quedaria desfasada hasta que alguien recargara a mano.
+                        */
                     if (typeof alFallar === 'function') {
                         alFallar();
                     }
@@ -1051,13 +1051,13 @@
                 };
 
                 /**
-                 * Revisa el catálogo del modal y lo repinta si cambió.
-                 *
-                 * @return {boolean} true si había un modal abierto y se
-                 *         acaba de mirar su catálogo. Lo usa el motor de
-                 *         tiempo real para saber si tiene sentido seguir
-                 *         anunciando un refresco de pantalla.
-                 */
+                    * Revisa el catálogo del modal y lo repinta si cambió.
+                    *
+                    * @return {boolean} true si había un modal abierto y se
+                    *         acaba de mirar su catálogo. Lo usa el motor de
+                    *         tiempo real para saber si tiene sentido seguir
+                    *         anunciando un refresco de pantalla.
+                    */
                 var consultar = function () {
                     var catalogo = catalogoVisible();
 
@@ -1112,19 +1112,19 @@
             })();
 
             /**
-             * Refresca el contenido y da por visto lo que habia pendiente.
-             *
-             * La firma se guarda SOLO cuando la pantalla se repinto de verdad,
-             * no antes. Si se guardara antes, y esa peticion fallara, el
-             * siguiente sondeo compararia contra una firma ya nueva, diria
-             * que no cambio nada y la pantalla se quedaria con el dato viejo
-             * para siempre: el unico arreglo seria recargar a mano. Con la
-             * firma donde toca, el cambio sigue pendiente y se reintenta solo
-             * en el siguiente sondeo.
-             *
-             * @param string|null nuevaFirma  la firma del servidor, que se
-             *        guarda aqui al terminar bien el refresco.
-             */
+                * Refresca el contenido y da por visto lo que habia pendiente.
+                *
+                * La firma se guarda SOLO cuando la pantalla se repinto de verdad,
+                * no antes. Si se guardara antes, y esa peticion fallara, el
+                * siguiente sondeo compararia contra una firma ya nueva, diria
+                * que no cambio nada y la pantalla se quedaria con el dato viejo
+                * para siempre: el unico arreglo seria recargar a mano. Con la
+                * firma donde toca, el cambio sigue pendiente y se reintenta solo
+                * en el siguiente sondeo.
+                *
+                * @param string|null nuevaFirma  la firma del servidor, que se
+                *        guarda aqui al terminar bien el refresco.
+                */
             var actualizar = function (nuevaFirma) {
 
                 quitarBarra();
@@ -1139,10 +1139,10 @@
                 }, function () {
 
                     /**
-                     * El refresco fallo. "pendiente" se queda en true a
-                     * proposito: el siguiente sondeo volvera a detectar el
-                     * cambio y lo reintentara solo.
-                     */
+                        * El refresco fallo. "pendiente" se queda en true a
+                        * proposito: el siguiente sondeo volvera a detectar el
+                        * cambio y lo reintentara solo.
+                        */
                     mostrarBarra();
                 });
             };
@@ -1177,13 +1177,13 @@
                     }
 
                     /**
-                     * Nada cambio desde la ultima vuelta.
-                     *
-                     * Pero si venia algo pendiente, se reintenta aqui y no
-                     * solo al abrir o cerrar un modal: si el cambio se detecto
-                     * con un modal abierto, esa senal ya habia pasado y la
-                     * pantalla se quedaba congelada para siempre.
-                     */
+                        * Nada cambio desde la ultima vuelta.
+                        *
+                        * Pero si venia algo pendiente, se reintenta aqui y no
+                        * solo al abrir o cerrar un modal: si el cambio se detecto
+                        * con un modal abierto, esa senal ya habia pasado y la
+                        * pantalla se quedaba congelada para siempre.
+                        */
                     if (!pendiente && !r.cambia) {
                         firma = r.firma;
                         return;
@@ -1192,35 +1192,35 @@
                     pendiente = true;
 
                     /**
-                     * La firma SOLO se mueve cuando la pantalla se refresca
-                     * de verdad.
-                     *
-                     * Si se guardara antes, un cambio detectado con un modal
-                     * abierto se daria por visto sin llegar a mostrarse, y la
-                     * tabla se quedaria con el dato viejo para siempre.
-                     */
+                        * La firma SOLO se mueve cuando la pantalla se refresca
+                        * de verdad.
+                        *
+                        * Si se guardara antes, un cambio detectado con un modal
+                        * abierto se daria por visto sin llegar a mostrarse, y la
+                        * tabla se quedaria con el dato viejo para siempre.
+                        */
                     if (seguro()) {
                         actualizar(r.firma);
                     } else {
                         /**
-                         * Hay un modal abierto, así que la pantalla no se
-                         * toca. Pero el catálogo del modal de pedidos sí
-                         * puede repintarse sin perder lo que se está
-                         * armando, y por eso se le pregunta aparte.
-                         */
+                            * Hay un modal abierto, así que la pantalla no se
+                            * toca. Pero el catálogo del modal de pedidos sí
+                            * puede repintarse sin perder lo que se está
+                            * armando, y por eso se le pregunta aparte.
+                            */
                         var catLogoActualizado = catalogoVivo.consultar();
 
                         /**
-                         * El cartel de "actualizando" solo tiene sentido si
-                         * de verdad va a venir un refresco de la pantalla.
-                         * Con el modal abierto no lo hay, y dejarlo puesto
-                         * prometía una actualización que el usuario no iba
-                         * a ver nunca: el catálogo sí cambia, el resto no.
-                         *
-                         * Lo que queda pendiente se actualiza al cerrar el
-                         * modal, que es donde el propio motor ya está
-                         * escuchando.
-                         */
+                            * El cartel de "actualizando" solo tiene sentido si
+                            * de verdad va a venir un refresco de la pantalla.
+                            * Con el modal abierto no lo hay, y dejarlo puesto
+                            * prometía una actualización que el usuario no iba
+                            * a ver nunca: el catálogo sí cambia, el resto no.
+                            *
+                            * Lo que queda pendiente se actualiza al cerrar el
+                            * modal, que es donde el propio motor ya está
+                            * escuchando.
+                            */
                         if (!catLogoActualizado) {
                             mostrarBarra();
                         }
@@ -1242,15 +1242,15 @@
                     window.setInterval(consultar, CADA_CUANTO_MS);
 
                     /**
-                     * El catálogo del modal se mira por su cuenta.
-                     *
-                     * El refresco normal se detiene en cuanto hay un modal
-                     * abierto, así que si solo se comprobara dentro de él,
-                     * un cambio que llegue con el modal abierto no volvería
-                     * a mirarse hasta que se cerrara. Con este intervalo
-                     * propio pasa lo contrario: se repinta el catálogo en
-                     * caliente aunque la pantalla entera siga congelada.
-                     */
+                        * El catálogo del modal se mira por su cuenta.
+                        *
+                        * El refresco normal se detiene en cuanto hay un modal
+                        * abierto, así que si solo se comprobara dentro de él,
+                        * un cambio que llegue con el modal abierto no volvería
+                        * a mirarse hasta que se cerrara. Con este intervalo
+                        * propio pasa lo contrario: se repinta el catálogo en
+                        * caliente aunque la pantalla entera siga congelada.
+                        */
                     window.setInterval(catalogoVivo.consultar, 6000);
 
                     // Si el modal se cierra o el campo pierde el foco, se
@@ -1277,23 +1277,23 @@
         $(document).on('click', function () { Alarma.despertar(); });
 
         /**
-         * El tiempo real arranca aquí y no al final del archivo a propósito:
-         * más abajo hay un return temprano que corta todo lo que sigue para
-         * quien no puede registrar pedidos (el usuario de cocina), y ese rol
-         * necesita las actualizaciones tanto como los demás.
-         */
+            * El tiempo real arranca aquí y no al final del archivo a propósito:
+            * más abajo hay un return temprano que corta todo lo que sigue para
+            * quien no puede registrar pedidos (el usuario de cocina), y ese rol
+            * necesita las actualizaciones tanto como los demás.
+            */
         TiempoReal.arrancar();
 
         /**
-         * Clic en una tarjeta de mesa.
-         *
-         * Va aquí y no junto al modal de pedido a propósito: más abajo hay un
-         * return temprano que corta este archivo entero para quien no puede
-         * registrar pedidos (el usuario de cocina), y si el binding viviera
-         * después nunca se engancharía.
-         *
-         * Se delega en document para no depender de cuándo se pintó la rejilla.
-         */
+            * Clic en una tarjeta de mesa.
+            *
+            * Va aquí y no junto al modal de pedido a propósito: más abajo hay un
+            * return temprano que corta este archivo entero para quien no puede
+            * registrar pedidos (el usuario de cocina), y si el binding viviera
+            * después nunca se engancharía.
+            *
+            * Se delega en document para no depender de cuándo se pintó la rejilla.
+            */
         $(document).on('click', '.lg-mesa-main', function () {
 
             var $card = $(this);
@@ -1332,11 +1332,11 @@
         if (modalMesa().length) {
 
             /**
-             * Los cuatro pasos por los que pasa un pedido en cocina.
-             *
-             * El índice es el estado; el último ya está servido y no lleva
-             * botón, porque ya no hay nada que hacer en cocina.
-             */
+                * Los cuatro pasos por los que pasa un pedido en cocina.
+                *
+                * El índice es el estado; el último ya está servido y no lleva
+                * botón, porque ya no hay nada que hacer en cocina.
+                */
             var PASOS = [
                 { clave: 'pendiente',  nombre: 'Recibido', accion: 'preparando', texto: 'Aceptar',        icono: 'fa fa-play' },
                 { clave: 'preparando', nombre: 'En cocina', accion: 'preparado',  texto: 'Marcar listo',  icono: 'fa fa-check' },
@@ -1462,9 +1462,9 @@
         }
 
         /**
-         * Formatea un monto. Vive aquí y no dentro de un bloque suelto porque
-         * lo usan el modal de pedidos, el de cobro y el de stock.
-         */
+            * Formatea un monto. Vive aquí y no dentro de un bloque suelto porque
+            * lo usan el modal de pedidos, el de cobro y el de stock.
+            */
         var soles = function (monto) {
             return 'S/ ' + Number(monto || 0).toFixed(2);
         };
@@ -1506,8 +1506,8 @@
         // Caja: cobro de la cuenta completa de una mesa
         // -------------------------------------------------
         /* El modal se busca cada vez que se usa: el motor de tiempo real
-           repone los modales y una referencia guardada apuntaria al
-           elemento viejo, que ya no esta en la pagina. */
+        repone los modales y una referencia guardada apuntaria al
+        elemento viejo, que ya no esta en la pagina. */
         var modalCaja = function () {
             return $('#modalCaja');
         };
@@ -1588,7 +1588,7 @@
                     });
 
                     var $quitar = $('<button type="button" class="lg-btn lg-btn--sm lg-btn--ghost" title="Quitar">' +
-                                   '<i class="fa fa-times"></i></button>');
+                                '<i class="fa fa-times"></i></button>');
 
                     $quitar.on('click', function () {
                         caja.lineas.splice(indice, 1);
@@ -1610,11 +1610,11 @@
             };
 
             /**
-             * Revisa que lo pagado cuadre con el total y calcula el vuelto.
-             *
-             * El vuelto solo tiene sentido si el cliente paga en efectivo con
-             * un billete grande: se compara lo que entregó contra el total.
-             */
+                * Revisa que lo pagado cuadre con el total y calcula el vuelto.
+                *
+                * El vuelto solo tiene sentido si el cliente paga en efectivo con
+                * un billete grande: se compara lo que entregó contra el total.
+                */
             var actualizarResumenCaja = function () {
 
                 var suma = 0;
@@ -1760,8 +1760,8 @@
                 })
                 .done(function () {
                     /* Se cierra el modal antes de refrescar: el motor de
-                       tiempo real no repinta la pantalla mientras haya un
-                       modal abierto. */
+                    tiempo real no repinta la pantalla mientras haya un
+                    modal abierto. */
                     modalCaja().modal('hide');
 
                     $boton.prop('disabled', false).html(textoOriginal);
@@ -1809,8 +1809,8 @@
         // Ajuste de stock
         // -------------------------------------------------
         /* Se busca cada vez que se usa. El motor de tiempo real repone los
-           modales cada 5 segundos y una referencia guardada apuntaria al
-           elemento viejo, que ya no esta en la pagina. */
+        modales cada 5 segundos y una referencia guardada apuntaria al
+        elemento viejo, que ya no esta en la pagina. */
         var stockModal = function () {
             return $('#modalStock');
         };
@@ -1823,8 +1823,8 @@
 
                 var tipo = $('#stockTipo').val();
                 var texto = tipo === 'entrada' ? 'Cantidad a ingresar'
-                          : tipo === 'salida' ? 'Cantidad a descontar'
-                          : 'Stock real (queda en este valor)';
+                        : tipo === 'salida' ? 'Cantidad a descontar'
+                        : 'Stock real (queda en este valor)';
 
                 $('#stockEtiqueta').text(texto);
             };
@@ -1916,8 +1916,8 @@
         // Mesas: reservar, liberar, agregar y eliminar
         // -------------------------------------------------
         /* Se busca cada vez que se usa. El motor de tiempo real repone los
-           modales cada 5 segundos y una referencia guardada apuntaria al
-           elemento viejo, que ya no esta en la pagina. */
+        modales cada 5 segundos y una referencia guardada apuntaria al
+        elemento viejo, que ya no esta en la pagina. */
         var modalReserva = function () {
             return $('#modalReserva');
         };
@@ -2039,8 +2039,8 @@
         // Modal de pedido
         // -------------------------------------------------
         /* Se busca cada vez que se usa. El motor de tiempo real repone los
-           modales cada 5 segundos y una referencia guardada apuntaria al
-           elemento viejo, que ya no esta en la pagina. */
+        modales cada 5 segundos y una referencia guardada apuntaria al
+        elemento viejo, que ya no esta en la pagina. */
         var modalPedido = function () {
             return $('#modalPedido');
         };
@@ -2066,8 +2066,8 @@
         };
 
         /**
-         * Stock en el almacén de un producto del catálogo.
-         */
+            * Stock en el almacén de un producto del catálogo.
+            */
         var $botonStock = function (idProducto) {
             return $('#modalCatalogo .modal-producto[data-producto-id="' + idProducto + '"]').data('stock');
         };
@@ -2141,7 +2141,7 @@
 
                 $acciones.append(
                     $('<button type="button" class="modal-item-quitar" title="Quitar del pedido">' +
-                      '<i class="fa fa-times"></i></button>')
+                    '<i class="fa fa-times"></i></button>')
                         .on('click', function () {
                             pedido.items.splice(indice, 1);
                             pintarPedido();
@@ -2181,11 +2181,11 @@
         window.abrirModalPedido = abrirModal;
 
         /**
-         * Muestra los pedidos que ya tiene la mesa.
-         *
-         * El servidor ya devuelve solo los de hoy: los de días anteriores no
-         * se listan, porque llenaban el modal y tapaban el catálogo.
-         */
+            * Muestra los pedidos que ya tiene la mesa.
+            *
+            * El servidor ya devuelve solo los de hoy: los de días anteriores no
+            * se listan, porque llenaban el modal y tapaban el catálogo.
+            */
         var cargarPedidosDeLaMesa = function () {
 
             var $wrap = $('#pedidoExistentesWrap');
@@ -2281,11 +2281,11 @@
 
         /* Agrega un producto al pedido.
 
-           Se escucha sobre document y no sobre cada botón, porque el catálogo
-           se repinta: al abrir el modal, al cambiar lo que haya en la cocina y
-           cada vez que el motor de tiempo real repone la pantalla. Un manejador
-           enganchado a los botones se queda en los viejos y los nuevos no
-           hacen nada al tocarlos. Con document siempre están todos. */
+        Se escucha sobre document y no sobre cada botón, porque el catálogo
+        se repinta: al abrir el modal, al cambiar lo que haya en la cocina y
+        cada vez que el motor de tiempo real repone la pantalla. Un manejador
+        enganchado a los botones se queda en los viejos y los nuevos no
+        hacen nada al tocarlos. Con document siempre están todos. */
         $(document).on('click', '.modal-producto', function () {
 
             var $boton = $(this);
@@ -2374,7 +2374,7 @@
             var original = $boton.html();
 
             $boton.prop('disabled', true)
-                  .html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
+                .html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
 
             api('api/pedido/crear', {
                 mesa_id: pedido.mesaId,
@@ -2392,9 +2392,9 @@
         });
 
         /* Se engancha cada vez que se abre el modal, y no una sola vez al
-           cargar la pagina: al reponerlo el motor de tiempo real, el
-           manejador que se habia quedado enganchado al elemento viejo deja
-           de escuchar, y el pedido en curso se limpiaba solo una vez. */
+        cargar la pagina: al reponerlo el motor de tiempo real, el
+        manejador que se habia quedado enganchado al elemento viejo deja
+        de escuchar, y el pedido en curso se limpiaba solo una vez. */
         modalPedido().one('shown.bs.modal', function () {
 
             modalPedido().on('hidden.bs.modal', function () {

@@ -76,7 +76,7 @@ class Pedido
                 INNER JOIN usuarios u ON u.id = p.usuario_id
                 LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
                 WHERE v.id IS NULL
-                  AND p.estado <> 'anulado'
+                AND p.estado <> 'anulado'
                 ORDER BY p.fecha_creacion";
 
         $stmt = $this->conexion->query($sql);
@@ -107,7 +107,7 @@ class Pedido
                 INNER JOIN mesas m ON m.id = p.mesa_id
                 LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
                 WHERE v.id IS NULL
-                  AND p.estado <> 'anulado'
+                AND p.estado <> 'anulado'
                 GROUP BY m.id, m.numero
                 ORDER BY MIN(p.fecha_creacion)";
 
@@ -132,8 +132,8 @@ class Pedido
                 INNER JOIN usuarios u ON u.id = p.usuario_id
                 LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
                 WHERE p.mesa_id = :mesa
-                  AND v.id IS NULL
-                  AND p.estado <> 'anulado'
+                AND v.id IS NULL
+                AND p.estado <> 'anulado'
                 ORDER BY p.fecha_creacion";
 
         $stmt = $this->conexion->prepare($sql);
@@ -146,10 +146,10 @@ class Pedido
 
         $detalle = $this->conexion->prepare(
             "SELECT d.cantidad, d.precio_unitario, d.subtotal, pr.nombre
-             FROM detalle_pedidos d
-             INNER JOIN productos pr ON pr.id = d.producto_id
-             WHERE d.pedido_id = :pedido
-             ORDER BY d.id"
+            FROM detalle_pedidos d
+            INNER JOIN productos pr ON pr.id = d.producto_id
+            WHERE d.pedido_id = :pedido
+            ORDER BY d.id"
         );
 
         foreach ($pedidos as &$pedido) {
@@ -167,11 +167,11 @@ class Pedido
     {
         $stmt = $this->conexion->prepare(
             "SELECT COALESCE(SUM(p.total), 0)
-             FROM pedidos p
-             LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
-             WHERE p.mesa_id = :mesa
-               AND v.id IS NULL
-               AND p.estado <> 'anulado'"
+            FROM pedidos p
+            LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+            WHERE p.mesa_id = :mesa
+            AND v.id IS NULL
+            AND p.estado <> 'anulado'"
         );
         $stmt->execute([':mesa' => $mesaId]);
 
@@ -185,11 +185,11 @@ class Pedido
     {
         $stmt = $this->conexion->prepare(
             "SELECT p.*, m.numero AS mesa_numero, u.nombre AS usuario_nombre
-             FROM pedidos p
-             INNER JOIN mesas m ON m.id = p.mesa_id
-             LEFT JOIN usuarios u ON u.id = p.usuario_id
-             WHERE p.id = :id
-             LIMIT 1"
+            FROM pedidos p
+            INNER JOIN mesas m ON m.id = p.mesa_id
+            LEFT JOIN usuarios u ON u.id = p.usuario_id
+            WHERE p.id = :id
+            LIMIT 1"
         );
         $stmt->execute([':id' => $id]);
 
@@ -201,10 +201,10 @@ class Pedido
 
         $stmt = $this->conexion->prepare(
             "SELECT d.cantidad, d.precio_unitario, d.subtotal, pr.nombre
-             FROM detalle_pedidos d
-             INNER JOIN productos pr ON pr.id = d.producto_id
-             WHERE d.pedido_id = :id
-             ORDER BY d.id"
+            FROM detalle_pedidos d
+            INNER JOIN productos pr ON pr.id = d.producto_id
+            WHERE d.pedido_id = :id
+            ORDER BY d.id"
         );
         $stmt->execute([':id' => $id]);
 
@@ -244,13 +244,13 @@ class Pedido
         try {
             $stmt = $this->conexion->prepare(
                 "SELECT n.id, n.pedido_id, n.texto, m.numero AS mesa
-                 FROM pedido_novedades n
-                 INNER JOIN pedidos p ON p.id = n.pedido_id
-                 INNER JOIN mesas m   ON m.id = p.mesa_id
-                 LEFT JOIN ventas v  ON v.pedido_id = p.id AND v.estado = 'pagada'
-                 WHERE n.id > :desde AND v.id IS NULL
-                 ORDER BY n.id
-                 LIMIT " . (int) $limite
+                FROM pedido_novedades n
+                INNER JOIN pedidos p ON p.id = n.pedido_id
+                INNER JOIN mesas m   ON m.id = p.mesa_id
+                LEFT JOIN ventas v  ON v.pedido_id = p.id AND v.estado = 'pagada'
+                WHERE n.id > :desde AND v.id IS NULL
+                ORDER BY n.id
+                LIMIT " . (int) $limite
             );
             $stmt->execute([':desde' => $desde]);
 
@@ -296,10 +296,10 @@ class Pedido
     {
         $stmt = $this->conexion->prepare(
             "SELECT p.*, m.numero AS mesa_numero
-             FROM pedidos p
-             INNER JOIN mesas m ON m.id = p.mesa_id
-             WHERE p.id = :id
-             LIMIT 1"
+            FROM pedidos p
+            INNER JOIN mesas m ON m.id = p.mesa_id
+            WHERE p.id = :id
+            LIMIT 1"
         );
         $stmt->execute([':id' => $id]);
 
@@ -372,7 +372,7 @@ class Pedido
 
             $stmt = $this->conexion->prepare(
                 "INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
-                 VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)"
+                VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)"
             );
 
             foreach ($precios as $item) {
@@ -475,13 +475,13 @@ class Pedido
 
             $pedidos = $this->conexion->prepare(
                 "SELECT p.id
-                 FROM pedidos p
-                 LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
-                 WHERE p.mesa_id = :mesa
-                   AND v.id IS NULL
-                   AND p.estado <> 'anulado'
-                 ORDER BY p.fecha_creacion
-                 FOR UPDATE"
+                FROM pedidos p
+                LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                WHERE p.mesa_id = :mesa
+                AND v.id IS NULL
+                AND p.estado <> 'anulado'
+                ORDER BY p.fecha_creacion
+                FOR UPDATE"
             );
             $pedidos->execute([':mesa' => $mesaId]);
             $ids = array_map(static fn (array $f): int => (int) $f['id'], $pedidos->fetchAll());
@@ -521,12 +521,12 @@ class Pedido
 
             $insertaVenta = $this->conexion->prepare(
                 "INSERT INTO ventas (pedido_id, usuario_id, subtotal, descuento, total, estado)
-                 VALUES (:pedido_id, :usuario_id, :subtotal, 0, :total, 'pagada')"
+                VALUES (:pedido_id, :usuario_id, :subtotal, 0, :total, 'pagada')"
             );
 
             $insertaPago = $this->conexion->prepare(
                 "INSERT INTO pagos (venta_id, metodo_pago_id, monto, monto_recibido, vuelto)
-                 VALUES (:venta_id, :metodo_id, :monto, :recibido, :vuelto)"
+                VALUES (:venta_id, :metodo_id, :monto, :recibido, :vuelto)"
             );
 
             /**
@@ -579,7 +579,7 @@ class Pedido
 
             $this->conexion->prepare(
                 "UPDATE pedidos SET estado = 'entregado' WHERE mesa_id = :mesa
-                   AND id IN (" . implode(',', array_map('intval', $ids)) . ")"
+                AND id IN (" . implode(',', array_map('intval', $ids)) . ")"
             )->execute([':mesa' => $mesaId]);
 
             // La mesa queda libre cuando ya no le queda nada por cobrar
@@ -600,8 +600,8 @@ class Pedido
 
                 $this->conexion->prepare(
                     "UPDATE pagos SET monto_recibido = :recibido, vuelto = :vuelto
-                     WHERE venta_id = :venta
-                     ORDER BY id LIMIT 1"
+                    WHERE venta_id = :venta
+                    ORDER BY id LIMIT 1"
                 )->execute([
                     ':recibido' => $montoRecibido > 0 ? $montoRecibido : null,
                     ':vuelto'   => $vuelto,
@@ -709,12 +709,12 @@ class Pedido
     {
         $stmt = $this->conexion->prepare(
             "SELECT COUNT(*)
-             FROM pedidos p
-             LEFT JOIN ventas v
-                    ON v.pedido_id = p.id AND v.estado = 'pagada'
-             WHERE p.mesa_id = :mesa
-               AND v.id IS NULL
-               AND p.estado <> 'anulado'"
+            FROM pedidos p
+            LEFT JOIN ventas v
+                ON v.pedido_id = p.id AND v.estado = 'pagada'
+            WHERE p.mesa_id = :mesa
+            AND v.id IS NULL
+            AND p.estado <> 'anulado'"
         );
         $stmt->execute([':mesa' => $mesaId]);
 
@@ -884,15 +884,15 @@ class Pedido
                 // ponerse en amarillo otra vez para que no se pierdan.
                 $stmt = $this->conexion->prepare(
                     "UPDATE pedidos
-                     SET estado = 'pendiente', fecha_actualizacion = NOW()
-                     WHERE id = :id"
+                    SET estado = 'pendiente', fecha_actualizacion = NOW()
+                    WHERE id = :id"
                 );
                 $stmt->execute([':id' => $pedidoId]);
 
                 $stmt = $this->conexion->prepare(
                     "INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
-                     VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)
-                     ON DUPLICATE KEY UPDATE
+                    VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)
+                    ON DUPLICATE KEY UPDATE
                         cantidad = cantidad + VALUES(cantidad),
                         subtotal = subtotal + VALUES(subtotal)"
                 );
@@ -919,7 +919,7 @@ class Pedido
                  */
                 $stmt = $this->conexion->prepare(
                     "INSERT INTO pedido_novedades (pedido_id, producto_id, texto, cantidad, usuario_id)
-                     VALUES (:pedido_id, :producto_id, :texto, :cantidad, :usuario_id)"
+                    VALUES (:pedido_id, :producto_id, :texto, :cantidad, :usuario_id)"
                 );
 
                 foreach ($precios as $item) {
@@ -935,7 +935,7 @@ class Pedido
             } else {
                 $stmt = $this->conexion->prepare(
                     "INSERT INTO pedidos (mesa_id, usuario_id, estado, total)
-                     VALUES (:mesa_id, :usuario_id, 'pendiente', :total)"
+                    VALUES (:mesa_id, :usuario_id, 'pendiente', :total)"
                 );
                 $stmt->execute([
                     ':mesa_id'    => $mesaId,
@@ -947,7 +947,7 @@ class Pedido
 
                 $stmt = $this->conexion->prepare(
                     "INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
-                     VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)"
+                    VALUES (:pedido_id, :producto_id, :cantidad, :precio, :subtotal)"
                 );
 
                 foreach ($precios as $item) {
@@ -1024,8 +1024,8 @@ class Pedido
     {
         $stmt = $this->conexion->prepare(
             "UPDATE pedidos
-             SET total = (SELECT COALESCE(SUM(subtotal), 0) FROM detalle_pedidos WHERE pedido_id = :id)
-             WHERE id = :id"
+            SET total = (SELECT COALESCE(SUM(subtotal), 0) FROM detalle_pedidos WHERE pedido_id = :id)
+            WHERE id = :id"
         );
         $stmt->execute([':id' => $pedidoId]);
     }
@@ -1073,7 +1073,7 @@ class Pedido
         $stmt = $this->conexion->prepare(
             "INSERT INTO movimientos_inventario
                 (producto_id, usuario_id, tipo, cantidad, stock_anterior, stock_nuevo, motivo)
-             VALUES (:producto_id, :usuario_id, :tipo, :cantidad, :anterior, :nuevo, :motivo)"
+            VALUES (:producto_id, :usuario_id, :tipo, :cantidad, :anterior, :nuevo, :motivo)"   
         );
         $stmt->execute([
             ':producto_id' => $productoId,
@@ -1095,9 +1095,9 @@ class Pedido
     {
         $stmt = $this->conexion->prepare(
             "SELECT producto_id, SUM(cantidad) AS cantidad
-             FROM detalle_pedidos
-             WHERE pedido_id = :id
-             GROUP BY producto_id"
+            FROM detalle_pedidos
+            WHERE pedido_id = :id
+            GROUP BY producto_id"
         );
         $stmt->execute([':id' => $pedidoId]);
 

@@ -79,9 +79,9 @@ class PulsoController
                     (SELECT COUNT(*) FROM ventas WHERE estado = 'pagada')        AS ventas,
                     (SELECT COALESCE(MAX(fecha), '0') FROM ventas)               AS ventas_alta,
                     (SELECT COUNT(DISTINCT p.mesa_id)
-                       FROM pedidos p
-                       LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
-                      WHERE v.id IS NULL AND p.estado <> 'anulado')               AS mesas_ocupadas,
+                    FROM pedidos p
+                    LEFT JOIN ventas v ON v.pedido_id = p.id AND v.estado = 'pagada'
+                    WHERE v.id IS NULL AND p.estado <> 'anulado')               AS mesas_ocupadas,
                     (SELECT COUNT(*) FROM egresos)                             AS compras,
                     (SELECT COALESCE(MAX(fecha), '0') FROM egresos)            AS compras_alta,
                     (SELECT COUNT(*) FROM movimientos_inventario)               AS movimientos,

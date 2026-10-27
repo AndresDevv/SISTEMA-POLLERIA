@@ -33,7 +33,7 @@ $stmt = $db->query(
         UNION SELECT fecha FROM egresos
         UNION SELECT fecha FROM ingresos
         UNION SELECT fecha_creacion AS fecha FROM pedidos
-     ) d ORDER BY dia DESC LIMIT 30"
+    ) d ORDER BY dia DESC LIMIT 30"
 );
 $fechasConDatos = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
@@ -132,8 +132,8 @@ $indicadores = [
     <label class="lg-label mb-0" for="dashFecha">Fecha</label>
 
     <input type="date" id="dashFecha" name="fecha" class="lg-input"
-           style="width:auto;min-height:42px;" value="<?= htmlspecialchars($fecha) ?>"
-           max="<?= date('Y-m-d') ?>">
+        style="width:auto;min-height:42px;" value="<?= htmlspecialchars($fecha) ?>"
+        max="<?= date('Y-m-d') ?>">
 
     <?php if (!$esHoy): ?>
         <a href="<?= BASE_URL ?>?page=dashboard" class="lg-btn lg-btn--ghost lg-btn--sm">Hoy</a>
@@ -148,7 +148,7 @@ $indicadores = [
             Días con actividad:
             <?php foreach (array_slice($fechasConDatos, 0, 5) as $dia): ?>
                 <a href="?page=dashboard&amp;fecha=<?= htmlspecialchars($dia) ?>"
-                   style="text-decoration:underline;<?= $dia === $fecha ? 'font-weight:700;' : '' ?>">
+                style="text-decoration:underline;<?= $dia === $fecha ? 'font-weight:700;' : '' ?>">
                     <?= date('d/m', strtotime($dia)) ?>
                 </a>
             <?php endforeach; ?>

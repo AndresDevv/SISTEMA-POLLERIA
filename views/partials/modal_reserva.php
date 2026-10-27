@@ -30,7 +30,7 @@
 
                 <label class="lg-label" for="reservaNombre">A nombre de qui&eacute;n</label>
                 <input type="text" id="reservaNombre" class="lg-input mb-3" maxlength="100"
-                       placeholder="Ej: Mar&iacute;a Gonz&aacute;les">
+                    placeholder="Ej: Mar&iacute;a Gonz&aacute;les">
 
                 <label class="lg-label" for="reservaHora">Hora estimada</label>
                 <input type="time" id="reservaHora" class="lg-input" value="<?= date('H:i') ?>">

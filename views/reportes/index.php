@@ -47,10 +47,10 @@ if ($desde > $hasta) {
 /** Ventas del período */
 $stmt = $db->prepare(
     "SELECT DATE(v.fecha) AS dia, COUNT(*) AS ventas, COALESCE(SUM(v.total), 0) AS total
-     FROM ventas v
-     WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
-     GROUP BY DATE(v.fecha)
-     ORDER BY dia DESC"
+    FROM ventas v
+    WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
+    GROUP BY DATE(v.fecha)
+    ORDER BY dia DESC"
 );
 $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $porDia = $stmt->fetchAll();
@@ -69,9 +69,9 @@ $gastosPorDia = [];
 try {
     $stmt = $db->prepare(
         "SELECT DATE(fecha) AS dia, COALESCE(SUM(monto), 0) AS total
-         FROM egresos
-         WHERE DATE(fecha) BETWEEN :desde AND :hasta
-         GROUP BY DATE(fecha)"
+        FROM egresos
+        WHERE DATE(fecha) BETWEEN :desde AND :hasta
+        GROUP BY DATE(fecha)"
     );
     $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 
@@ -97,12 +97,12 @@ $pagDias = paginar(array_values($dias), 15);
 /** Ventas por método de pago */
 $stmt = $db->prepare(
     "SELECT m.nombre AS metodo, COALESCE(SUM(pg.monto), 0) AS total
-     FROM pagos pg
-     INNER JOIN ventas v ON v.id = pg.venta_id
-     INNER JOIN metodos_pago m ON m.id = pg.metodo_pago_id
-     WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
-     GROUP BY m.nombre
-     ORDER BY total DESC"
+    FROM pagos pg
+    INNER JOIN ventas v ON v.id = pg.venta_id
+    INNER JOIN metodos_pago m ON m.id = pg.metodo_pago_id
+    WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
+    GROUP BY m.nombre
+    ORDER BY total DESC"
 );
 $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $porMetodo = $stmt->fetchAll();
@@ -110,13 +110,13 @@ $porMetodo = $stmt->fetchAll();
 /** Productos más vendidos */
 $stmt = $db->prepare(
     "SELECT pr.nombre, SUM(d.cantidad) AS unidades, SUM(d.subtotal) AS total
-     FROM detalle_pedidos d
-     INNER JOIN productos pr ON pr.id = d.producto_id
-     INNER JOIN pedidos p ON p.id = d.pedido_id
-     WHERE DATE(p.fecha_creacion) BETWEEN :desde AND :hasta
-     GROUP BY pr.id, pr.nombre
-     ORDER BY unidades DESC
-     LIMIT 10"
+    FROM detalle_pedidos d
+    INNER JOIN productos pr ON pr.id = d.producto_id
+    INNER JOIN pedidos p ON p.id = d.pedido_id
+    WHERE DATE(p.fecha_creacion) BETWEEN :desde AND :hasta
+    GROUP BY pr.id, pr.nombre
+    ORDER BY unidades DESC
+    LIMIT 10"
 );
 $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $topProductos = $stmt->fetchAll();
@@ -124,13 +124,13 @@ $topProductos = $stmt->fetchAll();
 /** Mesas más rentables */
 $stmt = $db->prepare(
     "SELECT m.numero, COALESCE(SUM(v.total), 0) AS total, COUNT(v.id) AS ventas
-     FROM ventas v
-     INNER JOIN pedidos p ON p.id = v.pedido_id
-     INNER JOIN mesas m ON m.id = p.mesa_id
-     WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
-     GROUP BY m.id, m.numero
-     ORDER BY total DESC
-     LIMIT 10"
+    FROM ventas v
+    INNER JOIN pedidos p ON p.id = v.pedido_id
+    INNER JOIN mesas m ON m.id = p.mesa_id
+    WHERE v.estado = 'pagada' AND DATE(v.fecha) BETWEEN :desde AND :hasta
+    GROUP BY m.id, m.numero
+    ORDER BY total DESC
+    LIMIT 10"
 );
 $stmt->execute([':desde' => $desde, ':hasta' => $hasta]);
 $porMesa = $stmt->fetchAll();
@@ -161,13 +161,13 @@ encabezadoPagina(
 <div class="lg-segmentos mb-3">
     <?php foreach ($rangos as $clave => $rango): ?>
         <a href="<?= url('reportes') ?>&amp;periodo=<?= $clave ?>"
-           class="lg-segmento<?= $periodo === $clave ? ' is-activo' : '' ?>">
+        class="lg-segmento<?= $periodo === $clave ? ' is-activo' : '' ?>">
             <i class="fa <?= $clave === 'dia' ? 'fa-calendar-check-o' : ($clave === 'semana' ? 'fa-calendar' : 'fa-calendar-o') ?>"></i>
             <?= htmlspecialchars($rango['etiqueta']) ?>
         </a>
     <?php endforeach; ?>
     <a href="<?= url('reportes') ?>&amp;periodo=personalizado"
-       class="lg-segmento<?= $periodo === 'personalizado' ? ' is-activo' : '' ?>">
+    class="lg-segmento<?= $periodo === 'personalizado' ? ' is-activo' : '' ?>">
         <i class="fa fa-calendar"></i> Personalizado
     </a>
 </div>
@@ -229,7 +229,7 @@ encabezadoPagina(
             <div>
                 <p class="lg-stat-label mb-1">Ganancia del per&iacute;odo</p>
                 <div class="lg-stat-value <?= $totalGanancia >= 0 ? 'is-green' : 'is-red' ?>"
-                     style="font-size:1.6rem;"><?= soles($totalGanancia) ?></div>
+                    style="font-size:1.6rem;"><?= soles($totalGanancia) ?></div>
             </div>
             <span class="lg-card-icon"><i class="fa fa-line-chart"></i></span>
         </div>

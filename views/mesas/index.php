@@ -222,7 +222,7 @@ encabezadoPagina(
             <?php foreach ($mesas as $mesa): ?>
                 <?php
                     /* El usuario de cocina ve el estado de los pedidos de la
-                       mesa; el resto sigue viendo si está libre u ocupada. */
+                    mesa; el resto sigue viendo si está libre u ocupada. */
                     $claveEstado = $soloCocina ? $mesa['estado_cocina'] : $mesa['estado_visual'];
                     $catalogo    = $soloCocina ? estadosMesaCocina() : estadosMesa();
                     $estado      = $catalogo[$claveEstado] ?? $catalogo['libre'];
@@ -234,7 +234,7 @@ encabezadoPagina(
                     $puedeReservarMesa = esPermitido('mesas_reservar');
                     ?>
                     <div class="lg-mesa lg-mesa--<?= htmlspecialchars($claveEstado) ?>"
-                         data-mesa-id="<?= (int) $mesa['id'] ?>">
+                        data-mesa-id="<?= (int) $mesa['id'] ?>">
 
                     <!-- Abrir pedido, o ver los pedidos de la mesa si es cocina -->
                     <button type="button"
@@ -287,7 +287,7 @@ encabezadoPagina(
                     </button>
 
                     <!-- Acciones de la mesa. Reservar y quitar la reserva lo puede
-                         hacer el mesero; agregar y eliminar, solo el admin. -->
+                        hacer el mesero; agregar y eliminar, solo el admin. -->
                     <?php if ($puedeEditarMesa || $puedeReservarMesa): ?>
                     <div class="lg-mesa-acciones">
 
@@ -355,7 +355,7 @@ encabezadoPagina(
             </div>
 
             <span class="lg-muted" style="font-size:0.75rem;"
-                  title="El estado lo cambia cocina al abrir la tarjeta de la mesa">
+                title="El estado lo cambia cocina al abrir la tarjeta de la mesa">
                 <i class="fa fa-eye"></i> Solo consulta
             </span>
         </div>
@@ -453,11 +453,11 @@ encabezadoPagina(
                                     <?php else: ?>
 
                                         <?php /* Esta tabla es solo de consulta.
-                                                 El estado lo cambia cocina al
-                                                 abrir la tarjeta de su mesa,
-                                                 que es donde se ven los platos.
-                                                 El cobro no vive aquí: se hace
-                                                 en Caja, mesa por mesa. */ ?>
+                                                El estado lo cambia cocina al
+                                                abrir la tarjeta de su mesa,
+                                                que es donde se ven los platos.
+                                                El cobro no vive aquí: se hace
+                                                en Caja, mesa por mesa. */ ?>
 
                                         <?php if (esPermitido('pedidos_editar')): ?>
                                             <button type="button"
