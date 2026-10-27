@@ -314,7 +314,8 @@ class PedidoController
                 'estado_etiqueta' => $estado['etiqueta'],
                 'estado_clase'    => $this->claseMesaEstado($pedido['estado']),
                 'total'           => (float) $pedido['total'],
-                'items'           => $detalle['items']
+                'items'           => $detalle['items'],
+                'usuario_nombre'  => $pedido['usuario_nombre'] ?? ''
             ];
         }
 

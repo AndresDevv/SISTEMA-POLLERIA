@@ -184,9 +184,10 @@ class Pedido
     public function conDetalle(int $id): ?array
     {
         $stmt = $this->conexion->prepare(
-            "SELECT p.*, m.numero AS mesa_numero
+            "SELECT p.*, m.numero AS mesa_numero, u.nombre AS usuario_nombre
              FROM pedidos p
              INNER JOIN mesas m ON m.id = p.mesa_id
+             LEFT JOIN usuarios u ON u.id = p.usuario_id
              WHERE p.id = :id
              LIMIT 1"
         );
@@ -274,15 +275,16 @@ class Pedido
      */
     public function porMesa(int $mesaId, bool $soloHoy = true): array
     {
-        $sql = "SELECT id, estado, total, fecha_creacion
-                FROM pedidos
-                WHERE mesa_id = :mesa";
+        $sql = "SELECT p.id, p.estado, p.total, p.fecha_creacion, p.usuario_id, COALESCE(u.nombre, '') AS usuario_nombre
+                FROM pedidos p
+                LEFT JOIN usuarios u ON u.id = p.usuario_id
+                WHERE p.mesa_id = :mesa";
 
         if ($soloHoy) {
-            $sql .= " AND DATE(fecha_creacion) = CURDATE()";
+            $sql .= " AND DATE(p.fecha_creacion) = CURDATE()";
         }
 
-        $sql .= " ORDER BY fecha_creacion DESC, id DESC";
+        $sql .= " ORDER BY p.fecha_creacion DESC, p.id DESC";
 
         $stmt = $this->conexion->prepare($sql);
         $stmt->execute([':mesa' => $mesaId]);

@@ -22,7 +22,7 @@
         <div class="modal-content" style="border-radius:14px;border:0;overflow:hidden;">
 
             <div class="modal-header align-items-center"
-                 style="border-bottom:1px solid #EFEFEF;background-color:#FAFAFA;">
+                style="border-bottom:1px solid #EFEFEF;background-color:#FAFAFA;">
                 <div class="d-flex align-items-center gap-3">
                     <span class="lg-card-icon" style="width:46px;height:46px;">
                         <i class="fa fa-fire"></i>

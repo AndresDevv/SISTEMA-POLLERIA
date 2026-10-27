@@ -1,5 +1,5 @@
 /* =========================================================
-   LOS GOMEZ - Comportamiento de las vistas
+    LOS GOMEZ - Comportamiento de las vistas
    ========================================================= */
 
 (function ($) {
@@ -11,8 +11,8 @@
         // CRUD genérico de los módulos administrativos
         // -------------------------------------------------
         /* Se busca cada vez que se usa. El motor de tiempo real repone los
-           modales cada 5 segundos y una referencia guardada apuntaria al
-           elemento viejo, que ya no esta en la pagina: el formulario se
+            modales cada 5 segundos y una referencia guardada apuntaria al
+            elemento viejo, que ya no esta en la pagina: el formulario se
            llenaba pero no se abria. */
         var formModal = function () {
             return $('#modalFormulario');
@@ -217,10 +217,10 @@
                     $grupo.append($label).append($controlo);
 
                     /* Ayuda bajo el campo.
-                       Explica qué se espera escribir cuando el nombre del
-                       campo puede prestarse a confusión (por ejemplo, que
-                       "Unidad de medida" es una palabra como "litros" y no
-                       un número). Como el texto es largo, el campo ocupa
+                        Explica qué se espera escribir cuando el nombre del  
+                        campo puede prestarse a confusión (por ejemplo, que
+                        "Unidad de medida" es una palabra como "litros" y no
+                        un número). Como el texto es largo, el campo ocupa
                        las dos columnas para que se lea completo. */
                     if (regla.ayuda) {
                         $grupo.addClass('is-ancho');
@@ -433,8 +433,8 @@
             });
 
             /* Al corregir un campo que había quedado marcado, se le quita
-               el resaltado y se esconde el aviso: así el formulario deja
-               de verse "en rojo" apenas la persona arregla lo que faltaba. */
+            el resaltado y se esconde el aviso: así el formulario deja
+            de verse "en rojo" apenas la persona arregla lo que faltaba. */
             $(document).on('input change', '#formCampos .is-error', function () {
 
                 var $c = $(this);
@@ -488,18 +488,18 @@
         // Buscador que filtra la tabla sin recargar la página
         // -------------------------------------------------
         /* Va aquí, antes de los bloques que solo corren cuando la página
-           trae el modal de pedidos, porque esas pantallas salen antes de
-           tiempo y este buscador tiene que quedar registrado siempre.
+        trae el modal de pedidos, porque esas pantallas salen antes de
+        tiempo y este buscador tiene que quedar registrado siempre.
 
-           El formulario manda a su página con el parámetro "buscar". En
-           vez de recargar toda la pantalla —se pierde el menú, la pestaña
-           activa y el punto donde se estaba—, se pide la página al
-           servidor y se repinta solo el contenido, igual que hace el
-           sondeo en tiempo real.
+        El formulario manda a su página con el parámetro "buscar". En
+        vez de recargar toda la pantalla —se pierde el menú, la pestaña
+        activa y el punto donde se estaba—, se pide la página al
+        servidor y se repinta solo el contenido, igual que hace el
+        sondeo en tiempo real.
 
-           La dirección exacta (con su pestaña, si la tiene) la trae el
-           formulario en "data-buscar-url", así que sirve igual para
-           Personal, Inventario, Finanzas, Servicios o Configuración. */
+        La dirección exacta (con su pestaña, si la tiene) la trae el
+        formulario en "data-buscar-url", así que sirve igual para
+        Personal, Inventario, Finanzas, Servicios o Configuración. */
         $(document).on('submit', 'form.input-group', function (e) {
 
             e.preventDefault();
@@ -519,8 +519,8 @@
             window.history.pushState({}, '', url);
 
             /* El campo se desenfoca antes de repintar: con un campo
-               enfocado el motor de tiempo real entiende que alguien
-               sigue escribiendo y pospone el repintado. */
+            enfocado el motor de tiempo real entiende que alguien
+            sigue escribiendo y pospone el repintado. */
             $form.find('input[name="buscar"]').blur();
 
             window.refrescarContenido();
@@ -586,17 +586,17 @@
         });
 
         /* En tablet el menú es una capa encima del contenido, así que se
-           cierra al tocar al costado, como en cualquier aplicación de móvil.
-           Eso evita tener que volver a tocar las rayas de arriba, que con el
-           menú abierto quedan tapadas.
+        cierra al tocar al costado, como en cualquier aplicación de móvil.
+        Eso evita tener que volver a tocar las rayas de arriba, que con el
+        menú abierto quedan tapadas.
 
-           Se escucha en fase de captura para que el toque no llegue antes al
-           botón o a la fila que hay debajo, y se descartan el propio botón de
-           las rayas, lo que está dentro del menú y los modales.
+        Se escucha en fase de captura para que el toque no llegue antes al
+        botón o a la fila que hay debajo, y se descartan el propio botón de
+        las rayas, lo que está dentro del menú y los modales.
 
-           Se usa addEventListener y no jQuery porque jQuery toma un tercer
-           argumento booleano como datos del evento, no como fase de captura:
-           el manejador se quedaba sin función y el menú no cerraba. */
+        Se usa addEventListener y no jQuery porque jQuery toma un tercer
+        argumento booleano como datos del evento, no como fase de captura:
+        el manejador se quedaba sin función y el menú no cerraba. */
         document.addEventListener('click', function (e) {
 
             if (window.innerWidth > MOVIL || !estaAbierto()) {
@@ -1029,15 +1029,15 @@
             // Catálogo del modal de pedidos, al día con el modal abierto
             // -------------------------------------------------
             /* Con un modal abierto la pantalla no se repinta, porque se
-               perdería el pedido que se está armando. Pero el catálogo de
-               platos sí puede cambiar sin tocar nada de eso, así que se
-               repinta por su cuenta.
+            perdería el pedido que se está armando. Pero el catálogo de
+            platos sí puede cambiar sin tocar nada de eso, así que se
+            repinta por su cuenta.
 
-               Solo se cambia la lista de productos: el pedido en curso, lo ya
-               agregado y los totales quedan como están. El HTML lo pinta el
-               servidor con el mismo partial que usa al abrir el modal, y va
-               con una firma, así que si no cambió no se repinta nada y no se
-               nota. Al repintar se devuelve el scroll donde estaba. */
+            Solo se cambia la lista de productos: el pedido en curso, lo ya
+            agregado y los totales quedan como están. El HTML lo pinta el
+            servidor con el mismo partial que usa al abrir el modal, y va
+            con una firma, así que si no cambió no se repinta nada y no se
+            nota. Al repintar se devuelve el scroll donde estaba. */
             var catalogoVivo = (function () {
 
                 var CADA_CUANTO_CATALOGO_MS = 6000;
@@ -1318,13 +1318,13 @@
         // Detalle de los pedidos de una mesa (usuario de cocina)
         // -------------------------------------------------
         /* El modal se busca cada vez que se usa, en vez de guardarlo en una
-           variable al cargar la pagina.
+        variable al cargar la pagina.
 
-           El motor de tiempo real, cada 5 segundos, cambia el HTML del
-           contenido y vuelve a poner los modales en el body. El modal viejo
-           se borra y entra uno nuevo: una referencia guardada se queda
-           apuntando a un elemento que ya no esta en la pagina, y al abrirlo
-           no aparece nada. Por eso se vuelve a buscar cada vez. */
+        El motor de tiempo real, cada 5 segundos, cambia el HTML del
+        contenido y vuelve a poner los modales en el body. El modal viejo
+        se borra y entra uno nuevo: una referencia guardada se queda
+        apuntando a un elemento que ya no esta en la pagina, y al abrirlo
+        no aparece nada. Por eso se vuelve a buscar cada vez. */
         var modalMesa = function () {
             return $('#modalMesaPedidos');
         };
@@ -1402,13 +1402,19 @@
                             return s + (parseInt(i.cantidad, 10) || 0);
                         }, 0);
 
+                        var meseroComanda = (p.usuario_nombre && p.usuario_nombre !== '' && p.usuario_nombre !== null && p.usuario_nombre !== undefined) 
+                        ? '<div style="display:block;font-size:.75rem;color:#6B6B6B;margin-top:2px;line-height:1.2;"><i class="fa fa-user"></i> Agregado por: ' + $('<div>').text(p.usuario_nombre).html() + '</div>' 
+                        : '';
                         html +=
                             '<div class="lg-comanda lg-comanda--' + p.estado + '">' +
                                 '<div class="lg-comanda-cuerpo">' +
 
                                     '<div class="lg-comanda-cabeza">' +
-                                        '<span class="lg-comanda-codigo">P-' + String(p.id).padStart(4, '0')
-                                            + '<small>' + unidades + ' producto(s)</small></span>' +
+                                        '<div style="display:flex;flex-direction:column;">' +
+                                            '<span class="lg-comanda-codigo">P-' + String(p.id).padStart(4, '0')
+                                                + '<small>' + unidades + ' producto(s)</small></span>' +
+                                            meseroComanda +
+                                        '</div>' +
                                         '<span class="lg-comanda-total">' + soles(p.total) + '</span>' +
                                     '</div>' +
 
@@ -1525,11 +1531,13 @@
 
                     var $bloque = $('<div class="lg-caja-pedido"></div>');
 
-                    $bloque.append(
-                        $('<div class="lg-caja-pedido-head"></div>')
-                            .append($('<span></span>').text('P-' + String(pedido.id).padStart(4, '0')))
-                            .append($('<span class="lg-muted"></span>').text(soles(pedido.total)))
-                    );
+                    var $head = $('<div class="lg-caja-pedido-head"></div>');
+                    var $izq = $('<span></span>').text('P-' + String(pedido.id).padStart(4, '0'));
+                    if (pedido.usuario_nombre && pedido.usuario_nombre !== '') {
+                        $izq.append($('<span class="lg-muted" style="font-weight:400;"></span>').html(' · <i class="fa fa-user"></i> Agregado por: ' + $('<div>').text(pedido.usuario_nombre).html()));
+                    }
+                    $head.append($izq).append($('<span class="lg-muted"></span>').text(soles(pedido.total)));
+                    $bloque.append($head);
 
                     (pedido.items || []).forEach(function (item) {
 
@@ -2218,12 +2226,14 @@
                 var html = '';
 
                 r.pedidos.forEach(function (p) {
+                    var mesero = p.usuario_nombre && p.usuario_nombre !== '' ? '<div class="lg-mesa-cap"><i class="fa fa-user"></i> Agregado por: ' + $('<div>').text(p.usuario_nombre).html() + '</div>' : '';
                     html +=
                         '<div class="lg-mesa lg-mesa--' + p.estado_clase + '" style="cursor:default;">' +
                             '<div class="lg-mesa-top">' +
                                 '<div>' +
                                     '<h3 class="lg-mesa-name">P-' + String(p.id).padStart(4, '0') + '</h3>' +
                                     '<div class="lg-mesa-cap">' + p.items.length + ' producto(s) &middot; ' + soles(p.total) + '</div>' +
+                                    mesero +
                                 '</div>' +
                                 '<span class="lg-mesa-badge lg-mesa-badge--' + p.estado_clase + '">' +
                                     p.estado_etiqueta +

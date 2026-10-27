@@ -170,6 +170,10 @@ encabezadoPagina(
                             <div>
                                 <strong>P-<?= str_pad((string) $pedido['id'], 4, '0', STR_PAD_LEFT) ?></strong>
                                 <span class="text-muted">&middot; Mesa <?= (int) $pedido['mesa_numero'] ?></span>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fa fa-user"></i> Creado por: <?= htmlspecialchars($pedido['usuario_nombre'] ?? '-') ?>
+                                </small>
                             </div>
 
                             <div class="d-flex align-items-center gap-2">

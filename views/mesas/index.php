@@ -393,6 +393,7 @@ encabezadoPagina(
                         <tr>
                             <th>C&oacute;digo</th>
                             <th>Mesa</th>
+                            <th>Agregado por</th>
                             <th>Items</th>
                             <th>Hora</th>
                             <th>Total</th>
@@ -424,6 +425,7 @@ encabezadoPagina(
                                     <?php endif; ?>
                                 </td>
                                 <td>Mesa <?= (int) $pedido['mesa_numero'] ?></td>
+                                <td><?= htmlspecialchars($pedido['usuario_nombre'] ?? '-') ?></td>
                                 <td class="num"><?= (int) $pedido['items'] ?></td>
                                 <td class="text-muted">
                                     <?= date('d/m H:i', strtotime($pedido['fecha_creacion'])) ?>
